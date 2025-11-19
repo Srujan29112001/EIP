@@ -108,7 +108,7 @@ Your advice is informational and should be verified by a professional."""
 
     async def _calculate_tax(self, financial_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Calculate tax liability
+        Calculate tax liability using LLM-powered analysis for complex scenarios
 
         Args:
             financial_data: Financial data
@@ -117,22 +117,100 @@ Your advice is informational and should be verified by a professional."""
             Tax calculation breakdown
         """
         net_profit = financial_data.get("net_profit", 0)
+        business_type = financial_data.get("business_type", "Private Limited")
+        revenue = financial_data.get("revenue", 0)
 
-        # Corporate tax rate (India): 25% for companies with turnover < Rs 400 Cr
-        base_tax_rate = 0.25
+        # Base calculations
+        base_tax_rate = 0.25  # 25% for companies with turnover < Rs 400 Cr
+
+        # Check if startup exemption applies (for LLP/Pvt Ltd incorporated after 2016)
+        incorporation_year = financial_data.get("incorporation_year", 2022)
+        years_since_incorporation = 2024 - incorporation_year
+
+        # Use LLM to analyze complex tax scenarios
+        try:
+            # Retrieve tax regulations from RAG
+            tax_context = ""
+            if self.config.use_rag and self.rag_service:
+                tax_docs = await self._retrieve_context(
+                    f"corporate tax rates India {business_type} revenue {revenue}"
+                )
+                if tax_docs:
+                    tax_context = "\n".join([
+                        f"{doc.get('metadata', {}).get('title', 'Tax Document')}: {doc.get('content', '')[:300]}"
+                        for doc in tax_docs[:2]
+                    ])
+
+            # Build LLM prompt for tax calculation verification
+            calc_prompt = f"""You are a tax calculation expert. Verify and optimize this tax calculation:
+
+Business Details:
+- Type: {business_type}
+- Revenue: ₹{revenue:,.0f}
+- Net Profit: ₹{net_profit:,.0f}
+- Years since incorporation: {years_since_incorporation}
+
+Tax Regulations Context:
+{tax_context if tax_context else "Using standard corporate tax rates"}
+
+Base Calculation:
+- Corporate tax rate: 25% (for turnover < ₹400 Cr)
+- Base tax: ₹{net_profit * 0.25:,.0f}
+- Health & Education Cess: 4% on tax
+- Surcharge: Based on income slabs
+
+Please verify:
+1. Is the 25% rate correct for this business?
+2. Are there any surcharges applicable?
+3. Any alternative tax regimes that might be beneficial (e.g., 22% regime under Section 115BAA)?
+
+Return ONLY a JSON object with:
+{{
+    "recommended_tax_rate": <decimal, e.g., 0.25>,
+    "surcharge_rate": <decimal, e.g., 0 or 0.10>,
+    "alternative_regime_available": <boolean>,
+    "alternative_regime_rate": <decimal or null>,
+    "rationale": "brief explanation"
+}}
+"""
+
+            if self.llm:
+                import json
+                import re
+                llm_response = await self.llm.generate(
+                    prompt=calc_prompt,
+                    temperature=0.2,
+                    max_tokens=500
+                )
+
+                # Parse JSON response
+                json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
+                if json_match:
+                    tax_analysis = json.loads(json_match.group(0))
+                    base_tax_rate = tax_analysis.get("recommended_tax_rate", 0.25)
+                    surcharge_rate = tax_analysis.get("surcharge_rate", 0.0)
+                else:
+                    surcharge_rate = 0.0
+            else:
+                surcharge_rate = 0.0
+
+        except Exception as e:
+            print(f"LLM tax calculation failed: {e}. Using standard rates.")
+            surcharge_rate = 0.0
+
+        # Final calculations
         base_tax = net_profit * base_tax_rate
-
-        # Surcharge and cess
-        surcharge = 0  # No surcharge for income < Rs 1 Cr
-        cess = base_tax * 0.04  # 4% health and education cess
-
-        total_tax = base_tax + surcharge + cess
+        surcharge = base_tax * surcharge_rate
+        tax_before_cess = base_tax + surcharge
+        cess = tax_before_cess * 0.04  # 4% health and education cess
+        total_tax = tax_before_cess + cess
 
         return {
             "net_profit": net_profit,
             "base_tax_rate": base_tax_rate * 100,
             "base_tax": base_tax,
             "surcharge": surcharge,
+            "surcharge_rate": surcharge_rate * 100,
             "cess": cess,
             "total_tax_before_deductions": total_tax,
             "effective_rate": (total_tax / net_profit * 100) if net_profit > 0 else 0
@@ -144,7 +222,7 @@ Your advice is informational and should be verified by a professional."""
         context: Optional[Dict]
     ) -> List[Dict[str, Any]]:
         """
-        Identify applicable tax deductions
+        Identify applicable tax deductions using LLM-powered analysis
 
         Args:
             financial_data: Financial data
@@ -153,6 +231,7 @@ Your advice is informational and should be verified by a professional."""
         Returns:
             List of applicable deductions
         """
+        # Start with rule-based deductions
         deductions = []
 
         # Section 80IAC - Startup tax exemption
@@ -194,6 +273,85 @@ Your advice is informational and should be verified by a professional."""
             "priority": "High"
         })
 
+        # Use LLM to identify additional deductions based on business profile
+        try:
+            if self.llm:
+                # Retrieve tax deduction information from RAG
+                deduction_context = ""
+                if self.config.use_rag and self.rag_service:
+                    deduction_docs = await self._retrieve_context(
+                        f"tax deductions India business {financial_data.get('business_type', 'startup')}"
+                    )
+                    if deduction_docs:
+                        deduction_context = "\n\n".join([
+                            f"**{doc.get('metadata', {}).get('title', 'Tax Guide')}**\n{doc.get('content', '')[:400]}"
+                            for doc in deduction_docs[:3]
+                        ])
+
+                # Build LLM prompt for deduction identification
+                deduction_prompt = f"""You are a tax deduction expert. Identify additional applicable tax deductions:
+
+Business Profile:
+- Type: {financial_data.get('business_type', 'Private Limited')}
+- Revenue: ₹{financial_data.get('revenue', 0):,.0f}
+- Net Profit: ₹{financial_data.get('net_profit', 0):,.0f}
+- Industry: {context.get('industry', 'Technology') if context else 'Technology'}
+- Employees: {context.get('employees', 10) if context else 10}
+- R&D Expenses: ₹{rd_expenses:,.0f}
+- IT Assets: ₹{it_assets:,.0f}
+
+Tax Deduction Knowledge:
+{deduction_context if deduction_context else "Using standard tax code knowledge"}
+
+Already Identified Deductions:
+{', '.join([d['section'] for d in deductions])}
+
+Please identify 2-3 additional tax deductions this business might be eligible for.
+Consider: Section 80G (donations), Section 35AD (specified businesses), Section 10AA (SEZ units), etc.
+
+Return ONLY a JSON array:
+[
+  {{
+    "section": "section code",
+    "name": "deduction name",
+    "description": "brief description",
+    "estimated_benefit": <amount in INR>,
+    "eligibility_criteria": "key requirements",
+    "priority": "High|Medium|Low",
+    "action_required": "what business needs to do"
+  }}
+]
+"""
+
+                llm_response = await self.llm.generate(
+                    prompt=deduction_prompt,
+                    temperature=0.3,
+                    max_tokens=1000
+                )
+
+                # Parse JSON response
+                import json
+                import re
+                json_match = re.search(r'\[.*\]', llm_response, re.DOTALL)
+                if json_match:
+                    additional_deductions = json.loads(json_match.group(0))
+
+                    # Add LLM-identified deductions
+                    for deduction in additional_deductions[:3]:  # Max 3 additional
+                        deductions.append({
+                            "section": deduction.get("section", "N/A"),
+                            "name": deduction.get("name", "Additional Deduction"),
+                            "description": deduction.get("description", ""),
+                            "max_deduction": deduction.get("estimated_benefit", 0),
+                            "eligibility": deduction.get("eligibility_criteria", ""),
+                            "savings": deduction.get("estimated_benefit", 0) * 0.25,  # Approximate
+                            "priority": deduction.get("priority", "Medium"),
+                            "action_required": deduction.get("action_required", "")
+                        })
+
+        except Exception as e:
+            print(f"LLM deduction identification failed: {e}. Using rule-based deductions only.")
+
         return deductions
 
     async def _generate_tax_strategy(
@@ -203,7 +361,7 @@ Your advice is informational and should be verified by a professional."""
         context: Optional[Dict]
     ) -> str:
         """
-        Generate tax optimization strategy
+        Generate tax optimization strategy using LLM-powered analysis
 
         Args:
             tax_calculation: Tax calculation
@@ -217,6 +375,81 @@ Your advice is informational and should be verified by a professional."""
         total_savings = sum(d.get("savings", 0) for d in deductions)
         optimized_tax = total_tax - total_savings
 
+        # Use LLM to generate personalized tax strategy
+        try:
+            if self.llm:
+                # Build comprehensive context
+                strategy_prompt = f"""{self.get_system_prompt()}
+
+Generate a comprehensive tax optimization strategy for this business:
+
+**Financial Overview:**
+- Net Profit: ₹{tax_calculation.get('net_profit', 0):,.0f}
+- Base Tax Rate: {tax_calculation.get('base_tax_rate', 0):.1f}%
+- Tax Before Deductions: ₹{total_tax:,.0f}
+- Business Type: {context.get('business_type', 'Private Limited') if context else 'Private Limited'}
+- Industry: {context.get('industry', 'Technology') if context else 'Technology'}
+
+**Identified Deductions ({len(deductions)} total):**
+{chr(10).join(f"- {d['section']} - {d['name']}: ₹{d.get('savings', 0):,.0f} savings (Priority: {d.get('priority', 'N/A')})" for d in deductions)}
+
+**Calculated Savings:**
+- Total Deductions: ₹{total_savings:,.0f}
+- Optimized Tax: ₹{optimized_tax:,.0f}
+- Savings Percentage: {(total_savings/total_tax*100) if total_tax > 0 else 0:.1f}%
+
+Please generate a comprehensive tax strategy including:
+
+1. **Executive Summary** (2-3 sentences on key insights)
+2. **Deduction Prioritization** (which deductions to pursue first and why)
+3. **Action Plan** with specific timelines:
+   - Immediate actions (this month)
+   - Short-term actions (1-3 months)
+   - Long-term planning (quarterly/annually)
+4. **Risk Mitigation** (compliance risks and how to avoid them)
+5. **Additional Opportunities** (advanced tax strategies not yet captured)
+6. **Important Deadlines** with specific dates
+7. **Professional Advisory** (when to consult a CA)
+
+Format using markdown with clear sections and bullet points.
+Include specific rupee amounts and percentages where relevant.
+Be practical and actionable for a busy entrepreneur.
+"""
+
+                llm_response = await self.llm.generate(
+                    prompt=strategy_prompt,
+                    temperature=0.4,
+                    max_tokens=2000
+                )
+
+                # Add disclaimer
+                llm_response += f"""
+
+---
+
+**📊 Tax Calculation Summary:**
+- Net Profit: ₹{tax_calculation.get('net_profit', 0):,.0f}
+- Tax Before Deductions: ₹{total_tax:,.0f}
+- Total Deductions: ₹{total_savings:,.0f}
+- **Final Tax Liability: ₹{optimized_tax:,.0f}**
+- **Tax Savings: ₹{total_savings:,.0f}** ({(total_savings/total_tax*100) if total_tax > 0 else 0:.1f}% reduction)
+
+**⚠️ Important Disclaimer:**
+This is AI-generated tax guidance for informational purposes only. Tax laws are complex and change frequently.
+Please consult a licensed Chartered Accountant (CA) for:
+- Final tax filing and compliance
+- Verification of deductions and calculations
+- Audit representation
+- Legal compliance confirmation
+- Business-specific tax planning
+"""
+
+                return llm_response
+
+        except Exception as e:
+            print(f"LLM strategy generation failed: {e}. Using template response.")
+
+        # Fallback template response
         return f"""**Tax Optimization Strategy**
 
 **Current Tax Liability:**
@@ -230,7 +463,7 @@ Your advice is informational and should be verified by a professional."""
 **Optimized Tax Liability:**
 - Total Deductions: ₹{total_savings:,.0f}
 - **Final Tax: ₹{optimized_tax:,.0f}**
-- **Total Savings: ₹{total_savings:,.0f}** ({(total_savings/total_tax*100):.1f}% reduction)
+- **Total Savings: ₹{total_savings:,.0f}** ({(total_savings/total_tax*100) if total_tax > 0 else 0:.1f}% reduction)
 
 **Recommended Actions:**
 
