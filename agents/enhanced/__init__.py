@@ -1,7 +1,7 @@
 """
-Enhanced AI Agents for EIP Platform - Phase 2 & Phase 3
+Enhanced AI Agents for EIP Platform - Phase 2, 3 & 4
 Comprehensive specialized agents for complete business intelligence coverage
-Total: 27 Enhanced Agents (10 Phase 2 + 17 Phase 3)
+Total: 30 Enhanced Agents (12 Phase 2 + 15 Phase 3 + 3 Phase 4)
 """
 
 # Phase 2 Agents (Original 10)
@@ -35,6 +35,11 @@ from .ngo_nonprofit_agent import NGONonProfitAgent
 from .philanthropy_impact_agent import PhilanthropyImpactAgent
 from .connecting_dots_agent import ConnectingDotsAgent
 
+# Phase 4 Agents (NEW: 3)
+from .geopolitics_agent import GeopoliticsAgent
+from .trends_analysis_agent import TrendsAnalysisAgent
+from .risk_analysis_agent import RiskAnalysisAgent
+
 __all__ = [
     # Phase 2 Agents (12)
     "BusinessModelAgent",
@@ -65,4 +70,8 @@ __all__ = [
     "NGONonProfitAgent",
     "PhilanthropyImpactAgent",
     "ConnectingDotsAgent",
+    # Phase 4 Agents (3 - NEW!)
+    "GeopoliticsAgent",
+    "TrendsAnalysisAgent",
+    "RiskAnalysisAgent",
 ]
