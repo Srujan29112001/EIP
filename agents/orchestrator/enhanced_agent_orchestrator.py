@@ -56,6 +56,11 @@ from enhanced.philanthropy_impact_agent import PhilanthropyImpactAgent
 from enhanced.schemes_monitoring_agent import SchemesMonitoringAgent
 from enhanced.regulator_analysis_agent import RegulatorAnalysisAgent
 
+# Import enhanced agents - Phase 4 (NEW: 3 agents)
+from enhanced.geopolitics_agent import GeopoliticsAgent
+from enhanced.trends_analysis_agent import TrendsAnalysisAgent
+from enhanced.risk_analysis_agent import RiskAnalysisAgent
+
 
 class EnhancedAgentOrchestrator:
     """
@@ -74,8 +79,8 @@ class EnhancedAgentOrchestrator:
         """Initialize Enhanced Agent Orchestrator"""
         self.llm_service = LLMService()
 
-        # Initialize ALL agents (Original 8 + Enhanced 27 = 35 TOTAL)
-        print("Initializing Enhanced Agent Orchestrator with 35 agents...")
+        # Initialize ALL agents (Original 8 + Enhanced 30 = 38 TOTAL)
+        print("Initializing Enhanced Agent Orchestrator with 38 agents...")
 
         # Original 8 agents
         self.policy_agent = PolicyAgent()
@@ -118,7 +123,12 @@ class EnhancedAgentOrchestrator:
         self.schemes_monitoring_agent = SchemesMonitoringAgent()
         self.regulator_analysis_agent = RegulatorAnalysisAgent()
 
-        # Agent registry (ALL 35 AGENTS)
+        # Enhanced agents (Phase 4) - NEW 3 agents
+        self.geopolitics_agent = GeopoliticsAgent()
+        self.trends_analysis_agent = TrendsAnalysisAgent()
+        self.risk_analysis_agent = RiskAnalysisAgent()
+
+        # Agent registry (ALL 38 AGENTS)
         self.agents = {
             # Core 8 agents
             "policy": self.policy_agent,
@@ -157,10 +167,14 @@ class EnhancedAgentOrchestrator:
             "ngo_nonprofit": self.ngo_nonprofit_agent,
             "philanthropy_impact": self.philanthropy_impact_agent,
             "schemes_monitoring": self.schemes_monitoring_agent,
-            "regulator_analysis": self.regulator_analysis_agent
+            "regulator_analysis": self.regulator_analysis_agent,
+            # Phase 4 enhanced agents (3)
+            "geopolitics": self.geopolitics_agent,
+            "trends_analysis": self.trends_analysis_agent,
+            "risk_analysis": self.risk_analysis_agent
         }
 
-        # Agent routing keywords (ALL 35 AGENTS)
+        # Agent routing keywords (ALL 38 AGENTS)
         self.routing_keywords = {
             # Core 8 agents
             "policy": ["policy", "regulation", "compliance", "government rule", "law change"],
@@ -199,7 +213,11 @@ class EnhancedAgentOrchestrator:
             "ngo_nonprofit": ["ngo", "nonprofit", "charity", "social sector", "foundation", "non-profit"],
             "philanthropy_impact": ["philanthropy", "donation", "giving", "social impact", "charitable", "impact investing"],
             "schemes_monitoring": ["scheme", "government scheme", "program", "initiative", "welfare"],
-            "regulator_analysis": ["regulator", "regulatory body", "sec", "sebi", "rbi", "fda", "compliance authority"]
+            "regulator_analysis": ["regulator", "regulatory body", "sec", "sebi", "rbi", "fda", "compliance authority"],
+            # Phase 4 enhanced agents (3)
+            "geopolitics": ["geopolitics", "geopolitical", "international relations", "global politics", "us-china", "tensions", "sanctions", "trade war", "conflict", "diplomacy", "territorial", "sovereignty"],
+            "trends_analysis": ["trends", "trend", "emerging", "future", "forecast", "what's next", "disruption", "innovation", "adoption", "lifestyle", "momentum"],
+            "risk_analysis": ["risk", "risks", "risk assessment", "risk management", "threat", "vulnerability", "exposure", "mitigation", "what if", "scenario", "stress test", "downside"]
         }
 
         # Inter-agent communication context (A2A protocol)
@@ -230,7 +248,11 @@ class EnhancedAgentOrchestrator:
             "ngo_nonprofit": ["philanthropy_impact", "esg_environmental"],
             "philanthropy_impact": ["ngo_nonprofit", "finance"],
             "schemes_monitoring": ["subsidies", "policy", "regulator_analysis"],
-            "regulator_analysis": ["policy", "legal", "schemes_monitoring"]
+            "regulator_analysis": ["policy", "legal", "schemes_monitoring"],
+            # Phase 4 enhanced agents
+            "geopolitics": ["international_markets", "policy", "market", "risk_analysis"],
+            "trends_analysis": ["enhanced_news", "market", "connecting_dots", "industry_expert"],
+            "risk_analysis": ["finance", "investment", "legal", "policy", "geopolitics"]
         }
 
         print(f"✓ Initialized {len(self.agents)} specialized agents")
@@ -317,7 +339,7 @@ class EnhancedAgentOrchestrator:
 
 User Query: "{query}"
 
-Available Agents (35 total):
+Available Agents (38 total):
 **Core Agents (8):**
 1. policy - Government policies, regulations, compliance
 2. market - Market analysis, industry trends, opportunities
@@ -358,6 +380,11 @@ Available Agents (35 total):
 33. philanthropy_impact - Philanthropy, social impact, charitable giving
 34. schemes_monitoring - Government schemes, welfare programs
 35. regulator_analysis - Regulatory bodies, compliance authorities
+
+**Enhanced Agents - Phase 4 (NEW: 3):**
+36. geopolitics - Geopolitical risk analysis, international relations, trade wars, conflicts
+37. trends_analysis - Trend detection, forecasting, emerging patterns, disruption prediction
+38. risk_analysis - Comprehensive risk assessment, risk mitigation, scenario analysis
 
 Return JSON:
 {{
