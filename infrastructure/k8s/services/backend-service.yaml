@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: eip-backend-service
+  labels:
+    app: eip-backend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: eip-backend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eip-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+spec:
+  tls:
+  - hosts:
+    - api.eip-platform.com
+    secretName: eip-tls
+  rules:
+  - host: api.eip-platform.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: eip-backend-service
+            port:
+              number: 80
