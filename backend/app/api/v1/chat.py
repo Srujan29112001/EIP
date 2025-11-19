@@ -44,10 +44,47 @@ async def chat(
 
     logger.info(f"Processing query for user {user_id}: {request.query[:100]}")
 
-    # TODO: Implement agent orchestration
-    # For now, return a mock response
-    response_text = f"This is a mock response to: {request.query}. Agent system will be implemented next."
-    agent_used = "mock_agent"
+    # Initialize agent orchestrator and process query
+    import sys
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'agents'))
+
+    try:
+        from orchestrator.agent_orchestrator import AgentOrchestrator
+
+        # Create orchestrator instance
+        orchestrator = AgentOrchestrator()
+
+        # Build user context
+        user_context = {
+            "user_id": user_id,
+            "tier": current_user.get("tier", "aspiring"),
+            "name": current_user.get("name", "User")
+        }
+
+        # Process query through agent system
+        agent_response = await orchestrator.process_query(
+            query=request.query,
+            user_context=user_context
+        )
+
+        response_text = agent_response.get("answer", "")
+        agent_used = agent_response.get("primary_agent", "unknown")
+        sources_raw = agent_response.get("sources", [])
+
+    except Exception as e:
+        logger.error(f"Error in agent orchestration: {e}")
+        # Fallback to simple response
+        response_text = f"""I apologize, but I encountered an issue processing your query. This could be due to:
+
+1. **Missing API Keys**: Ensure OPENAI_API_KEY or ANTHROPIC_API_KEY is configured in .env
+2. **System Error**: {str(e)[:100]}
+
+Your query: "{request.query}"
+
+Please contact support if this issue persists."""
+        agent_used = "error_fallback"
+        sources_raw = []
 
     # Calculate latency
     latency_ms = (time.time() - start_time) * 1000
@@ -71,22 +108,29 @@ async def chat(
     redis.lpush(session_key, f"assistant: {response_text}")
     redis.expire(session_key, 3600)  # 1 hour TTL
 
+    # Convert raw sources to Source objects
+    sources = []
+    for source_raw in sources_raw:
+        try:
+            sources.append(Source(
+                title=source_raw.get("title", "Untitled"),
+                content=source_raw.get("content", "")[:500],  # Limit content length
+                url=source_raw.get("url"),
+                relevance_score=source_raw.get("relevance_score", 0.0)
+            ))
+        except Exception as e:
+            logger.warning(f"Error parsing source: {e}")
+            continue
+
     # Prepare response
     response = ChatResponse(
         query_id=query_record.id,
         session_id=session_id,
         answer=response_text,
         agent_used=agent_used,
-        sources=[
-            Source(
-                title="Mock Source",
-                content="This is a mock source citation",
-                url="https://example.com",
-                relevance_score=0.95
-            )
-        ],
+        sources=sources,
         latency_ms=latency_ms,
-        tokens_used=100,
+        tokens_used=100,  # TODO: Calculate actual token usage from LLM response
         timestamp=query_record.created_at
     )
 
