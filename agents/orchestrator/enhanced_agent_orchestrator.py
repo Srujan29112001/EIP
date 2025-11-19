@@ -51,7 +51,7 @@ from enhanced.human_needs_agent import HumanNeedsAgent
 from enhanced.esg_environmental_agent import ESGEnvironmentalAgent
 from enhanced.philosophy_ethics_agent import PhilosophyEthicsAgent
 from enhanced.money_happiness_agent import MoneyHappinessAgent
-from enhanced.ngo_nonprofit_agent import NGONonprofitAgent
+from enhanced.ngo_nonprofit_agent import NGONonProfitAgent
 from enhanced.philanthropy_impact_agent import PhilanthropyImpactAgent
 from enhanced.schemes_monitoring_agent import SchemesMonitoringAgent
 from enhanced.regulator_analysis_agent import RegulatorAnalysisAgent
@@ -113,7 +113,7 @@ class EnhancedAgentOrchestrator:
         self.esg_environmental_agent = ESGEnvironmentalAgent()
         self.philosophy_ethics_agent = PhilosophyEthicsAgent()
         self.money_happiness_agent = MoneyHappinessAgent()
-        self.ngo_nonprofit_agent = NGONonprofitAgent()
+        self.ngo_nonprofit_agent = NGONonProfitAgent()
         self.philanthropy_impact_agent = PhilanthropyImpactAgent()
         self.schemes_monitoring_agent = SchemesMonitoringAgent()
         self.regulator_analysis_agent = RegulatorAnalysisAgent()
