@@ -471,6 +471,91 @@ class GraphRAGService:
 
             return stats
 
+    async def traverse_graph(
+        self,
+        start_node: str,
+        max_depth: int = 2,
+        relationship_types: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Traverse the knowledge graph from a starting entity
+
+        Args:
+            start_node: Starting node name/title (will search across all node types)
+            max_depth: Maximum traversal depth
+            relationship_types: List of relationship types to follow
+
+        Returns:
+            List of connected nodes with relationship information
+        """
+        # Build relationship type filter
+        rel_types = relationship_types or ["AFFECTS", "RELATED_TO", "REQUIRES", "PROVIDES_BENEFIT_TO", "CITES"]
+        rel_filter = "|".join(rel_types)
+
+        with self.driver.session() as session:
+            result = session.run(
+                f"""
+                MATCH (start)
+                WHERE start.title CONTAINS $search_term OR start.name CONTAINS $search_term
+                CALL apoc.path.subgraphAll(start, {{
+                    maxLevel: $max_depth,
+                    relationshipFilter: "{rel_filter}"
+                }})
+                YIELD nodes, relationships
+                UNWIND nodes as node
+                OPTIONAL MATCH (start)-[r:{rel_filter}]-(node)
+                WHERE node <> start
+                RETURN DISTINCT
+                    elementId(node) as id,
+                    labels(node)[0] as label,
+                    properties(node) as props,
+                    type(r) as relationship_type,
+                    properties(r) as relationship_props
+                LIMIT 20
+                """,
+                search_term=start_node,
+                max_depth=max_depth
+            )
+
+            results = []
+            for record in result:
+                results.append({
+                    "id": record.get("id"),
+                    "label": record.get("label"),
+                    "title": record.get("props", {}).get("title") or record.get("props", {}).get("name", "Unknown"),
+                    "relationship_type": record.get("relationship_type", "RELATED_TO"),
+                    "properties": dict(record.get("props", {}))
+                })
+
+            # Fallback if APOC not available - use simpler query
+            if not results:
+                result = session.run(
+                    f"""
+                    MATCH (start)
+                    WHERE start.title CONTAINS $search_term OR start.name CONTAINS $search_term
+                    MATCH (start)-[r:{rel_filter}*1..$max_depth]-(connected)
+                    RETURN DISTINCT
+                        elementId(connected) as id,
+                        labels(connected)[0] as label,
+                        properties(connected) as props,
+                        type(r[0]) as relationship_type
+                    LIMIT 20
+                    """,
+                    search_term=start_node,
+                    max_depth=max_depth
+                )
+
+                for record in result:
+                    results.append({
+                        "id": record.get("id"),
+                        "label": record.get("label"),
+                        "title": record.get("props", {}).get("title") or record.get("props", {}).get("name", "Unknown"),
+                        "relationship_type": record.get("relationship_type", "RELATED_TO"),
+                        "properties": dict(record.get("props", {}))
+                    })
+
+            return results
+
 
 # Factory function
 def create_graphrag_service(
