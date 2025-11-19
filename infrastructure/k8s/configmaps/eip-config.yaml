@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eip-config
+data:
+  redis-url: "redis://redis-service:6379"
+  neo4j-uri: "bolt://neo4j-service:7687"
+  mongodb-url: "mongodb://mongodb-service:27017"
+  kafka-brokers: "kafka-service:9092"
+  postgres-host: "postgres-service"
+  postgres-port: "5432"
+  postgres-db: "eip_db"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: eip-secrets
+type: Opaque
+stringData:
+  database-url: "postgresql://user:password@postgres-service:5432/eip_db"
+  openai-api-key: "sk-your-openai-key-here"
+  anthropic-api-key: "sk-ant-your-anthropic-key-here"
+  deepseek-api-key: "sk-your-deepseek-key-here"
+  jwt-secret: "your-jwt-secret-here"
