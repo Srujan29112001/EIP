@@ -3,7 +3,10 @@ Tax Agent
 Provides tax optimization, compliance, and reporting assistance
 """
 from typing import Dict, List, Any, Optional
-from ..base_agent import BaseAgent, AgentConfig
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from base_agent import BaseAgent, AgentConfig
 
 
 class TaxAgent(BaseAgent):

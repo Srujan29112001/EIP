@@ -3,7 +3,10 @@ Policy Agent
 Monitors and analyzes policy changes, regulations, and compliance requirements
 """
 from typing import Dict, List, Any, Optional
-from ..base_agent import BaseAgent, AgentConfig
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from base_agent import BaseAgent, AgentConfig
 
 
 class PolicyAgent(BaseAgent):
@@ -73,7 +76,7 @@ Always be accurate, objective, and cite your sources."""
         response_text = await self._analyze_policy(query, retrieved_docs, related_policies, context)
 
         # Step 4: Extract action items
-        action_items = self._extract_action_items(response_text)
+        action_items = await self._extract_action_items(response_text)
 
         return {
             "answer": response_text,
@@ -369,7 +372,7 @@ Format your response using markdown with clear sections.
 *Note: For personalized advice, please ensure API keys are configured.*
 """
 
-    def _extract_action_items(self, response: str) -> List[Dict]:
+    async def _extract_action_items(self, response: str) -> List[Dict]:
         """
         Extract actionable items from response using LLM
 

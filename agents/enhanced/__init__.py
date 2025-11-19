@@ -31,7 +31,7 @@ from .human_needs_agent import HumanNeedsAgent
 from .esg_environmental_agent import ESGEnvironmentalAgent
 from .philosophy_ethics_agent import PhilosophyEthicsAgent
 from .money_happiness_agent import MoneyHappinessAgent
-from .ngo_nonprofit_agent import NGONonprofitAgent
+from .ngo_nonprofit_agent import NGONonProfitAgent
 from .philanthropy_impact_agent import PhilanthropyImpactAgent
 from .connecting_dots_agent import ConnectingDotsAgent
 
@@ -62,7 +62,7 @@ __all__ = [
     "ESGEnvironmentalAgent",
     "PhilosophyEthicsAgent",
     "MoneyHappinessAgent",
-    "NGONonprofitAgent",
+    "NGONonProfitAgent",
     "PhilanthropyImpactAgent",
     "ConnectingDotsAgent",
 ]

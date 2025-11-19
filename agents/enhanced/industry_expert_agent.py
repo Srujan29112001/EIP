@@ -17,7 +17,7 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from agents.base.base_agent import BaseAgent
+import sys; import os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..")); from base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
