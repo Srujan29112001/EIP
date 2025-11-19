@@ -25,7 +25,7 @@ from investment_agent.investment_agent import InvestmentAgent
 from legal_agent.legal_agent import LegalAgent
 from news_agent.news_agent import NewsAgent
 
-# Import enhanced agents
+# Import enhanced agents - Phase 2 (First 12)
 from enhanced.business_model_agent import BusinessModelAgent
 from enhanced.stock_analysis_agent import StockAnalysisAgent
 from enhanced.competitor_intelligence_agent import CompetitorIntelligenceAgent
@@ -38,6 +38,23 @@ from enhanced.industry_expert_agent import IndustryDomainExpertAgent
 from enhanced.enhanced_news_agent import EnhancedNewsAgent
 from enhanced.macroeconomics_agent import MacroeconomicsAgent
 from enhanced.international_markets_agent import InternationalMarketsAgent
+
+# Import enhanced agents - Phase 3 (Final 15 agents)
+from enhanced.real_estate_agent import RealEstateAnalysisAgent
+from enhanced.marketing_strategy_agent import MarketingStrategyAgent
+from enhanced.business_strategy_agent import BusinessStrategyAgent
+from enhanced.connecting_dots_agent import ConnectingDotsAgent
+from enhanced.hft_analysis_agent import HFTAnalysisAgent
+from enhanced.hr_analytics_agent import HRAnalyticsAgent
+from enhanced.human_behaviour_agent import HumanBehaviourAgent
+from enhanced.human_needs_agent import HumanNeedsAgent
+from enhanced.esg_environmental_agent import ESGEnvironmentalAgent
+from enhanced.philosophy_ethics_agent import PhilosophyEthicsAgent
+from enhanced.money_happiness_agent import MoneyHappinessAgent
+from enhanced.ngo_nonprofit_agent import NGONonprofitAgent
+from enhanced.philanthropy_impact_agent import PhilanthropyImpactAgent
+from enhanced.schemes_monitoring_agent import SchemesMonitoringAgent
+from enhanced.regulator_analysis_agent import RegulatorAnalysisAgent
 
 
 class EnhancedAgentOrchestrator:
@@ -57,8 +74,8 @@ class EnhancedAgentOrchestrator:
         """Initialize Enhanced Agent Orchestrator"""
         self.llm_service = LLMService()
 
-        # Initialize ALL agents (Original 8 + Enhanced 13 = 21 TOTAL)
-        print("Initializing Enhanced Agent Orchestrator with 21 agents...")
+        # Initialize ALL agents (Original 8 + Enhanced 27 = 35 TOTAL)
+        print("Initializing Enhanced Agent Orchestrator with 35 agents...")
 
         # Original 8 agents
         self.policy_agent = PolicyAgent()
@@ -70,7 +87,7 @@ class EnhancedAgentOrchestrator:
         self.legal_agent = LegalAgent()
         self.news_agent = NewsAgent()
 
-        # Enhanced agents (Phase 2) - All 13 agents
+        # Enhanced agents (Phase 2) - First 12 agents
         self.business_model_agent = BusinessModelAgent()
         self.stock_analysis_agent = StockAnalysisAgent()
         self.competitor_agent = CompetitorIntelligenceAgent()
@@ -84,8 +101,26 @@ class EnhancedAgentOrchestrator:
         self.macroeconomics_agent = MacroeconomicsAgent()
         self.international_markets_agent = InternationalMarketsAgent()
 
-        # Agent registry
+        # Enhanced agents (Phase 3) - Final 15 agents
+        self.real_estate_agent = RealEstateAnalysisAgent()
+        self.marketing_strategy_agent = MarketingStrategyAgent()
+        self.business_strategy_agent = BusinessStrategyAgent()
+        self.connecting_dots_agent = ConnectingDotsAgent()
+        self.hft_analysis_agent = HFTAnalysisAgent()
+        self.hr_analytics_agent = HRAnalyticsAgent()
+        self.human_behaviour_agent = HumanBehaviourAgent()
+        self.human_needs_agent = HumanNeedsAgent()
+        self.esg_environmental_agent = ESGEnvironmentalAgent()
+        self.philosophy_ethics_agent = PhilosophyEthicsAgent()
+        self.money_happiness_agent = MoneyHappinessAgent()
+        self.ngo_nonprofit_agent = NGONonprofitAgent()
+        self.philanthropy_impact_agent = PhilanthropyImpactAgent()
+        self.schemes_monitoring_agent = SchemesMonitoringAgent()
+        self.regulator_analysis_agent = RegulatorAnalysisAgent()
+
+        # Agent registry (ALL 35 AGENTS)
         self.agents = {
+            # Core 8 agents
             "policy": self.policy_agent,
             "market": self.market_agent,
             "finance": self.finance_agent,
@@ -94,6 +129,7 @@ class EnhancedAgentOrchestrator:
             "investment": self.investment_agent,
             "legal": self.legal_agent,
             "news": self.news_agent,
+            # Phase 2 enhanced agents (12)
             "business_model": self.business_model_agent,
             "business_model_recommender": self.business_model_recommender,
             "stock_analysis": self.stock_analysis_agent,
@@ -105,11 +141,28 @@ class EnhancedAgentOrchestrator:
             "industry_expert": self.industry_expert,
             "enhanced_news": self.enhanced_news_agent,
             "macroeconomics": self.macroeconomics_agent,
-            "international_markets": self.international_markets_agent
+            "international_markets": self.international_markets_agent,
+            # Phase 3 enhanced agents (15)
+            "real_estate": self.real_estate_agent,
+            "marketing_strategy": self.marketing_strategy_agent,
+            "business_strategy": self.business_strategy_agent,
+            "connecting_dots": self.connecting_dots_agent,
+            "hft_analysis": self.hft_analysis_agent,
+            "hr_analytics": self.hr_analytics_agent,
+            "human_behaviour": self.human_behaviour_agent,
+            "human_needs": self.human_needs_agent,
+            "esg_environmental": self.esg_environmental_agent,
+            "philosophy_ethics": self.philosophy_ethics_agent,
+            "money_happiness": self.money_happiness_agent,
+            "ngo_nonprofit": self.ngo_nonprofit_agent,
+            "philanthropy_impact": self.philanthropy_impact_agent,
+            "schemes_monitoring": self.schemes_monitoring_agent,
+            "regulator_analysis": self.regulator_analysis_agent
         }
 
-        # Agent routing keywords
+        # Agent routing keywords (ALL 35 AGENTS)
         self.routing_keywords = {
+            # Core 8 agents
             "policy": ["policy", "regulation", "compliance", "government rule", "law change"],
             "market": ["market", "industry trend", "market size", "competitor landscape", "market opportunity"],
             "finance": ["financial", "budget", "cash flow", "profit", "revenue", "financial analysis"],
@@ -118,6 +171,7 @@ class EnhancedAgentOrchestrator:
             "investment": ["investment", "valuation", "due diligence", "funding", "investor"],
             "legal": ["contract", "legal", "agreement", "terms", "nda", "legal review"],
             "news": ["news", "latest", "update", "announcement", "current events"],
+            # Phase 2 enhanced agents (12)
             "business_model": ["business model", "canvas", "value proposition", "revenue stream", "analyze model"],
             "business_model_recommender": ["recommend model", "suggest model", "which model", "best model", "model for"],
             "stock_analysis": ["stock", "share", "equity", "ticker", "invest in stock", "buy stock"],
@@ -129,23 +183,54 @@ class EnhancedAgentOrchestrator:
             "industry_expert": ["industry", "sector", "domain", "market analysis", "industry trends", "competitive dynamics"],
             "enhanced_news": ["news", "headlines", "market news", "latest news", "breaking", "trending", "updates"],
             "macroeconomics": ["macro", "macroeconomic", "gdp", "inflation", "interest rate", "economy", "fiscal policy", "monetary policy", "recession", "economic growth"],
-            "international_markets": ["international", "global market", "foreign market", "overseas", "export", "import", "cross-border", "international trade", "emerging market"]
+            "international_markets": ["international", "global market", "foreign market", "overseas", "export", "import", "cross-border", "international trade", "emerging market"],
+            # Phase 3 enhanced agents (15)
+            "real_estate": ["real estate", "property", "rental", "reit", "cap rate", "commercial real estate", "residential property", "property investment"],
+            "marketing_strategy": ["marketing", "brand", "advertising", "campaign", "customer acquisition", "seo", "content marketing", "digital marketing"],
+            "business_strategy": ["strategy", "strategic planning", "competitive strategy", "growth strategy", "expansion", "pivot", "business planning"],
+            "connecting_dots": ["connect", "correlation", "pattern", "insight", "trend analysis", "hidden connection", "market intelligence"],
+            "hft_analysis": ["high frequency", "hft", "algorithmic trading", "quant", "trading strategy", "market microstructure"],
+            "hr_analytics": ["hr", "human resources", "salary", "compensation", "hiring", "recruitment", "employee", "workforce"],
+            "human_behaviour": ["behavior", "psychology", "consumer behavior", "decision making", "behavioral economics"],
+            "human_needs": ["needs", "maslow", "basic needs", "hierarchy", "motivation", "well-being"],
+            "esg_environmental": ["esg", "environmental", "sustainability", "climate", "carbon", "green", "sustainable"],
+            "philosophy_ethics": ["philosophy", "ethics", "moral", "values", "principles", "philosophical"],
+            "money_happiness": ["money", "happiness", "well-being", "life satisfaction", "wealth", "quality of life"],
+            "ngo_nonprofit": ["ngo", "nonprofit", "charity", "social sector", "foundation", "non-profit"],
+            "philanthropy_impact": ["philanthropy", "donation", "giving", "social impact", "charitable", "impact investing"],
+            "schemes_monitoring": ["scheme", "government scheme", "program", "initiative", "welfare"],
+            "regulator_analysis": ["regulator", "regulatory body", "sec", "sebi", "rbi", "fda", "compliance authority"]
         }
 
-        # Inter-agent communication context
+        # Inter-agent communication context (A2A protocol)
         self.agent_context_sharing = {
             "business_model": ["market", "finance", "competitor", "industry_expert"],
             "stock_analysis": ["enhanced_news", "market", "finance", "hedge_fund"],
             "competitor": ["market", "business_model", "finance", "industry_expert"],
             "investment": ["finance", "market", "legal", "competitor", "hedge_fund", "mutual_fund"],
-            "subsidies": ["policy", "tax", "finance", "loophole_predictor"],
+            "subsidies": ["policy", "tax", "finance", "loophole_predictor", "schemes_monitoring"],
             "loophole_predictor": ["tax", "legal", "policy"],
-            "hedge_fund": ["stock_analysis", "enhanced_news", "market", "macroeconomics"],
+            "hedge_fund": ["stock_analysis", "enhanced_news", "market", "macroeconomics", "hft_analysis"],
             "mutual_fund": ["stock_analysis", "finance", "market"],
             "industry_expert": ["market", "competitor", "enhanced_news"],
-            "enhanced_news": ["market", "stock_analysis", "competitor"],
+            "enhanced_news": ["market", "stock_analysis", "competitor", "connecting_dots"],
             "macroeconomics": ["market", "finance", "policy", "international_markets"],
-            "international_markets": ["market", "macroeconomics", "competitor", "policy"]
+            "international_markets": ["market", "macroeconomics", "competitor", "policy"],
+            "real_estate": ["finance", "market", "investment"],
+            "marketing_strategy": ["market", "competitor", "business_strategy"],
+            "business_strategy": ["market", "finance", "competitor", "marketing_strategy"],
+            "connecting_dots": ["enhanced_news", "market", "competitor"],
+            "hft_analysis": ["stock_analysis", "market", "hedge_fund"],
+            "hr_analytics": ["finance", "human_behaviour"],
+            "human_behaviour": ["market", "human_needs"],
+            "human_needs": ["philosophy_ethics", "money_happiness"],
+            "esg_environmental": ["policy", "philosophy_ethics"],
+            "philosophy_ethics": ["human_needs", "money_happiness"],
+            "money_happiness": ["finance", "human_needs"],
+            "ngo_nonprofit": ["philanthropy_impact", "esg_environmental"],
+            "philanthropy_impact": ["ngo_nonprofit", "finance"],
+            "schemes_monitoring": ["subsidies", "policy", "regulator_analysis"],
+            "regulator_analysis": ["policy", "legal", "schemes_monitoring"]
         }
 
         print(f"✓ Initialized {len(self.agents)} specialized agents")
@@ -232,7 +317,8 @@ class EnhancedAgentOrchestrator:
 
 User Query: "{query}"
 
-Available Agents (21 total):
+Available Agents (35 total):
+**Core Agents (8):**
 1. policy - Government policies, regulations, compliance
 2. market - Market analysis, industry trends, opportunities
 3. finance - Financial analysis, budgeting, cash flow
@@ -241,6 +327,8 @@ Available Agents (21 total):
 6. investment - Investment analysis, valuation, due diligence
 7. legal - Contract review, legal compliance
 8. news - Latest news, updates, current events
+
+**Enhanced Agents - Phase 2 (12):**
 9. business_model - Analyze existing business models (canvas analysis)
 10. business_model_recommender - Recommend business models for ideas
 11. stock_analysis - Stock market analysis, investment recommendations
@@ -253,6 +341,23 @@ Available Agents (21 total):
 18. enhanced_news - Real-time news aggregation with sentiment analysis
 19. macroeconomics - Macroeconomic analysis, GDP, inflation, monetary policy
 20. international_markets - Global markets, international trade, emerging markets
+
+**Enhanced Agents - Phase 3 (15):**
+21. real_estate - Real estate investment analysis, REITs, property valuation
+22. marketing_strategy - Marketing campaigns, brand strategy, customer acquisition
+23. business_strategy - Strategic planning, growth strategy, competitive positioning
+24. connecting_dots - Connect patterns in news, hidden insights, market intelligence
+25. hft_analysis - High-frequency trading, algorithmic trading analysis
+26. hr_analytics - HR, salary budgeting, compensation, workforce planning
+27. human_behaviour - Consumer psychology, behavioral economics
+28. human_needs - Human needs analysis, motivation, well-being
+29. esg_environmental - ESG, sustainability, environmental impact
+30. philosophy_ethics - Philosophy, ethics, moral principles
+31. money_happiness - Relationship between money and happiness
+32. ngo_nonprofit - NGO operations, nonprofit management
+33. philanthropy_impact - Philanthropy, social impact, charitable giving
+34. schemes_monitoring - Government schemes, welfare programs
+35. regulator_analysis - Regulatory bodies, compliance authorities
 
 Return JSON:
 {{

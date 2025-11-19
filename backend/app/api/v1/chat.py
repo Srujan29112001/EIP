@@ -52,7 +52,7 @@ async def chat(
     try:
         from orchestrator.enhanced_agent_orchestrator import EnhancedAgentOrchestrator
 
-        # Create enhanced orchestrator instance (21 agents total)
+        # Create enhanced orchestrator instance (35 agents total: 8 core + 27 enhanced)
         orchestrator = EnhancedAgentOrchestrator()
 
         # Build user context
@@ -62,7 +62,7 @@ async def chat(
             "name": current_user.get("name", "User")
         }
 
-        # Process query through enhanced agent system (21 agents)
+        # Process query through enhanced agent system (35 agents with A2A communication)
         agent_response = await orchestrator.process_query(
             query=request.query,
             user_context=user_context,
