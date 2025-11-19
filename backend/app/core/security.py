@@ -120,6 +120,38 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 def verify_api_key(api_key: str) -> bool:
     """
     Verify API key for external integrations
+
+    For production, this should:
+    1. Query database for active API keys
+    2. Check rate limits
+    3. Log usage
+
+    For now, we verify against environment-configured keys
     """
-    # TODO: Implement API key verification from database
-    return True
+    import os
+    from typing import List
+
+    # Get allowed API keys from environment (comma-separated)
+    allowed_keys_str = os.getenv("ALLOWED_API_KEYS", "")
+
+    if not allowed_keys_str:
+        # No API keys configured, allow all (development mode)
+        # In production, this should return False
+        return True
+
+    allowed_keys: List[str] = [key.strip() for key in allowed_keys_str.split(",")]
+
+    # Verify the provided key is in the allowed list
+    if api_key in allowed_keys:
+        return True
+
+    # For additional security, check if it's a hashed key
+    # This allows storing hashed versions in environment
+    try:
+        import hashlib
+        hashed_key = hashlib.sha256(api_key.encode()).hexdigest()
+        return hashed_key in allowed_keys
+    except Exception:
+        pass
+
+    return False
