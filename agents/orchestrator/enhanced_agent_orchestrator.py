@@ -36,6 +36,8 @@ from enhanced.hedge_fund_agent import HedgeFundAnalyzerAgent
 from enhanced.mutual_fund_agent import MutualFundAnalyzerAgent
 from enhanced.industry_expert_agent import IndustryDomainExpertAgent
 from enhanced.enhanced_news_agent import EnhancedNewsAgent
+from enhanced.macroeconomics_agent import MacroeconomicsAgent
+from enhanced.international_markets_agent import InternationalMarketsAgent
 
 
 class EnhancedAgentOrchestrator:
@@ -55,8 +57,8 @@ class EnhancedAgentOrchestrator:
         """Initialize Enhanced Agent Orchestrator"""
         self.llm_service = LLMService()
 
-        # Initialize ALL agents (Original 8 + Enhanced 10)
-        print("Initializing Enhanced Agent Orchestrator with 18 agents...")
+        # Initialize ALL agents (Original 8 + Enhanced 13 = 21 TOTAL)
+        print("Initializing Enhanced Agent Orchestrator with 21 agents...")
 
         # Original 8 agents
         self.policy_agent = PolicyAgent()
@@ -68,7 +70,7 @@ class EnhancedAgentOrchestrator:
         self.legal_agent = LegalAgent()
         self.news_agent = NewsAgent()
 
-        # Enhanced agents (Phase 2) - All 10 agents
+        # Enhanced agents (Phase 2) - All 13 agents
         self.business_model_agent = BusinessModelAgent()
         self.stock_analysis_agent = StockAnalysisAgent()
         self.competitor_agent = CompetitorIntelligenceAgent()
@@ -79,6 +81,8 @@ class EnhancedAgentOrchestrator:
         self.mutual_fund_analyzer = MutualFundAnalyzerAgent()
         self.industry_expert = IndustryDomainExpertAgent()
         self.enhanced_news_agent = EnhancedNewsAgent()
+        self.macroeconomics_agent = MacroeconomicsAgent()
+        self.international_markets_agent = InternationalMarketsAgent()
 
         # Agent registry
         self.agents = {
@@ -99,7 +103,9 @@ class EnhancedAgentOrchestrator:
             "hedge_fund": self.hedge_fund_analyzer,
             "mutual_fund": self.mutual_fund_analyzer,
             "industry_expert": self.industry_expert,
-            "enhanced_news": self.enhanced_news_agent
+            "enhanced_news": self.enhanced_news_agent,
+            "macroeconomics": self.macroeconomics_agent,
+            "international_markets": self.international_markets_agent
         }
 
         # Agent routing keywords
@@ -121,7 +127,9 @@ class EnhancedAgentOrchestrator:
             "hedge_fund": ["hedge fund", "alternative investment", "fund manager", "hedge", "alpha", "absolute return"],
             "mutual_fund": ["mutual fund", "index fund", "etf", "vanguard", "fidelity", "portfolio", "fund recommendation"],
             "industry_expert": ["industry", "sector", "domain", "market analysis", "industry trends", "competitive dynamics"],
-            "enhanced_news": ["news", "headlines", "market news", "latest news", "breaking", "trending", "updates"]
+            "enhanced_news": ["news", "headlines", "market news", "latest news", "breaking", "trending", "updates"],
+            "macroeconomics": ["macro", "macroeconomic", "gdp", "inflation", "interest rate", "economy", "fiscal policy", "monetary policy", "recession", "economic growth"],
+            "international_markets": ["international", "global market", "foreign market", "overseas", "export", "import", "cross-border", "international trade", "emerging market"]
         }
 
         # Inter-agent communication context
@@ -132,10 +140,12 @@ class EnhancedAgentOrchestrator:
             "investment": ["finance", "market", "legal", "competitor", "hedge_fund", "mutual_fund"],
             "subsidies": ["policy", "tax", "finance", "loophole_predictor"],
             "loophole_predictor": ["tax", "legal", "policy"],
-            "hedge_fund": ["stock_analysis", "enhanced_news", "market"],
+            "hedge_fund": ["stock_analysis", "enhanced_news", "market", "macroeconomics"],
             "mutual_fund": ["stock_analysis", "finance", "market"],
             "industry_expert": ["market", "competitor", "enhanced_news"],
-            "enhanced_news": ["market", "stock_analysis", "competitor"]
+            "enhanced_news": ["market", "stock_analysis", "competitor"],
+            "macroeconomics": ["market", "finance", "policy", "international_markets"],
+            "international_markets": ["market", "macroeconomics", "competitor", "policy"]
         }
 
         print(f"✓ Initialized {len(self.agents)} specialized agents")
@@ -222,7 +232,7 @@ class EnhancedAgentOrchestrator:
 
 User Query: "{query}"
 
-Available Agents (18 total):
+Available Agents (21 total):
 1. policy - Government policies, regulations, compliance
 2. market - Market analysis, industry trends, opportunities
 3. finance - Financial analysis, budgeting, cash flow
@@ -241,6 +251,8 @@ Available Agents (18 total):
 16. mutual_fund - Mutual fund comparison and recommendations
 17. industry_expert - Deep industry knowledge across 50+ sectors
 18. enhanced_news - Real-time news aggregation with sentiment analysis
+19. macroeconomics - Macroeconomic analysis, GDP, inflation, monetary policy
+20. international_markets - Global markets, international trade, emerging markets
 
 Return JSON:
 {{

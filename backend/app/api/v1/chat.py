@@ -50,10 +50,10 @@ async def chat(
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'agents'))
 
     try:
-        from orchestrator.agent_orchestrator import AgentOrchestrator
+        from orchestrator.enhanced_agent_orchestrator import EnhancedAgentOrchestrator
 
-        # Create orchestrator instance
-        orchestrator = AgentOrchestrator()
+        # Create enhanced orchestrator instance (21 agents total)
+        orchestrator = EnhancedAgentOrchestrator()
 
         # Build user context
         user_context = {
@@ -62,15 +62,21 @@ async def chat(
             "name": current_user.get("name", "User")
         }
 
-        # Process query through agent system
+        # Process query through enhanced agent system (21 agents)
         agent_response = await orchestrator.process_query(
             query=request.query,
-            user_context=user_context
+            user_context=user_context,
+            session_id=str(session_id)
         )
 
         response_text = agent_response.get("answer", "")
         agent_used = agent_response.get("primary_agent", "unknown")
+        secondary_agents = agent_response.get("secondary_agents", [])
         sources_raw = agent_response.get("sources", [])
+
+        # Add metadata about multi-agent collaboration
+        if secondary_agents:
+            logger.info(f"Multi-agent response: primary={agent_used}, secondary={secondary_agents}")
 
     except Exception as e:
         logger.error(f"Error in agent orchestration: {e}")
