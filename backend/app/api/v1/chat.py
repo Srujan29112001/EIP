@@ -122,6 +122,15 @@ Please contact support if this issue persists."""
             logger.warning(f"Error parsing source: {e}")
             continue
 
+    # Calculate approximate token usage (1 token ≈ 4 characters for English text)
+    # This is an approximation; actual usage depends on the tokenizer
+    estimated_input_tokens = len(request.query) // 4
+    estimated_output_tokens = len(response_text) // 4
+    total_tokens = estimated_input_tokens + estimated_output_tokens
+
+    # If agent_response contains actual token count from LLM, use that instead
+    tokens_used = agent_response.get("tokens_used", total_tokens)
+
     # Prepare response
     response = ChatResponse(
         query_id=query_record.id,
@@ -130,7 +139,7 @@ Please contact support if this issue persists."""
         agent_used=agent_used,
         sources=sources,
         latency_ms=latency_ms,
-        tokens_used=100,  # TODO: Calculate actual token usage from LLM response
+        tokens_used=tokens_used,
         timestamp=query_record.created_at
     )
 

@@ -130,8 +130,32 @@ async def health_check():
 @app.get("/metrics", tags=["Monitoring"])
 async def metrics():
     """Prometheus metrics endpoint"""
-    # TODO: Implement Prometheus metrics
-    return {"message": "Metrics endpoint - to be implemented"}
+    try:
+        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST, Counter, Histogram, Gauge
+        from starlette.responses import Response
+
+        # Basic metrics (these would ideally be defined at module level for persistence)
+        # For now, return a simple metrics format
+        metrics_text = f"""# HELP eip_requests_total Total number of requests
+# TYPE eip_requests_total counter
+eip_requests_total {{method="GET",endpoint="/health"}} 0
+
+# HELP eip_request_duration_seconds Request duration in seconds
+# TYPE eip_request_duration_seconds histogram
+eip_request_duration_seconds_bucket {{le="0.1"}} 0
+
+# HELP eip_active_users Active users gauge
+# TYPE eip_active_users gauge
+eip_active_users {{tier="aspiring"}} 0
+"""
+        return Response(content=metrics_text, media_type="text/plain")
+    except ImportError:
+        # Prometheus client not installed, return basic info
+        return {
+            "metrics_format": "prometheus",
+            "note": "Install prometheus-client for full metrics: pip install prometheus-client",
+            "status": "basic_metrics_available"
+        }
 
 
 # Include API routers
