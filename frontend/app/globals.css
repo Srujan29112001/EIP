@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* surfaces (Helix) */
+  --color-ink: #04060f;
+  --color-panel: #0a1020;
+  --color-panel-2: #0d1428;
+  --color-line: rgba(148, 163, 184, 0.14);
+
+  /* brand (SRUJAN.K) */
+  --color-brand: #6d64a3;
+  --color-cyan: #06b6d4;
+
+  /* semantic (Helix terminal idiom) */
+  --color-ok: #9ae64a;
+  --color-warn: #fbbf24;
+  --color-err: #fb7185;
+  --color-muted: #64748b;
+
+  /* layer accents */
+  --color-l0: #94a3b8;
+  --color-l1: #22d3ee;
+  --color-l2: #8b5cf6;
+  --color-l3: #fb7185;
+  --color-l4: #eab308;
+  --color-l5: #a78bfa;
+
+  --font-display: var(--font-space-grotesk), sans-serif;
+  --font-body: var(--font-inter), sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
+}
+
+html {
+  background: var(--color-ink);
+  color: #e2e8f0;
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 60%, transparent);
+}
+
+/* thin scrollbars for terminal panes */
+.scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 3px; }
+
+/* film grain + scanlines (SRUJAN.K, dialed down) */
+.texture::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background-image: repeating-linear-gradient(
+    0deg, transparent 0 2px, rgba(255, 255, 255, 0.012) 2px 4px);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--glow, #8b5cf6) 45%, transparent); }
+  50% { box-shadow: 0 0 16px 2px color-mix(in srgb, var(--glow, #8b5cf6) 70%, transparent); }
+}
+.glow-active { animation: pulse-glow 1.6s ease-in-out infinite; }
+
+@keyframes blink { 50% { opacity: 0.2; } }
+.cursor-blink { animation: blink 1s step-start infinite; }

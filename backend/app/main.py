@@ -12,7 +12,7 @@ app = FastAPI(title="EIP — Money Intelligence OS", version="2.0.0-phase1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.vercel\.app|http://localhost:\d+|http://127\.0\.0\.1:\d+",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
