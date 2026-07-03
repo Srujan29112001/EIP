@@ -4,6 +4,15 @@ import { ExternalLink, Flame, Swords } from "lucide-react";
 import { agentById } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 
+/** Scraped source URLs are untrusted — a malformed one must not crash the tab. */
+function safeHost(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url.slice(0, 40);
+  }
+}
+
 /** The agent-to-agent feed: claims landing, conflicts opening, biases flagged. */
 export function Boardroom() {
   const board = useRun((s) => s.board);
@@ -51,7 +60,7 @@ export function Boardroom() {
             {b.source?.url && (
               <a href={b.source.url} target="_blank" rel="noreferrer"
                 className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] text-cyan hover:underline">
-                <ExternalLink size={10} /> {b.source.name || new URL(b.source.url).hostname}
+                <ExternalLink size={10} /> {b.source.name || safeHost(b.source.url)}
               </a>
             )}
             {!b.source?.url && b.kind === "claim" && (

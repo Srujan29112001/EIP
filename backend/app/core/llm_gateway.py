@@ -97,17 +97,21 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool) -> list[tuple[st
         return []
     if cfg.compute == "local":
         return plan + ([local] if ollama_up else [])
+    # a user model override applies ONLY to the provider it was chosen for —
+    # sending e.g. an Anthropic model name to Groq guarantees 404s on fallback
+    def model_for(p: str) -> str:
+        return cfg.model if (cfg.model and p == cfg.provider) else DEFAULT_MODELS[p]
+
     if cfg.compute == "cloud":
-        pref_model = cfg.model or ""
-        return plan + [(p, pref_model or DEFAULT_MODELS[p]) for p in clouds]
+        return plan + [(p, model_for(p)) for p in clouds]
 
     # auto / hybrid: t1,t2 prefer local; t3 prefers cloud
     if tier in ("t1", "t2"):
         if ollama_up:
             plan.append(local)
-        plan += [(p, DEFAULT_MODELS[p]) for p in clouds]
+        plan += [(p, model_for(p)) for p in clouds]
     else:
-        plan += [(p, cfg.model or DEFAULT_MODELS[p]) for p in clouds]
+        plan += [(p, model_for(p)) for p in clouds]
         if ollama_up:
             plan.append(local)
     return plan

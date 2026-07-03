@@ -165,6 +165,14 @@ _ANALYSIS_SCHEMA = ('{"verdict_line": str, "score": float (0-10), "confidence": 
                     '[{"figure": str, "source": "url or ESTIMATE"}]}')
 
 
+def _num(value: Any, default: float) -> float:
+    """LLM output is untrusted — coerce to float or fall back, never raise."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
                            fallback: dict[str, Any]) -> dict[str, Any]:
     data, res = await ctx.llm.structured(
@@ -175,8 +183,10 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
         _ANALYSIS_SCHEMA, max_tokens=900,
     )
     if data and isinstance(data.get("score"), (int, float)):
-        data["score"] = max(0.0, min(10.0, float(data["score"])))
-        data["confidence"] = max(0.05, min(0.95, float(data.get("confidence", 0.5))))
+        for k, v in fallback.items():          # partial LLM output inherits fallback keys
+            data.setdefault(k, v)
+        data["score"] = max(0.0, min(10.0, _num(data["score"], 5.0)))
+        data["confidence"] = max(0.05, min(0.95, _num(data.get("confidence"), 0.5)))
         data["route"] = res.route
         await ctx.emit.log(aid, f"analysis via {res.route}", "ok")
         await ctx.emit.usage(aid, res.tokens, res.route)
@@ -268,7 +278,10 @@ async def red_team(ctx: Ctx) -> None:
         "Produce the 3 strongest attacks and the single most likely kill risk.",
         schema, max_tokens=800,
     )
-    if not data:
+    if data:
+        # untrusted LLM shape: attacks must be dicts, severity numeric
+        data["attacks"] = [a for a in data.get("attacks") or [] if isinstance(a, dict)]
+    if not data or not data["attacks"]:
         data = {"attacks": [
             {"target_agent": "market_analyst", "severity": 0.5,
              "attack": "Competitive intensity is inferred from search density, not validated demand — "
@@ -282,7 +295,7 @@ async def red_team(ctx: Ctx) -> None:
         await ctx.emit.usage(aid, res.tokens, res.route)
 
     for atk in data.get("attacks", [])[:4]:
-        sev = float(atk.get("severity", 0.5))
+        sev = _num(atk.get("severity"), 0.5)
         await ctx.emit.log(aid, f"⚔ [{atk.get('target_agent','?')}] {atk.get('attack','')}", "err" if sev > 0.6 else "warn")
         await ctx.emit.conflict(aid, atk.get("target_agent", "?"), atk.get("attack", "")[:80])
         ctx.state.conflicts.append(atk)
@@ -302,12 +315,12 @@ async def weighing_engine(ctx: Ctx) -> None:
     attacks = ctx.state.conflicts
 
     def penalty(target: str) -> float:
-        return sum(float(a.get("severity", 0.5)) for a in attacks if a.get("target_agent") == target) * 0.8
+        return sum(_num(a.get("severity"), 0.5) for a in attacks if a.get("target_agent") == target) * 0.8
 
     evidence_quality = min(1.0, len(ctx.state.evidence) / 12.0)
     dims = {
-        "Market": max(0.5, float(market.get("score", 5.0)) - penalty("market_analyst")),
-        "Economics": max(0.5, float(fin.get("score", 5.0)) - penalty("finance_modeler")),
+        "Market": max(0.5, _num(market.get("score"), 5.0) - penalty("market_analyst")),
+        "Economics": max(0.5, _num(fin.get("score"), 5.0) - penalty("finance_modeler")),
         "Evidence": round(evidence_quality * 10, 1),
         "Execution": 5.0,   # placeholder until GTM/HR agents land (Phase 3)
         "Timing": 5.0,      # placeholder until trends/macro agents land (Phase 3)
@@ -318,7 +331,7 @@ async def weighing_engine(ctx: Ctx) -> None:
         (dims["Market"] * 0.3 + dims["Economics"] * 0.3 + dims["Evidence"] * 0.15
          + dims["Execution"] * 0.125 + dims["Timing"] * 0.125), 1)
 
-    conf_spread = abs(float(market.get("confidence", 0.5)) - float(fin.get("confidence", 0.5)))
+    conf_spread = abs(_num(market.get("confidence"), 0.5) - _num(fin.get("confidence"), 0.5))
     for k, v in dims.items():
         await ctx.emit.log(aid, f"{k:<10} {v}/10", "code")
     await ctx.emit.log(aid, f"weighted score {overall}/10 · dissent recorded: {len(attacks)} attacks", "info")

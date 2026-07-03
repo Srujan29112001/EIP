@@ -14,7 +14,7 @@ const DOT: Record<StageStatus, string> = {
 
 export function PipelineRail() {
   const status = useRun((s) => s.agentStatus);
-  const layers = ["L0", "L1", "L2", "L3", "L4"] as const;
+  const layers = ["L0", "L1", "L2", "L3", "L4", "L5"] as const;
 
   return (
     <aside className="scroll-thin sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl border border-line bg-panel p-4">

@@ -16,9 +16,12 @@ from ..core.llm_gateway import EngineConfig, Gateway
 
 
 async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
-    cfg = EngineConfig(**(payload.get("engine") or {}))
-    ctx = Ctx(emit=emitter, llm=Gateway(cfg), state=RunState(run_id=run_id, raw=payload))
     try:
+        # Tolerate unknown engine keys from older/newer clients — a version skew
+        # must never brick the run before the try block can report it.
+        eng = payload.get("engine") or {}
+        cfg = EngineConfig(**{k: v for k, v in eng.items() if k in EngineConfig.__dataclass_fields__})
+        ctx = Ctx(emit=emitter, llm=Gateway(cfg), state=RunState(run_id=run_id, raw=payload))
         status = await ctx.llm.status()
         route_note = ("demo (deterministic cores only)" if cfg.compute == "demo"
                       else f"local={'✓' if status['local'] else '✗'} · cloud={status['cloud'] or '—'}")

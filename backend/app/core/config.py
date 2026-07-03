@@ -1,11 +1,16 @@
 """Central settings. Every value optional — zero-config demo mode is a feature."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Anchor to backend/.env regardless of the CWD uvicorn was launched from.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="EIP_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="EIP_", env_file=_ENV_FILE, extra="ignore")
 
     # local inference
     ollama_url: str = "http://localhost:11434"

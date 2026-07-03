@@ -19,7 +19,9 @@ export function StudioClient() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    backendHealth().then((h) => setBackend(h.ok ? "live" : "offline"));
+    backendHealth()
+      .then((h) => setBackend(h.ok ? "live" : "offline"))
+      .catch(() => setBackend("offline"));
     return () => abortRef.current?.abort();
   }, []);
 

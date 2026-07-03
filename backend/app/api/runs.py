@@ -30,13 +30,28 @@ class RunRequest(BaseModel):
     engine: dict[str, Any] = Field(default_factory=dict)
 
 
+# Strong references: asyncio only weak-refs tasks, so a run could be GC'd mid-flight.
+_TASKS: set[asyncio.Task] = set()
+
+
 @router.post("/run")
 async def run(req: RunRequest) -> StreamingResponse:
     run_id = uuid.uuid4().hex[:12]
     emitter = Emitter()
-    asyncio.create_task(run_venture(run_id, req.model_dump(), emitter))
+    task = asyncio.create_task(run_venture(run_id, req.model_dump(), emitter))
+    _TASKS.add(task)
+    task.add_done_callback(_TASKS.discard)
+
+    async def stream():
+        try:
+            async for chunk in emitter.sse():
+                yield chunk
+        finally:
+            # client disconnected (or stream ended) — stop the pipeline, don't burn tokens
+            task.cancel()
+
     return StreamingResponse(
-        emitter.sse(),
+        stream(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Run-Id": run_id},
     )
