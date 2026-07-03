@@ -7,6 +7,7 @@ import { buildMarkdown, download } from "@/lib/export";
 import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AgentAccordion } from "./agent-accordion";
+import { AskBoard } from "./ask-board";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
 import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
@@ -152,6 +153,8 @@ export function DecisionRoom() {
         </h3>
         <NeuralMap {...buildGraph({ brief, board, agentOutputs, verdict })} height={460} />
       </section>
+
+      <AskBoard />
 
       <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.

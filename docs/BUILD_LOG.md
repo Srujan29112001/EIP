@@ -79,5 +79,10 @@ Deep extraction pass over all 4 inspiration apps (Helix per-agent AI config + pi
 - [x] **Frontend:** Founder/Trader mode tabs; trader intake (symbol, style, capital, risk% slider, compliance note); Trade Desk results card (setup + votes + S/R levels, position plan, backtest proof-of-work table, honesty card); MarketSim/ScoreSim/graph/pipeline all work in trader mode unchanged
 - Verified live on RELIANCE.NS via Groq: real SMA/RSI reads, 2y backtests with thin-sample flags, ₹3,000-max-loss position plan, 5.7/10 MIXED_SETUP, persisted to history
 
+## Phase 5 (part 1) — Ask the Board (built 2026-07-03)
+- [x] POST /api/ask: grounded Q&A over a persisted run — the spokesperson answers ONLY from the run's verdict/outputs/evidence/attacks, cites agents, admits "not in the record" otherwise
+- [x] Decision Room chat panel (suggestions, threaded messages, route chip); runId captured from the done event
+- Verified on the RELIANCE run via Groq: answer cited the run's actual 0.8-severity risk
+
 ## Next
-Phase 3b part 2 (gap-detector replay, Wealth/World clusters), Phase 5 (Ask-the-Board grounded chat, outcome tracking), Phase 6 (deploy — Vercel + HF Space, has manual user steps). Options/futures education mode and broker deep-links remain post-launch per MASTER_PLAN §5.4.
+Phase 3b part 2 (gap-detector replay, Wealth/World clusters), Phase 5 part 2 (outcome tracking, cross-run memory into the Context Profiler), Phase 6 (deploy — Vercel + HF Space, has manual user steps). Options/futures education mode and broker deep-links remain post-launch per MASTER_PLAN §5.4.

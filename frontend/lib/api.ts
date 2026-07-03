@@ -48,6 +48,18 @@ export async function getRun(id: string): Promise<(RunSummary & { state: Record<
   }
 }
 
+export async function askBoard(runId: string, question: string):
+  Promise<{ answer: string; route: string; grounded: boolean }> {
+  const r = await fetch(`${API_BASE}/api/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: runId, question }),
+    signal: AbortSignal.timeout(90000),
+  });
+  if (!r.ok) throw new Error(`ask failed: ${r.status}`);
+  return r.json();
+}
+
 /**
  * POST the intake and stream the run: parses `data: {…}` SSE lines and feeds
  * each event to `onEvent` (the store's apply). Resolves when the stream closes.

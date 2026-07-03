@@ -11,6 +11,7 @@ export type RunPhase = "intake" | "running" | "done";
 
 interface RunStore {
   phase: RunPhase;
+  runId: string | null;
   agentStatus: Record<string, StageStatus>;
   logs: { agent: string; kind: LogKind; text: string }[];
   board: BoardItem[];
@@ -30,6 +31,7 @@ interface RunStore {
 }
 
 const EMPTY = {
+  runId: null as string | null,
   agentStatus: {} as Record<string, StageStatus>,
   logs: [],
   board: [],
@@ -91,7 +93,7 @@ export const useRun = create<RunStore>((set) => ({
         case "usage":
           return { tokens: s.tokens + (e.tokens || 0), routes: new Set(s.routes).add(e.route) };
         case "done":
-          return { phase: "done" as const };
+          return { phase: "done" as const, runId: e.run_id };
         case "fatal":
           return { phase: "done" as const, fatal: e.message };
         default:

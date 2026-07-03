@@ -85,6 +85,45 @@ async def local() -> dict[str, Any]:
     return {"available": bool(models), "models": models}
 
 
+class AskRequest(BaseModel):
+    run_id: str
+    question: str
+    engine: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/ask")
+async def ask_the_board(req: AskRequest) -> dict[str, Any]:
+    """Grounded Q&A: answers ONLY from the chosen run's evidence and outputs."""
+    rec = await store.get_run(req.run_id)
+    if rec is None:
+        raise HTTPException(404, "run not found")
+    st = rec["state"]
+    context = {
+        "situation": rec.get("situation"),
+        "verdict": st.get("verdict"),
+        "dimensions": st.get("dimensions"),
+        "agent_verdicts": {k: v.get("verdict_line") for k, v in (st.get("outputs") or {}).items()
+                           if isinstance(v, dict) and v.get("verdict_line")},
+        "evidence": [e.get("text") for e in (st.get("evidence") or [])[:24]],
+        "red_team_attacks": [a.get("attack") for a in (st.get("conflicts") or [])[:5] if isinstance(a, dict)],
+    }
+    cfg = EngineConfig(**{k: v for k, v in (req.engine or {}).items()
+                          if k in EngineConfig.__dataclass_fields__})
+    res = await Gateway(cfg).complete(
+        "t3",
+        "You are the board's spokesperson. Answer ONLY from the run context provided — if the answer "
+        "is not in it, say so and suggest what to re-run. Cite which agent or evidence item supports "
+        "each claim (e.g. 'per the Fact Checker…'). Never invent numbers. Educational, never advice.",
+        f"RUN CONTEXT:\n{context}\n\nQUESTION: {req.question}",
+        max_tokens=700,
+    )
+    if res.ok:
+        return {"answer": res.text, "route": res.route, "grounded": True}
+    return {"answer": "No model is reachable right now — the board can't speak, but its written record "
+                      "above stands. Add an API key (or start Ollama) and ask again.",
+            "route": "none", "grounded": False}
+
+
 @router.get("/runs")
 async def runs_history(limit: int = 50) -> list[dict[str, Any]]:
     return await store.list_runs(min(limit, 200))
