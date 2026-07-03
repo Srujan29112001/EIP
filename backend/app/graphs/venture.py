@@ -13,6 +13,7 @@ from ..agents import venture as v
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
+from ..memory.store import save_run
 
 
 async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -32,19 +33,21 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         await v.context_profiler(ctx)
         await v.scope_planner(ctx)
 
-        # L1 — grounding in parallel
-        await asyncio.gather(v.web_researcher(ctx), v.news_intel(ctx))
+        # L1 — grounding in parallel (web, news, live market, official macro)
+        await asyncio.gather(v.web_researcher(ctx), v.news_intel(ctx),
+                             v.market_data(ctx), v.macro_data(ctx))
 
         # L2 — domain analysis in parallel
         await asyncio.gather(v.market_analyst(ctx), v.finance_modeler(ctx))
 
-        # L3 — crucible
-        await v.red_team(ctx)
+        # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
+        await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx))
 
         # L4 — synthesis
         await v.weighing_engine(ctx)
         await v.verdict_composer(ctx)
 
+        await save_run(ctx.state)
         await emitter.done(run_id)
     except Exception:
         await emitter.log("verdict_composer", traceback.format_exc(limit=3), "err")

@@ -34,11 +34,15 @@ export const AGENTS: AgentInfo[] = [
   // L1 — Grounding (cyan family)
   { id: "web_researcher", name: "Web Researcher", layer: "L1", cluster: "grounding", blurb: "Live web evidence — competitors, markets, claims", accent: "#22d3ee" },
   { id: "news_intel", name: "News Intelligence", layer: "L1", cluster: "grounding", blurb: "What is happening right now in this space", accent: "#67e8f9" },
+  { id: "market_data", name: "Market Data", layer: "L1", cluster: "grounding", blurb: "Live prices & index pulse (NSE/global)", accent: "#06b6d4" },
+  { id: "macro_data", name: "Macro Data", layer: "L1", cluster: "grounding", blurb: "GDP, inflation, rates from official series", accent: "#38bdf8" },
   // L2 — Domain analysis (violet family for venture cluster)
   { id: "market_analyst", name: "Market Analyst", layer: "L2", cluster: "venture", blurb: "Market size, growth, competition — sourced", accent: "#8b5cf6" },
   { id: "finance_modeler", name: "Finance Modeler", layer: "L2", cluster: "venture", blurb: "Unit economics, runway, breakeven — real math", accent: "#a78bfa" },
   // L3 — Crucible (red/orange family)
   { id: "red_team", name: "Red Team", layer: "L3", cluster: "crucible", blurb: "Attacks the thesis with evidence", accent: "#fb7185" },
+  { id: "fact_checker", name: "Fact Checker", layer: "L3", cluster: "crucible", blurb: "Every claim must trace to the evidence board", accent: "#f97316" },
+  { id: "bias_auditor", name: "Bias Auditor", layer: "L3", cluster: "crucible", blurb: "Names the biases in your framing", accent: "#fbbf24" },
   // L4 — Synthesis (gold family)
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
   { id: "verdict_composer", name: "Verdict Composer", layer: "L4", cluster: "synthesis", blurb: "The decision document, with sensitivities", accent: "#facc15" },

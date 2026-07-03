@@ -124,3 +124,6 @@ spark-warehouse/
 # Cache
 .cache/
 *.cache
+
+# runtime data (run history db)
+backend/data/

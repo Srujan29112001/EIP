@@ -44,6 +44,25 @@ export interface RadarData {
   overall: number;
 }
 
+/** Deterministic finance core — the client-side What-If simulator re-runs this math. */
+export interface FinanceCore {
+  capital_lakhs: number;
+  burn_lakhs_pm: number;
+  runway_months: number;
+  team: number;
+}
+
+/** Loose shape of one agent's structured output (streamed via partial:agent_output). */
+export type AgentOutput = {
+  verdict_line?: string;
+  score?: number;
+  confidence?: number;
+  analysis?: string;
+  assumptions?: string[];
+  numbers_used?: { figure: string; source: string }[];
+  route?: string;
+} & Record<string, unknown>;
+
 export interface Verdict {
   score: number;
   band: string;

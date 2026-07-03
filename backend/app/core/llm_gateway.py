@@ -228,15 +228,25 @@ class Gateway:
     async def complete(self, tier: Tier, system: str, user: str,
                        max_tokens: int = 1200, temperature: float = 0.4) -> LLMResult:
         """Walk the degradation ladder. Returns LLMResult(ok=False) if nothing worked."""
+        import asyncio
+
         plan = _route_plan(tier, self.cfg, await self._local_ok())
         for provider, model in plan:
-            try:
-                res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
-                if res.ok:
-                    res.route = f"{provider}:{model}"
-                    return res
-            except Exception:
-                continue
+            for attempt in (0, 1):
+                try:
+                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    if res.ok:
+                        res.route = f"{provider}:{model}"
+                        return res
+                    break
+                except httpx.HTTPStatusError as e:
+                    # rate limit: one short backoff before falling down the ladder
+                    if e.response.status_code == 429 and attempt == 0:
+                        await asyncio.sleep(2.5)
+                        continue
+                    break
+                except Exception:
+                    break
         return LLMResult(text="", route="none")
 
     async def structured(self, tier: Tier, system: str, user: str, schema_hint: str,

@@ -9,10 +9,13 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from fastapi import HTTPException
+
 from ..agents.registry import ROSTER
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
 from ..graphs.venture import run_venture
 from ..core.events import Emitter
+from ..memory import store
 
 router = APIRouter(prefix="/api")
 
@@ -72,3 +75,16 @@ async def agents() -> list[dict[str, Any]]:
 async def local() -> dict[str, Any]:
     models = await local_models()
     return {"available": bool(models), "models": models}
+
+
+@router.get("/runs")
+async def runs_history(limit: int = 50) -> list[dict[str, Any]]:
+    return await store.list_runs(min(limit, 200))
+
+
+@router.get("/runs/{run_id}")
+async def run_detail(run_id: str) -> dict[str, Any]:
+    rec = await store.get_run(run_id)
+    if rec is None:
+        raise HTTPException(404, "run not found")
+    return rec

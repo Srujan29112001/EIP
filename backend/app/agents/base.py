@@ -44,6 +44,8 @@ class Ctx:
                      route: str = "", tokens: int = 0) -> None:
         if result is not None:
             self.state.outputs[agent_id] = result
+            # stream the structured output → Decision Room agent accordion
+            await self.emit.partial("agent_output", {"agent": agent_id, "output": result})
         if tokens:
             await self.emit.usage(agent_id, tokens, route)
         await self.emit.stage(agent_id, "done", layer)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { consumeRun, backendHealth } from "@/lib/api";
+import { consumeRun, backendHealth, type EngineStatus } from "@/lib/api";
 import { useRun } from "@/lib/store";
 import type { IntakeForm } from "@/lib/types";
 import { Boardroom } from "./boardroom";
@@ -16,11 +16,15 @@ export function StudioClient() {
   const { phase, begin, apply, reset, fatal, verdict } = useRun();
   const [tab, setTab] = useState<Tab>("pipeline");
   const [backend, setBackend] = useState<"checking" | "live" | "offline">("checking");
+  const [engine, setEngine] = useState<EngineStatus | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     backendHealth()
-      .then((h) => setBackend(h.ok ? "live" : "offline"))
+      .then((h) => {
+        setBackend(h.ok ? "live" : "offline");
+        setEngine(h.engine ?? null);
+      })
       .catch(() => setBackend("offline"));
     return () => abortRef.current?.abort();
   }, []);
@@ -45,7 +49,7 @@ export function StudioClient() {
     return (
       <>
         <BackendBadge state={backend} />
-        <IntakeWizard onRun={start} />
+        <IntakeWizard onRun={start} engine={engine} />
       </>
     );
   }

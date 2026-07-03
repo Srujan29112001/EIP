@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cpu, Rocket, Sparkles, Zap } from "lucide-react";
+import type { EngineStatus } from "@/lib/api";
 import type { IntakeForm } from "@/lib/types";
 
 const DEFAULTS: IntakeForm = {
@@ -27,7 +28,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 const selectCls =
   "w-full rounded-md border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-cyan/60";
 
-export function IntakeWizard({ onRun }: { onRun: (f: IntakeForm) => void }) {
+export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void; engine?: EngineStatus | null }) {
   const [f, setF] = useState<IntakeForm>(DEFAULTS);
   const set = <K extends keyof IntakeForm>(k: K, v: IntakeForm[K]) => setF((p) => ({ ...p, [k]: v }));
   const ready = f.situation.trim().length >= 20;
@@ -92,6 +93,21 @@ export function IntakeWizard({ onRun }: { onRun: (f: IntakeForm) => void }) {
       {/* step 2 — engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the engine</h2>
+        {engine && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
+            <span className="uppercase tracking-wider text-slate-500">server engines:</span>
+            {engine.cloud.map((p) => (
+              <span key={p} className="rounded border border-ok/40 bg-ok/10 px-1.5 py-0.5 text-ok">{p} ✓</span>
+            ))}
+            <span className={`rounded border px-1.5 py-0.5 ${
+              engine.local ? "border-ok/40 bg-ok/10 text-ok" : "border-line text-slate-600"}`}>
+              local gpu ({engine.local_model}) {engine.local ? "✓" : "not detected"}
+            </span>
+            {engine.cloud.length === 0 && !engine.local && (
+              <span className="text-slate-500">none — deterministic cores only, add a key below</span>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {([
             ["auto", "Auto", Sparkles, "best available"],

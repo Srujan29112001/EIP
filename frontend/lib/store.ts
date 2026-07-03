@@ -3,7 +3,9 @@
 /** Run state — a zustand store fed one SSE event at a time (lib/api.consumeRun). */
 
 import { create } from "zustand";
-import type { BoardItem, LogKind, RadarData, RunEvent, StageStatus, Verdict } from "./types";
+import type {
+  AgentOutput, BoardItem, FinanceCore, LogKind, RadarData, RunEvent, StageStatus, Verdict,
+} from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
 
@@ -16,6 +18,8 @@ interface RunStore {
   scope: string[];
   radar: RadarData | null;
   verdict: Verdict | null;
+  agentOutputs: Record<string, AgentOutput>;
+  financeCore: FinanceCore | null;
   tokens: number;
   routes: Set<string>;
   fatal: string | null;
@@ -32,6 +36,8 @@ const EMPTY = {
   scope: [],
   radar: null,
   verdict: null,
+  agentOutputs: {},
+  financeCore: null,
   tokens: 0,
   routes: new Set<string>(),
   fatal: null,
@@ -67,6 +73,11 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "radar") return { radar: e.data as RadarData };
           if (e.section === "brief") return { brief: e.data as Record<string, unknown> };
           if (e.section === "scope") return { scope: e.data as string[] };
+          if (e.section === "finance_core") return { financeCore: e.data as FinanceCore };
+          if (e.section === "agent_output") {
+            const d = e.data as { agent: string; output: AgentOutput };
+            return { agentOutputs: { ...s.agentOutputs, [d.agent]: d.output } };
+          }
           return {};
         }
         case "usage":

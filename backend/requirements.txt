@@ -7,3 +7,4 @@ python-dotenv>=1.0
 orjson>=3.10
 ddgs>=9.0
 feedparser>=6.0
+yfinance>=0.2.50

@@ -16,10 +16,16 @@ export default function Landing() {
         <span className="font-display text-lg font-bold tracking-tight">
           EIP<span className="text-cyan">.</span>
         </span>
-        <Link href="/studio"
-          className="rounded-lg border border-line px-4 py-2 font-mono text-xs uppercase tracking-wider text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
-          Open Studio →
-        </Link>
+        <span className="flex items-center gap-2">
+          <Link href="/history"
+            className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-500 transition hover:text-cyan">
+            History
+          </Link>
+          <Link href="/studio"
+            className="rounded-lg border border-line px-4 py-2 font-mono text-xs uppercase tracking-wider text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+            Open Studio →
+          </Link>
+        </span>
       </nav>
 
       <header className="py-20 text-center">

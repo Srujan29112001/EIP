@@ -4,13 +4,47 @@ import type { IntakeForm, RunEvent } from "./types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export async function backendHealth(): Promise<{ ok: boolean; engine?: Record<string, unknown> }> {
+export interface EngineStatus {
+  local: boolean;
+  local_model: string;
+  cloud: string[];
+  compute: string;
+}
+
+export async function backendHealth(): Promise<{ ok: boolean; engine?: EngineStatus }> {
   try {
     const r = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(4000) });
     if (!r.ok) return { ok: false };
     return await r.json();
   } catch {
     return { ok: false };
+  }
+}
+
+export interface RunSummary {
+  id: string;
+  created_at: string;
+  mode: string;
+  situation: string;
+  score: number;
+  band: string;
+}
+
+export async function listRuns(): Promise<RunSummary[]> {
+  try {
+    const r = await fetch(`${API_BASE}/api/runs`, { signal: AbortSignal.timeout(6000) });
+    return r.ok ? await r.json() : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getRun(id: string): Promise<(RunSummary & { state: Record<string, unknown> }) | null> {
+  try {
+    const r = await fetch(`${API_BASE}/api/runs/${id}`, { signal: AbortSignal.timeout(8000) });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
   }
 }
 

@@ -9,10 +9,11 @@ board or are labelled estimates (EIP Constitution #1).
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any
 
-from ..grounding import web
+from ..grounding import macro, market, web
 from .base import Ctx
 
 # ── L0: intake parser ─────────────────────────────────────────────────────────
@@ -93,9 +94,12 @@ async def context_profiler(ctx: Ctx) -> None:
 async def scope_planner(ctx: Ctx) -> None:
     aid, layer = "scope_planner", "L0"
     await ctx.start(aid, layer)
-    # Phase 1: fixed venture spine. Depth/mode-aware scoping arrives with the full roster.
-    scope = ["web_researcher", "news_intel", "market_analyst", "finance_modeler",
-             "red_team", "weighing_engine", "verdict_composer"]
+    # Phase 2: fixed venture spine + grounding/crucible wave. Depth/mode-aware
+    # scoping arrives with the full roster (Phase 3).
+    scope = ["web_researcher", "news_intel", "market_data", "macro_data",
+             "market_analyst", "finance_modeler",
+             "red_team", "fact_checker", "bias_auditor",
+             "weighing_engine", "verdict_composer"]
     ctx.state.scope = scope
     await ctx.emit.log(aid, f"convening {len(scope)} specialists for a Pulse run", "info")
     for s in scope:
@@ -156,6 +160,54 @@ async def news_intel(ctx: Ctx) -> None:
     await ctx.emit.log(aid, f"{len(items)} current headlines captured" if items
                        else "news feed unreachable — continuing", kind)
     await ctx.finish(aid, layer, {"headlines": len(items)})
+
+
+# ── L1: market data (t0 — pure data, no LLM) ─────────────────────────────────
+
+async def market_data(ctx: Ctx) -> None:
+    aid, layer = "market_data", "L1"
+    await ctx.start(aid, layer)
+    b = ctx.state.brief
+    geo = b.get("geography", "India")
+    idx_sym, idx_label = market.INDEX.get(geo, market.INDEX["India"])
+    sector = market.sector_for(f"{b.get('industry','')} {b.get('summary','')}")
+
+    targets = [(idx_sym, idx_label)] + ([sector] if sector else [])
+    for sym, label in targets:
+        await ctx.emit.log(aid, f"⌕ yfinance: {sym} ({label})", "code")
+    pulses = [p for p in await asyncio.gather(*(market.pulse(s, l) for s, l in targets)) if p]
+
+    for p in pulses:
+        text = (f"{p['label']}: 1y {p['ret_1y_pct']:+.1f}% · 3m {p['ret_3m_pct']:+.1f}% "
+                f"· volatility {p['volatility_pct']:.0f}%")
+        await ctx.emit.claim(aid, text, source={"url": p["source_url"], "name": "Yahoo Finance"},
+                             confidence=0.85)
+        ctx.state.evidence.append({"text": f"MARKET: {text}", "source": {"url": p["source_url"]},
+                                   "agent": aid})
+    kind = "ok" if pulses else "warn"
+    await ctx.emit.log(aid, f"{len(pulses)} live market series on the board" if pulses
+                       else "market data unreachable — continuing", kind)
+    await ctx.finish(aid, layer, {"pulses": pulses})
+
+
+# ── L1: macro data (t0 — official series, no LLM) ────────────────────────────
+
+async def macro_data(ctx: Ctx) -> None:
+    aid, layer = "macro_data", "L1"
+    await ctx.start(aid, layer)
+    geo = ctx.state.brief.get("geography", "India")
+    await ctx.emit.log(aid, f"⌕ world bank: {geo} macro series", "code")
+    rows = await macro.series(geo)
+    for r in rows:
+        text = f"{r['name']}: {r['value']} ({r['year']}, {r['country']})"
+        await ctx.emit.claim(aid, text, source={"url": r["source_url"], "name": "World Bank"},
+                             confidence=0.9)
+        ctx.state.evidence.append({"text": f"MACRO: {text}", "source": {"url": r["source_url"]},
+                                   "agent": aid})
+    kind = "ok" if rows else "warn"
+    await ctx.emit.log(aid, f"{len(rows)} official macro indicators captured" if rows
+                       else "world bank unreachable — continuing", kind)
+    await ctx.finish(aid, layer, {"series": rows})
 
 
 # ── L2 helper: scored analysis via LLM with deterministic fallback ────────────
@@ -239,6 +291,9 @@ async def finance_modeler(ctx: Ctx) -> None:
     runway = round(capital_l / burn_l, 1)
     await ctx.emit.log(aid, f"capital ≈ ₹{capital_l}L · est. burn ₹{burn_l}L/mo (team of {team}) [ESTIMATE]", "code")
     await ctx.emit.log(aid, f"runway ≈ {runway} months before revenue", "info")
+    # deterministic core → What-If simulator (client re-runs this math live)
+    await ctx.emit.partial("finance_core", {"capital_lakhs": capital_l, "burn_lakhs_pm": burn_l,
+                                            "runway_months": runway, "team": team})
     det_score = max(1.0, min(9.0, runway / 3.0))
     fallback = {
         "verdict_line": f"≈{runway} months runway at heuristic burn — {'thin' if runway < 9 else 'workable'}",
@@ -303,6 +358,135 @@ async def red_team(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, data)
 
 
+# ── L3: fact checker ──────────────────────────────────────────────────────────
+
+def _overlap(claim: str, evidence_texts: list[str]) -> float:
+    """Cheap lexical support score: shared significant words / claim words."""
+    words = {w for w in re.findall(r"[a-z]{5,}", claim.lower())}
+    if not words:
+        return 0.0
+    best = 0.0
+    for ev in evidence_texts:
+        ev_words = set(re.findall(r"[a-z]{5,}", ev.lower()))
+        best = max(best, len(words & ev_words) / len(words))
+    return best
+
+
+async def fact_checker(ctx: Ctx) -> None:
+    aid, layer = "fact_checker", "L3"
+    await ctx.start(aid, layer)
+    await ctx.emit.log(aid, "mandate: every analyst claim must trace to the evidence board", "muted")
+
+    # deterministic core: numbers audit + lexical support screen
+    claims: list[str] = []
+    estimates = sourced = 0
+    for agent_id in ("market_analyst", "finance_modeler"):
+        out = ctx.state.outputs.get(agent_id, {})
+        if out.get("verdict_line"):
+            claims.append(f"[{agent_id}] {out['verdict_line']}")
+        for n in out.get("numbers_used", []) or []:
+            if isinstance(n, dict) and str(n.get("source", "")).startswith("http"):
+                sourced += 1
+            else:
+                estimates += 1
+    ev_texts = [e["text"] for e in ctx.state.evidence]
+    det_checks = [{"claim": c, "verdict": "supported" if _overlap(c, ev_texts) >= 0.25 else "unverified",
+                   "note": "lexical screen vs evidence board"} for c in claims]
+
+    schema = ('{"checks": [{"claim": str, "verdict": "supported"|"partly"|"unsupported"|"contradicted", '
+              '"note": str (<=25 words)}]}')
+    data, res = await ctx.llm.structured(
+        "t2",
+        "You are a fact checker. For each analyst claim, judge ONLY from the evidence provided — "
+        "supported / partly / unsupported / contradicted. Never assume outside knowledge.",
+        f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(20)}\n\nCLAIMS:\n" + "\n".join(claims),
+        schema, max_tokens=700,
+    )
+    checks = data.get("checks") if data else None
+    if checks and isinstance(checks, list):
+        checks = [c for c in checks if isinstance(c, dict)][:8]
+        await ctx.emit.usage(aid, res.tokens, res.route)
+    else:
+        checks = det_checks
+        await ctx.emit.log(aid, "LLM unavailable — lexical support screen only", "warn")
+
+    bad = 0
+    for c in checks:
+        v = str(c.get("verdict", "unverified"))
+        kind = "ok" if v == "supported" else "warn" if v in ("partly", "unverified") else "err"
+        if v in ("unsupported", "contradicted"):
+            bad += 1
+        await ctx.emit.log(aid, f"[{v.upper()}] {str(c.get('claim',''))[:110]}", kind)
+    await ctx.emit.log(aid, f"numbers audit: {sourced} sourced · {estimates} estimates", "code")
+    await ctx.emit.claim(aid, f"Fact check: {len(checks)} claims reviewed, {bad} unsupported/contradicted, "
+                              f"{estimates} unsourced figures flagged", confidence=0.7)
+    await ctx.finish(aid, layer, {"checks": checks, "unsupported": bad,
+                                  "numbers": {"sourced": sourced, "estimates": estimates}})
+
+
+# ── L3: bias auditor ──────────────────────────────────────────────────────────
+# Detection table ported (inverted: exploit → detect) from the legacy
+# human_behaviour_agent bias database, extended with founder-specific biases.
+
+_BIAS_SCREENS: list[tuple[str, str, str]] = [
+    ("optimism bias", r"\b(definitely|surely|can'?t fail|guaranteed|everyone (will|wants)|huge market|no competition)\b",
+     "Absolute language about uncertain outcomes — the base rate for new ventures disagrees."),
+    ("confirmation bias", r"\b(i know|i'?m (sure|certain)|clearly|obviously|proves?)\b",
+     "Certainty phrasing suggests seeking confirmation, not tests that could falsify the idea."),
+    ("social proof", r"\b(everyone is doing|trending|hot right now|all my friends|viral)\b",
+     "Popularity of a category is weak evidence of *your* unit economics."),
+    ("sunk cost", r"\b(already (spent|built|invested|quit)|too far in|can'?t stop now)\b",
+     "Past investment is not a reason to continue — only forward returns are."),
+    ("scarcity/FOMO", r"\b(before it'?s too late|now or never|window is closing|last chance|miss out)\b",
+     "Urgency framing short-circuits diligence; real windows rarely close in one quarter."),
+    ("overconfidence", r"\b(easily|just need to|simple to|piece of cake|quickly capture|only \d+%)\b",
+     "'Only 1% of the market' math and 'just' plans underestimate execution cost."),
+    ("planning fallacy", r"\b(in (a|one|two|2|3|three) (week|month)s?\b|within \d+ (day|week)s)\b",
+     "Timelines this tight are usually best-case; median outcomes run 2-3× longer."),
+    ("authority bias", r"\b(guru|influencer said|billionaire|famous investor|podcast said)\b",
+     "Advice from status, not from evidence about this specific market."),
+]
+
+
+async def bias_auditor(ctx: Ctx) -> None:
+    aid, layer = "bias_auditor", "L3"
+    await ctx.start(aid, layer)
+    await ctx.emit.log(aid, "auditing the FRAMING, not the idea (Constitution: disagreement is data)", "muted")
+    raw = ctx.state.raw
+    framing = f"{raw.get('situation','')} {raw.get('uncertainty','')}"
+
+    findings: list[dict[str, Any]] = []
+    for bias, pattern, note in _BIAS_SCREENS:
+        m = re.search(pattern, framing, re.I)
+        if m:
+            findings.append({"bias": bias, "quote": m.group(0), "note": note, "severity": 0.5})
+
+    schema = ('{"biases": [{"bias": str, "quote": str (verbatim from the text), '
+              '"note": str (<=25 words, specific), "severity": float (0-1)}]}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are a cognitive-bias auditor for decision-making. Identify biases IN THE FOUNDER'S OWN "
+        "FRAMING of their situation (not in the idea itself). Only report biases with a verbatim quote "
+        "as evidence. Empty list if the framing is clean.",
+        f"FOUNDER'S FRAMING:\n{framing[:1200]}\n\nPROFILE: {ctx.state.profile}",
+        schema, max_tokens=600,
+    )
+    if data and isinstance(data.get("biases"), list):
+        llm_findings = [b for b in data["biases"] if isinstance(b, dict) and b.get("bias")][:5]
+        seen = {f["bias"] for f in findings}
+        findings += [b for b in llm_findings if b.get("bias") not in seen]
+        await ctx.emit.usage(aid, res.tokens, res.route)
+    elif not findings:
+        await ctx.emit.log(aid, "LLM unavailable — pattern screen found no flagrant bias markers", "info")
+
+    for f in findings[:6]:
+        await ctx.emit.bias("user_framing", f["bias"], f'"{str(f.get("quote",""))[:60]}" — {f.get("note","")}')
+        await ctx.emit.log(aid, f"⚑ {f['bias']}: {str(f.get('quote',''))[:60]}", "warn")
+    if not findings:
+        await ctx.emit.log(aid, "no significant bias markers in your framing — rare, well done", "ok")
+    await ctx.finish(aid, layer, {"findings": findings[:6]})
+
+
 # ── L4: weighing engine — PURE deterministic (Constitution #3) ───────────────
 
 async def weighing_engine(ctx: Ctx) -> None:
@@ -318,12 +502,35 @@ async def weighing_engine(ctx: Ctx) -> None:
         return sum(_num(a.get("severity"), 0.5) for a in attacks if a.get("target_agent") == target) * 0.8
 
     evidence_quality = min(1.0, len(ctx.state.evidence) / 12.0)
+
+    # Evidence dimension: coverage minus fact-check failures (Phase 2)
+    fc = o.get("fact_checker", {})
+    unsupported = int(_num(fc.get("unsupported"), 0))
+    evidence_dim = max(0.5, evidence_quality * 10 - unsupported * 1.2)
+
+    # Timing dimension: real macro + market pulse instead of the old 5.0 placeholder
+    timing = 5.0
+    for row in (o.get("macro_data", {}).get("series") or []):
+        v = _num(row.get("value"), 0.0)
+        if row.get("indicator") == "NY.GDP.MKTP.KD.ZG":
+            timing += 1.0 if v >= 6.5 else 0.5 if v >= 4.0 else -1.0 if v < 2.5 else 0.0
+        elif row.get("indicator") == "FP.CPI.TOTL.ZG":
+            timing += 0.5 if v <= 4.0 else -1.0 if v >= 7.0 else 0.0
+    pulses = o.get("market_data", {}).get("pulses") or []
+    if pulses:
+        idx = _num(pulses[0].get("ret_1y_pct"), 0.0)
+        timing += 1.0 if idx >= 12 else 0.5 if idx >= 5 else -1.0 if idx < 0 else 0.0
+        if len(pulses) > 1:
+            sec = _num(pulses[1].get("ret_1y_pct"), 0.0)
+            timing += 0.5 if sec >= 15 else -0.5 if sec <= -10 else 0.0
+        await ctx.emit.log(aid, f"timing inputs: index 1y {idx:+.1f}% · macro series {len(o.get('macro_data', {}).get('series') or [])}", "code")
+
     dims = {
         "Market": max(0.5, _num(market.get("score"), 5.0) - penalty("market_analyst")),
         "Economics": max(0.5, _num(fin.get("score"), 5.0) - penalty("finance_modeler")),
-        "Evidence": round(evidence_quality * 10, 1),
+        "Evidence": round(evidence_dim, 1),
         "Execution": 5.0,   # placeholder until GTM/HR agents land (Phase 3)
-        "Timing": 5.0,      # placeholder until trends/macro agents land (Phase 3)
+        "Timing": max(1.0, min(9.5, timing)),
     }
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}
     ctx.state.dimensions = dims
@@ -371,15 +578,28 @@ async def verdict_composer(ctx: Ctx) -> None:
             "Re-run EIP in Board-Meeting depth once data improves"],
         "teach": "A verdict is only as good as its weakest sourced input. Improve the evidence, not the score.",
     }
+    # compact context — full outputs blow past cheap-tier TPM limits (observed on Groq free tier)
+    compact: dict[str, Any] = {}
+    for k, out in ctx.state.outputs.items():
+        if k in ("weighing_engine", "verdict_composer") or not isinstance(out, dict):
+            continue
+        c = {kk: out[kk] for kk in ("verdict_line", "score", "confidence", "kill_risk", "unsupported") if kk in out}
+        if out.get("assumptions"):
+            c["assumptions"] = out["assumptions"][:2]
+        if isinstance(out.get("findings"), list):  # bias auditor (web_researcher's is an int)
+            c["biases"] = [f.get("bias") for f in out["findings"] if isinstance(f, dict)][:5]
+        if c:
+            compact[k] = c
     data, res = await ctx.llm.structured(
         "t3",
         "You compose the final decision document for an entrepreneur. Honest, specific, calibrated to their "
         "profile. You may NOT change the numeric verdict — it is computed deterministically.",
         f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
         f"DIMENSIONS: {ctx.state.dimensions} → overall {overall}/10 (band {band})\n"
-        f"ANALYST OUTPUTS: { {k: v for k, v in ctx.state.outputs.items() if k not in ('weighing_engine',)} }\n"
-        f"RED TEAM: {ctx.state.conflicts}\nEVIDENCE:\n{ctx.state.evidence_digest()}",
-        _VERDICT_SCHEMA, max_tokens=1400,
+        f"ANALYST SUMMARIES: {compact}\n"
+        f"RED TEAM ATTACKS: {[{'target': a.get('target_agent'), 'attack': str(a.get('attack',''))[:140], 'severity': a.get('severity')} for a in ctx.state.conflicts[:4]]}\n"
+        f"EVIDENCE:\n{ctx.state.evidence_digest(10)}",
+        _VERDICT_SCHEMA, max_tokens=1100,
     )
     if data:
         data["recommendation"] = data.get("recommendation") or band

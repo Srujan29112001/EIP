@@ -27,8 +27,8 @@ ROSTER: list[AgentMeta] = [
     # L1 — Grounding
     AgentMeta("web_researcher", "Web Researcher", "L1", "grounding", "t2", "Live web evidence — competitors, markets, claims", True),
     AgentMeta("news_intel", "News Intelligence", "L1", "grounding", "t2", "What is happening right now in this space", True),
-    AgentMeta("market_data", "Market Data", "L1", "grounding", "t0", "Live prices & fundamentals (NSE/BSE/global)"),
-    AgentMeta("macro_data", "Macro Data", "L1", "grounding", "t0", "GDP, inflation, rates from official series"),
+    AgentMeta("market_data", "Market Data", "L1", "grounding", "t0", "Live prices & fundamentals (NSE/BSE/global, True)"),
+    AgentMeta("macro_data", "Macro Data", "L1", "grounding", "t0", "GDP, inflation, rates from official series", True),
     AgentMeta("doc_analyst", "Document Analyst", "L1", "grounding", "t2", "Reads your pitch deck, plan, contracts"),
     # L2 — Venture
     AgentMeta("market_analyst", "Market Analyst", "L2", "venture", "t2", "Market size, growth, competition — sourced", True),
@@ -70,8 +70,8 @@ ROSTER: list[AgentMeta] = [
     # L3 — Crucible
     AgentMeta("red_team", "Red Team", "L3", "crucible", "t3", "Attacks the thesis with evidence", True),
     AgentMeta("devils_advocate", "Devil's Advocate", "L3", "crucible", "t3", "Steel-mans the NO case"),
-    AgentMeta("bias_auditor", "Bias Auditor", "L3", "crucible", "t3", "Names the biases in your framing"),
-    AgentMeta("fact_checker", "Fact Checker", "L3", "crucible", "t2", "Spot-checks claims against the evidence board"),
+    AgentMeta("bias_auditor", "Bias Auditor", "L3", "crucible", "t3", "Names the biases in your framing", True),
+    AgentMeta("fact_checker", "Fact Checker", "L3", "crucible", "t2", "Spot-checks claims against the evidence board", True),
     # L4 — Synthesis
     AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects"),
     AgentMeta("weighing_engine", "Weighing Engine", "L4", "synthesis", "t0", "Deterministic scoring — disagreement preserved", True),

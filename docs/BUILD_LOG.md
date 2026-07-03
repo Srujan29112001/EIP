@@ -30,5 +30,18 @@ Phase-by-phase progress against `MASTER_PLAN.md`.
 - [x] Backend: `.env` loading anchored to `backend/.env` regardless of launch CWD
 - [x] Frontend: malformed source URLs can't crash the Boardroom; health-probe failure can't strand the badge; log auto-scroll only follows when pinned to bottom; broken `next lint` script removed
 
-## Phase 2 — Grounding & trust (next)
-See MASTER_PLAN.md §9. Scan of portable assets complete: legacy bias DB (human_behaviour_agent) → Bias Auditor; legacy risk taxonomy → Risk Register; Helix `web_search.py` (Tavily+DDG) + `export.py` (markdown) + `charts.tsx` (26 SVG components); market-data connector must be written fresh (no real fetcher exists in any prior repo — Finance-and-Trading's was a random-walk simulator).
+## Phase 2 — Grounding & trust (built 2026-07-03)
+- [x] **Market Data agent (L1, t0):** yfinance connector — index pulse (NIFTY/S&P/STOXX by geography) + Indian sector-proxy table (Dabur for ayurveda, Nykaa for D2C, …); 1y/3m returns + volatility land as sourced claims
+- [x] **Macro Data agent (L1, t0):** World Bank API (key-free) — GDP growth, inflation, lending rate, unemployment per geography, every figure with indicator URL
+- [x] **Fact Checker (L3):** analyst claims judged against the evidence board (LLM verdicts supported/partly/unsupported/contradicted, lexical-overlap fallback) + sourced-vs-ESTIMATE numbers audit
+- [x] **Bias Auditor (L3):** 8-pattern deterministic screen on the founder's framing (ported/inverted from legacy human_behaviour bias DB) + LLM audit with verbatim quotes; emits `bias` events
+- [x] **Weighing engine v2:** Timing dimension now computed from real macro + market pulse (was placeholder 5.0); Evidence dimension penalized by failed fact-checks
+- [x] Run persistence: SQLite (`backend/data/eip.db`, fail-soft) + `GET /api/runs`, `GET /api/runs/{id}`
+- [x] Gateway: one-shot 429 backoff; verdict-composer prompt compacted (fixed Groq free-tier TPM fallback — verdicts are LLM-written again)
+- [x] Frontend: Decision Room v2 — Disagreement panel, agent-by-agent accordion (confidence bars + sourced/ESTIMATE number chips), What-If simulator (client-side deterministic finance core re-run), Markdown/JSON export
+- [x] Frontend: wizard shows server-configured engines (groq ✓ / local gpu status); `/history` page over the runs API
+- [x] Verified with Groq (llama-3.3-70b): 11 agents, LLM verdict, bias flags with quotes, NIFTY+Dabur+World-Bank evidence, run persisted
+- [ ] Deferred within Phase 2 scope: PDF export (Markdown ships; print-to-PDF works meanwhile), what-if server-side re-runs (client deterministic mirror ships)
+
+## Phase 3 — Full board (next)
+See MASTER_PLAN.md §9. Portable-asset notes: legacy risk taxonomy → Risk agents; Helix `charts.tsx` (26 SVG components) for richer viz; depth selector (pulse/board/war_room) must drive the Scope Planner when the roster grows.

@@ -1,9 +1,13 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, GraduationCap, Lightbulb, Scale } from "lucide-react";
+import { AlertTriangle, ArrowRight, Download, FileJson, GraduationCap, Lightbulb, Scale } from "lucide-react";
 import { agentById } from "@/lib/agents";
+import { buildMarkdown, download } from "@/lib/export";
 import { useRun } from "@/lib/store";
+import { AgentAccordion } from "./agent-accordion";
+import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
+import { WhatIf } from "./whatif";
 
 const BAND_STYLE: Record<string, { label: string; cls: string }> = {
   GO: { label: "GO", cls: "text-ok border-ok/40 bg-ok/10" },
@@ -12,7 +16,13 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs } = useRun();
+
+  const exportMd = () =>
+    download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
+  const exportJson = () =>
+    download("eip-decision.json",
+      JSON.stringify({ brief, verdict, board, agentOutputs }, null, 2), "application/json");
 
   if (!verdict) {
     return (
@@ -40,9 +50,21 @@ export function DecisionRoom() {
           </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-slate-200">{verdict.reasoning}</p>
-        <div className="mt-3 font-mono text-[10px] text-slate-400">
-          {sourced} externally sourced claims · {tokens.toLocaleString()} tokens ·{" "}
-          {[...routes].join(", ") || "deterministic cores only"}
+        <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[10px] text-slate-400">
+          <span>
+            {sourced} externally sourced claims · {tokens.toLocaleString()} tokens ·{" "}
+            {[...routes].join(", ") || "deterministic cores only"}
+          </span>
+          <span className="ml-auto flex gap-2">
+            <button onClick={exportMd}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <Download size={11} /> Markdown
+            </button>
+            <button onClick={exportJson}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <FileJson size={11} /> JSON
+            </button>
+          </span>
         </div>
       </section>
 
@@ -109,6 +131,10 @@ export function DecisionRoom() {
           </ul>
         </section>
       </div>
+
+      <Disagreements />
+      <WhatIf />
+      <AgentAccordion />
 
       <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.
