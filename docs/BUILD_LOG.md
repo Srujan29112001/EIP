@@ -43,5 +43,14 @@ Phase-by-phase progress against `MASTER_PLAN.md`.
 - [x] Verified with Groq (llama-3.3-70b): 11 agents, LLM verdict, bias flags with quotes, NIFTY+Dabur+World-Bank evidence, run persisted
 - [ ] Deferred within Phase 2 scope: PDF export (Markdown ships; print-to-PDF works meanwhile), what-if server-side re-runs (client deterministic mirror ships)
 
-## Phase 3 — Full board (next)
-See MASTER_PLAN.md §9. Portable-asset notes: legacy risk taxonomy → Risk agents; Helix `charts.tsx` (26 SVG components) for richer viz; depth selector (pulse/board/war_room) must drive the Scope Planner when the roster grows.
+## Phase 3a — Venture board wave (built 2026-07-03)
+- [x] 6 new L2 venture agents (`agents/board.py`): Competitor Intelligence, GTM & Distribution, Legal, Tax (India-first), Policy & Compliance, Industry Expert — each deterministic-core + LLM narrative, prompts ported from the legacy generation
+- [x] Devil's Advocate (L3): steel-mans the NO case + "what would flip me"
+- [x] Connecting Dots (L4): cross-domain patterns + weak signals (honest skip without a model)
+- [x] **Depth selector live:** Pulse (11 agents) / Board Meeting (19) / War Room (19, debate rounds in 3b) — wizard step 02, scope planner honors it
+- [x] Weighing engine v3: per-dimension agent contribution map; **Regulatory dimension** appears on the radar at board depth; weights renormalized (mirrored in client What-If)
+- [x] Gateway: process-wide cloud-concurrency gate (semaphore 3) + escalating 429 backoff — a full 19-agent board now survives a free-tier Groq key (12 LLM-routed calls verified, real devil's-advocate + connecting-dots output)
+- Verified: board-depth run → done, 6-dim radar with Regulatory 5.8, verdict 6.3 CONDITIONAL_GO, run persisted
+
+## Phase 3b — next
+Debate rounds on ConflictLog (war_room), gap-detector replay loop, Wealth/World/Markets clusters, boardroom `debate` events. Then Phase 4 Trading Co-Pilot.

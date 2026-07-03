@@ -90,9 +90,28 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         </div>
       </section>
 
-      {/* step 2 — engine */}
+      {/* step 2 — depth */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the engine</h2>
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+          {([
+            ["pulse", "Pulse", "11 specialists · ~2 min · the fast read"],
+            ["board", "Board Meeting", "19 specialists · full venture board + devil's advocate"],
+            ["war_room", "War Room", "full board · debate rounds land in Phase 3b"],
+          ] as const).map(([id, label, sub]) => (
+            <button key={id} onClick={() => set("depth", id)}
+              className={`rounded-lg border p-3 text-left transition ${
+                f.depth === id ? "border-cyan/70 bg-cyan/10" : "border-line bg-panel-2 hover:border-slate-500"}`}>
+              <div className="text-sm font-semibold">{label}</div>
+              <div className="font-mono text-[10px] text-muted">{sub}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* step 3 — engine */}
+      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Choose the engine</h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
             <span className="uppercase tracking-wider text-slate-500">server engines:</span>
@@ -148,7 +167,10 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* run bar */}
       <div className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl border border-line bg-panel/90 p-4 backdrop-blur">
         <span className="font-mono text-[11px] text-muted">
-          {ready ? "10 specialists ready · Pulse depth" : "describe your situation (≥ 20 chars) to begin"}
+          {ready
+            ? `${f.depth === "pulse" ? 11 : 19} specialists ready · ${
+                { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`
+            : "describe your situation (≥ 20 chars) to begin"}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
           className="rounded-lg bg-gradient-to-r from-brand to-cyan px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">

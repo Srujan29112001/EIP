@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
-from ..agents import venture as v
+from ..agents import board, venture as v
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -37,13 +37,22 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         await asyncio.gather(v.web_researcher(ctx), v.news_intel(ctx),
                              v.market_data(ctx), v.macro_data(ctx))
 
-        # L2 — domain analysis in parallel
-        await asyncio.gather(v.market_analyst(ctx), v.finance_modeler(ctx))
+        # L2 — domain analysis in parallel (depth-scoped: spine + board wave)
+        scoped = set(ctx.state.scope)
+        l2_extra = [fn for aid, fn in board.BOARD_AGENTS.items()
+                    if aid in scoped and aid not in ("devils_advocate", "connecting_dots")]
+        await asyncio.gather(v.market_analyst(ctx), v.finance_modeler(ctx),
+                             *(fn(ctx) for fn in l2_extra))
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
-        await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx))
+        crucible = [v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx)]
+        if "devils_advocate" in scoped:
+            crucible.append(board.devils_advocate(ctx))
+        await asyncio.gather(*crucible)
 
         # L4 — synthesis
+        if "connecting_dots" in scoped:
+            await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)
         await v.verdict_composer(ctx)
 

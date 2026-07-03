@@ -94,14 +94,19 @@ async def context_profiler(ctx: Ctx) -> None:
 async def scope_planner(ctx: Ctx) -> None:
     aid, layer = "scope_planner", "L0"
     await ctx.start(aid, layer)
-    # Phase 2: fixed venture spine + grounding/crucible wave. Depth/mode-aware
-    # scoping arrives with the full roster (Phase 3).
-    scope = ["web_researcher", "news_intel", "market_data", "macro_data",
+    depth = (ctx.state.raw.get("depth") or "pulse").lower()
+    spine = ["web_researcher", "news_intel", "market_data", "macro_data",
              "market_analyst", "finance_modeler",
              "red_team", "fact_checker", "bias_auditor",
              "weighing_engine", "verdict_composer"]
+    board_wave = ["competitor_intel", "gtm_distribution", "legal", "tax",
+                  "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
+    scope = spine if depth == "pulse" else spine + board_wave
+    label = {"pulse": "Pulse", "board": "Board Meeting", "war_room": "War Room"}.get(depth, "Pulse")
+    if depth == "war_room":
+        await ctx.emit.log(aid, "war-room debate rounds land in Phase 3b — full board scope for now", "muted")
     ctx.state.scope = scope
-    await ctx.emit.log(aid, f"convening {len(scope)} specialists for a Pulse run", "info")
+    await ctx.emit.log(aid, f"convening {len(scope)} specialists for a {label} run", "info")
     for s in scope:
         await ctx.emit.stage(s, "queued", "")
     await ctx.emit.partial("scope", scope)
@@ -525,18 +530,33 @@ async def weighing_engine(ctx: Ctx) -> None:
             timing += 0.5 if sec >= 15 else -0.5 if sec <= -10 else 0.0
         await ctx.emit.log(aid, f"timing inputs: index 1y {idx:+.1f}% · macro series {len(o.get('macro_data', {}).get('series') or [])}", "code")
 
+    def avg(agent_ids: list[str]) -> float | None:
+        """Mean of available agent scores, each less its red-team penalty."""
+        vals = [max(0.5, float(o[i]["score"]) - penalty(i)) for i in agent_ids
+                if isinstance(o.get(i), dict) and isinstance(o[i].get("score"), (int, float))]
+        return sum(vals) / len(vals) if vals else None
+
     dims = {
-        "Market": max(0.5, _num(market.get("score"), 5.0) - penalty("market_analyst")),
-        "Economics": max(0.5, _num(fin.get("score"), 5.0) - penalty("finance_modeler")),
-        "Evidence": round(evidence_dim, 1),
-        "Execution": 5.0,   # placeholder until GTM/HR agents land (Phase 3)
+        "Market": avg(["market_analyst", "competitor_intel", "industry_expert"]) or 5.0,
+        "Economics": avg(["finance_modeler", "tax"]) or 5.0,
+        "Evidence": evidence_dim,
+        "Execution": avg(["gtm_distribution"]) or 5.0,  # 5.0 = placeholder on Pulse depth
         "Timing": max(1.0, min(9.5, timing)),
     }
+    regulatory = avg(["policy_compliance", "legal"])
+    if regulatory is not None:
+        dims["Regulatory"] = regulatory
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}
     ctx.state.dimensions = dims
-    overall = round(
-        (dims["Market"] * 0.3 + dims["Economics"] * 0.3 + dims["Evidence"] * 0.15
-         + dims["Execution"] * 0.125 + dims["Timing"] * 0.125), 1)
+
+    # weights must sum to 1.0 in both depths (client What-If mirrors these — keep in sync)
+    if "Regulatory" in dims:
+        weights = {"Market": 0.25, "Economics": 0.25, "Regulatory": 0.125,
+                   "Evidence": 0.10, "Execution": 0.125, "Timing": 0.15}
+    else:
+        weights = {"Market": 0.3, "Economics": 0.3, "Evidence": 0.15,
+                   "Execution": 0.125, "Timing": 0.125}
+    overall = round(sum(dims[k] * w for k, w in weights.items()), 1)
 
     conf_spread = abs(_num(market.get("confidence"), 0.5) - _num(fin.get("confidence"), 0.5))
     for k, v in dims.items():

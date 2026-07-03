@@ -26,9 +26,12 @@ export function WhatIf() {
   const baseRaw = clamp(core.runway_months / 3.0, 1.0, 9.0);
   const penalty = baseRaw - (dims.Economics ?? baseRaw);
   const newEcon = clamp(clamp(runway / 3.0, 1.0, 9.0) - penalty, 0.5, 10);
-  const overall =
-    (dims.Market ?? 5) * 0.3 + newEcon * 0.3 + (dims.Evidence ?? 5) * 0.15 +
-    (dims.Execution ?? 5) * 0.125 + (dims.Timing ?? 5) * 0.125;
+  // weights mirror backend weighing_engine (6-dim when Regulatory present, else 5-dim)
+  const weights: Record<string, number> = "Regulatory" in dims
+    ? { Market: 0.25, Economics: 0.25, Regulatory: 0.125, Evidence: 0.10, Execution: 0.125, Timing: 0.15 }
+    : { Market: 0.3, Economics: 0.3, Evidence: 0.15, Execution: 0.125, Timing: 0.125 };
+  const overall = Object.entries(weights).reduce(
+    (sum, [k, w]) => sum + (k === "Economics" ? newEcon : dims[k] ?? 5) * w, 0);
   const delta = overall - (verdict.score ?? overall);
 
   const Slider = ({ label, value, min, max, step, onChange, unit }: {

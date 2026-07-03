@@ -33,16 +33,16 @@ ROSTER: list[AgentMeta] = [
     # L2 — Venture
     AgentMeta("market_analyst", "Market Analyst", "L2", "venture", "t2", "Market size, growth, competition — sourced", True),
     AgentMeta("finance_modeler", "Finance Modeler", "L2", "venture", "t2", "Unit economics, runway, breakeven — real math", True),
-    AgentMeta("competitor_intel", "Competitor Intelligence", "L2", "venture", "t2", "Positioning map and moat analysis"),
+    AgentMeta("competitor_intel", "Competitor Intelligence", "L2", "venture", "t2", "Positioning map and moat analysis", True),
     AgentMeta("business_model", "Business Model", "L2", "venture", "t2", "Canvas analysis + model recommendation"),
-    AgentMeta("gtm_distribution", "GTM & Distribution", "L2", "venture", "t2", "Channels, launch sequence, CAC reality"),
+    AgentMeta("gtm_distribution", "GTM & Distribution", "L2", "venture", "t2", "Channels, launch sequence, CAC reality", True),
     AgentMeta("marketing_strategy", "Marketing Strategist", "L2", "venture", "t2", "Brand, acquisition, growth loops"),
-    AgentMeta("legal", "Legal", "L2", "venture", "t2", "Contracts, structure, IP exposure"),
-    AgentMeta("tax", "Tax (India-first)", "L2", "venture", "t2", "GST, income tax, optimization"),
-    AgentMeta("policy_compliance", "Policy & Compliance", "L2", "venture", "t2", "Acts, rules, compliance calendar"),
+    AgentMeta("legal", "Legal", "L2", "venture", "t2", "Contracts, structure, IP exposure", True),
+    AgentMeta("tax", "Tax (India-first, True)", "L2", "venture", "t2", "GST, income tax, optimization"),
+    AgentMeta("policy_compliance", "Policy & Compliance", "L2", "venture", "t2", "Acts, rules, compliance calendar", True),
     AgentMeta("regulator", "Regulator Analysis", "L2", "venture", "t2", "SEBI / RBI / CCI / FSSAI exposure"),
     AgentMeta("subsidies_schemes", "Subsidies & Schemes", "L2", "venture", "t2", "Government money you are leaving on the table"),
-    AgentMeta("industry_expert", "Industry Expert", "L2", "venture", "t2", "Sector-specific dynamics and benchmarks"),
+    AgentMeta("industry_expert", "Industry Expert", "L2", "venture", "t2", "Sector-specific dynamics and benchmarks", True),
     AgentMeta("hr_talent", "HR & Talent", "L2", "venture", "t2", "Team, salaries, hiring plan"),
     AgentMeta("optimization_predictor", "Optimization Predictor", "L2", "venture", "t2", "Legal/tax optimizations and their risks"),
     # L2 — Markets
@@ -69,11 +69,11 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("esg_impact", "ESG & Impact", "L2", "world", "t2", "Sustainability, ethics, impact economics"),
     # L3 — Crucible
     AgentMeta("red_team", "Red Team", "L3", "crucible", "t3", "Attacks the thesis with evidence", True),
-    AgentMeta("devils_advocate", "Devil's Advocate", "L3", "crucible", "t3", "Steel-mans the NO case"),
+    AgentMeta("devils_advocate", "Devil's Advocate", "L3", "crucible", "t3", "Steel-mans the NO case", True),
     AgentMeta("bias_auditor", "Bias Auditor", "L3", "crucible", "t3", "Names the biases in your framing", True),
     AgentMeta("fact_checker", "Fact Checker", "L3", "crucible", "t2", "Spot-checks claims against the evidence board", True),
     # L4 — Synthesis
-    AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects"),
+    AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects", True),
     AgentMeta("weighing_engine", "Weighing Engine", "L4", "synthesis", "t0", "Deterministic scoring — disagreement preserved", True),
     AgentMeta("verdict_composer", "Verdict Composer", "L4", "synthesis", "t3", "The decision document, with sensitivities", True),
     # L5 — Memory

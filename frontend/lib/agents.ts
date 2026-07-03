@@ -39,11 +39,19 @@ export const AGENTS: AgentInfo[] = [
   // L2 — Domain analysis (violet family for venture cluster)
   { id: "market_analyst", name: "Market Analyst", layer: "L2", cluster: "venture", blurb: "Market size, growth, competition — sourced", accent: "#8b5cf6" },
   { id: "finance_modeler", name: "Finance Modeler", layer: "L2", cluster: "venture", blurb: "Unit economics, runway, breakeven — real math", accent: "#a78bfa" },
+  { id: "competitor_intel", name: "Competitor Intelligence", layer: "L2", cluster: "venture", blurb: "Positioning map, moats, whitespace", accent: "#7c3aed" },
+  { id: "gtm_distribution", name: "GTM & Distribution", layer: "L2", cluster: "venture", blurb: "Channels, launch sequence, CAC reality", accent: "#9333ea" },
+  { id: "legal", name: "Legal", layer: "L2", cluster: "venture", blurb: "Structure, contracts, IP exposure", accent: "#c084fc" },
+  { id: "tax", name: "Tax (India-first)", layer: "L2", cluster: "venture", blurb: "GST, exemptions, legitimate optimization", accent: "#a855f7" },
+  { id: "policy_compliance", name: "Policy & Compliance", layer: "L2", cluster: "venture", blurb: "Acts, licences, compliance calendar", accent: "#8b5cf6" },
+  { id: "industry_expert", name: "Industry Expert", layer: "L2", cluster: "venture", blurb: "Insider benchmarks and failure modes", accent: "#6d28d9" },
   // L3 — Crucible (red/orange family)
   { id: "red_team", name: "Red Team", layer: "L3", cluster: "crucible", blurb: "Attacks the thesis with evidence", accent: "#fb7185" },
   { id: "fact_checker", name: "Fact Checker", layer: "L3", cluster: "crucible", blurb: "Every claim must trace to the evidence board", accent: "#f97316" },
   { id: "bias_auditor", name: "Bias Auditor", layer: "L3", cluster: "crucible", blurb: "Names the biases in your framing", accent: "#fbbf24" },
+  { id: "devils_advocate", name: "Devil's Advocate", layer: "L3", cluster: "crucible", blurb: "Steel-mans the NO case", accent: "#f43f5e" },
   // L4 — Synthesis (gold family)
+  { id: "connecting_dots", name: "Connecting Dots", layer: "L4", cluster: "synthesis", blurb: "Cross-domain patterns and weak signals", accent: "#fde047" },
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
   { id: "verdict_composer", name: "Verdict Composer", layer: "L4", cluster: "synthesis", blurb: "The decision document, with sensitivities", accent: "#facc15" },
 ];

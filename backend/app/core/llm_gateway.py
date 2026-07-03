@@ -10,6 +10,7 @@ falls back to its deterministic core). The app must never blank on a missing key
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -207,6 +208,10 @@ async def _dispatch(provider: str, model: str, cfg: EngineConfig, system: str, u
 
 # ── public API ────────────────────────────────────────────────────────────────
 
+# process-wide: cloud providers rate-limit per key, not per run
+_CLOUD_SEM = asyncio.Semaphore(3)
+
+
 class Gateway:
     def __init__(self, cfg: EngineConfig | None = None) -> None:
         self.cfg = cfg or EngineConfig()
@@ -228,21 +233,25 @@ class Gateway:
     async def complete(self, tier: Tier, system: str, user: str,
                        max_tokens: int = 1200, temperature: float = 0.4) -> LLMResult:
         """Walk the degradation ladder. Returns LLMResult(ok=False) if nothing worked."""
-        import asyncio
-
         plan = _route_plan(tier, self.cfg, await self._local_ok())
         for provider, model in plan:
-            for attempt in (0, 1):
+            for attempt in (0, 1, 2):
                 try:
-                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    if provider in ("ollama", "lmstudio"):
+                        res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    else:
+                        # gate cloud concurrency — a parallel 8-agent wave on a
+                        # free-tier key otherwise 429s half the board
+                        async with _CLOUD_SEM:
+                            res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
                     if res.ok:
                         res.route = f"{provider}:{model}"
                         return res
                     break
                 except httpx.HTTPStatusError as e:
-                    # rate limit: one short backoff before falling down the ladder
-                    if e.response.status_code == 429 and attempt == 0:
-                        await asyncio.sleep(2.5)
+                    # rate limit: back off before falling down the ladder
+                    if e.response.status_code == 429 and attempt < 2:
+                        await asyncio.sleep(3.0 * (attempt + 1))
                         continue
                     break
                 except Exception:
