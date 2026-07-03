@@ -81,3 +81,47 @@ def sector_for(text: str) -> tuple[str, str] | None:
         if key in lower:
             return pair
     return None
+
+
+# ── Trader mode: full OHLCV history + fundamentals ───────────────────────────
+
+def resolve_symbol(raw: str, geography: str = "India") -> str:
+    """'reliance' → 'RELIANCE.NS'; passes through anything already qualified."""
+    s = raw.strip().upper().replace(" ", "")
+    if not s:
+        return ""
+    if "." in s or "^" in s or "-" in s or "=" in s:
+        return s
+    return f"{s}.NS" if geography == "India" else s
+
+
+def _history_sync(symbol: str, period: str, interval: str) -> dict[str, Any]:
+    import yfinance as yf
+    t = yf.Ticker(symbol)
+    df = t.history(period=period, interval=interval, auto_adjust=True)
+    if df.empty or len(df) < 30:
+        return {}
+    ohlcv = [[idx.strftime("%Y-%m-%d"), round(float(r.Open), 2), round(float(r.High), 2),
+              round(float(r.Low), 2), round(float(r.Close), 2), int(r.Volume)]
+             for idx, r in df.tail(280).iterrows()]
+    info: dict[str, Any] = {}
+    try:
+        raw = t.info or {}
+        info = {k: raw.get(k) for k in (
+            "longName", "sector", "industry", "marketCap", "trailingPE", "forwardPE",
+            "priceToBook", "dividendYield", "beta", "fiftyTwoWeekHigh", "fiftyTwoWeekLow",
+            "revenueGrowth", "profitMargins", "debtToEquity", "currency",
+        ) if raw.get(k) is not None}
+    except Exception:
+        pass  # fundamentals are a bonus, never a blocker
+    return {
+        "symbol": symbol, "ohlcv": ohlcv, "info": info,
+        "source_url": f"https://finance.yahoo.com/quote/{symbol}",
+    }
+
+
+async def full_history(symbol: str, period: str = "2y", interval: str = "1d") -> dict[str, Any]:
+    try:
+        return await asyncio.wait_for(asyncio.to_thread(_history_sync, symbol, period, interval), timeout=30)
+    except Exception:
+        return {}

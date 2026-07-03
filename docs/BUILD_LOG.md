@@ -68,5 +68,16 @@ Deep extraction pass over all 4 inspiration apps (Helix per-agent AI config + pi
 - [x] `debate` SSE event + `debate_rounds`: top-3 landed attacks go to open debate — the attacked analyst rebuts or concedes (concession lowers its confidence); Boardroom renders attack/rebuttal/concession turns
 - Verified with Groq: finance_modeler + market_analyst produced real rebuttals citing their own evidence
 
+## Design polish — SRUJAN.K aesthetic layer (2026-07-03, feedback round 2)
+- [x] Aurora background drift + animated film grain + scanlines (dialed for legibility); panel hover lift/glow; holographic hero text; staged rise-in entrances; ambient agent constellation on the landing hero (pure SVG/CSS)
+- [x] Interactive radar: hover an axis → highlights + chips showing exactly which agents scored that dimension (mirror of the weighing map)
+
+## Phase 4 — Trading Co-Pilot (built 2026-07-03)
+- [x] **Engines (t0, pure pandas):** `engine/indicators.py` (SMA/EMA/RSI/MACD/Bollinger/ATR, swing S/R, per-reading bullish/bearish verdicts, deterministic trend+momentum scores) · `engine/backtest.py` (BacktestEngine port: SMA-cross + RSI-reversion, hit rate, returns vs buy&hold, max drawdown, sample-size honesty)
+- [x] **Markets cluster (`agents/markets.py`):** Market History (2y OHLCV + fundamentals → sourced claims + chart series), Technical Analyst (t0), Backtest Engineer (t0 — every strategy proves itself on the symbol's own history before Quant Signals may speak), Quant Signals (ensemble vote → setup quality + agreement), Risk Manager (t0 — position sizing, 2×ATR stop, max-loss banner), Stock Analyst (t2 valuation narrative)
+- [x] **Trading pipeline (`graphs/trading.py`):** trader intake → history+news+macro → deterministic chain → crucible (red team/fact checker/bias auditor reused) → trader weighing (Trend/Momentum/Value/History/RiskFit) → educational setup verdict (FAVOURABLE/MIXED/UNFAVOURABLE — never buy/sell, never price predictions, SEBI framing throughout)
+- [x] **Frontend:** Founder/Trader mode tabs; trader intake (symbol, style, capital, risk% slider, compliance note); Trade Desk results card (setup + votes + S/R levels, position plan, backtest proof-of-work table, honesty card); MarketSim/ScoreSim/graph/pipeline all work in trader mode unchanged
+- Verified live on RELIANCE.NS via Groq: real SMA/RSI reads, 2y backtests with thin-sample flags, ₹3,000-max-loss position plan, 5.7/10 MIXED_SETUP, persisted to history
+
 ## Next
-Phase 3b (part 2): gap-detector replay loop, Wealth/World/Markets clusters. Phase 4: Trading Co-Pilot desk (reuses TimeSeries + flow/graph components). Phase 5: Ask-the-Board grounded chat + outcome tracking. Phase 6: deploy (Vercel + HF Space).
+Phase 3b part 2 (gap-detector replay, Wealth/World clusters), Phase 5 (Ask-the-Board grounded chat, outcome tracking), Phase 6 (deploy — Vercel + HF Space, has manual user steps). Options/futures education mode and broker deep-links remain post-launch per MASTER_PLAN §5.4.

@@ -45,6 +45,12 @@ export const AGENTS: AgentInfo[] = [
   { id: "tax", name: "Tax (India-first)", layer: "L2", cluster: "venture", blurb: "GST, exemptions, legitimate optimization", accent: "#a855f7" },
   { id: "policy_compliance", name: "Policy & Compliance", layer: "L2", cluster: "venture", blurb: "Acts, licences, compliance calendar", accent: "#8b5cf6" },
   { id: "industry_expert", name: "Industry Expert", layer: "L2", cluster: "venture", blurb: "Insider benchmarks and failure modes", accent: "#6d28d9" },
+  // L2 — Markets cluster (green family — the Trading Co-Pilot)
+  { id: "technical_analyst", name: "Technical Analyst", layer: "L2", cluster: "markets", blurb: "Indicators, levels, multi-signal read — pure math", accent: "#34d399" },
+  { id: "stock_analyst", name: "Stock Analyst", layer: "L2", cluster: "markets", blurb: "Fundamentals + what the market is pricing in", accent: "#6ee7b7" },
+  { id: "backtest_engineer", name: "Backtest Engineer", layer: "L2", cluster: "markets", blurb: "Every signal proves itself on history first", accent: "#10b981" },
+  { id: "quant_signals", name: "Quant Signals", layer: "L2", cluster: "markets", blurb: "Regime + ensemble vote → setup quality", accent: "#2dd4bf" },
+  { id: "risk_manager", name: "Risk Manager", layer: "L2", cluster: "markets", blurb: "Position sizing, stops, exposure — always on", accent: "#059669" },
   // L3 — Crucible (red/orange family)
   { id: "red_team", name: "Red Team", layer: "L3", cluster: "crucible", blurb: "Attacks the thesis with evidence", accent: "#fb7185" },
   { id: "fact_checker", name: "Fact Checker", layer: "L3", cluster: "crucible", blurb: "Every claim must trace to the evidence board", accent: "#f97316" },

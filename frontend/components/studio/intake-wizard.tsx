@@ -17,6 +17,10 @@ const DEFAULTS: IntakeForm = {
   uncertainty: "",
   depth: "pulse",
   agents_enabled: [],
+  symbol: "",
+  trading_style: "swing",
+  capital: 100000,
+  risk_pct: 1.0,
   engine: {
     compute: "auto", provider: "", api_key: "", model: "",
     api_keys: {}, agent_routes: {}, temperature: null, max_tokens_cap: 0,
@@ -36,19 +40,70 @@ const selectCls =
 export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void; engine?: EngineStatus | null }) {
   const [f, setF] = useState<IntakeForm>(DEFAULTS);
   const set = <K extends keyof IntakeForm>(k: K, v: IntakeForm[K]) => setF((p) => ({ ...p, [k]: v }));
-  const ready = f.situation.trim().length >= 20;
+  const trader = f.mode === "trader";
+  const ready = trader ? f.symbol.trim().length >= 2 : f.situation.trim().length >= 20;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <h1 className="font-display text-3xl font-bold">
-        Convene your <span className="bg-gradient-to-r from-brand to-cyan bg-clip-text text-transparent">board</span>
+        Convene your <span className="holo-text">board</span>
       </h1>
       <p className="mt-1 text-sm text-slate-400">
         Describe the situation like you would to a smart friend. The board does the rest — live data, real math, open argument.
       </p>
 
-      {/* step 1 — situation */}
-      <section className="mt-8 rounded-xl border border-line bg-panel p-5">
+      {/* mode tabs */}
+      <div className="mt-6 flex gap-2">
+        {([["founder", "🚀 Founder", "validate an idea or dilemma"],
+           ["trader", "📈 Trader", "analyse any listed stock"]] as const).map(([id, label, sub]) => (
+          <button key={id} onClick={() => set("mode", id)}
+            className={`flex-1 rounded-xl border p-3 text-left transition ${
+              f.mode === id ? "border-cyan/70 bg-cyan/10" : "border-line bg-panel hover:border-slate-500"}`}>
+            <div className="text-sm font-semibold">{label}</div>
+            <div className="font-mono text-[10px] text-muted">{sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* step 1 — trader: the symbol IS the situation */}
+      {trader && (
+        <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · What are you looking at?</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Field label="Symbol (NSE default)">
+              <input value={f.symbol} onChange={(e) => set("symbol", e.target.value.toUpperCase())}
+                placeholder="RELIANCE · TCS · AAPL" className={selectCls} />
+            </Field>
+            <Field label="Style">
+              <select value={f.trading_style}
+                onChange={(e) => set("trading_style", e.target.value as IntakeForm["trading_style"])}
+                className={selectCls}>
+                <option value="intraday">intraday</option>
+                <option value="swing">swing</option>
+                <option value="position">position</option>
+                <option value="options_edu">options (education)</option>
+              </select>
+            </Field>
+            <Field label="Capital (₹)">
+              <input type="number" min={1000} step={1000} value={f.capital}
+                onChange={(e) => set("capital", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label={`Risk per trade · ${f.risk_pct}%`}>
+              <input type="range" min={0.25} max={5} step={0.25} value={f.risk_pct}
+                onChange={(e) => set("risk_pct", Number(e.target.value))}
+                className="mt-3 w-full accent-[#06b6d4]" />
+            </Field>
+          </div>
+          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
+            EIP analyses setups and teaches — it never tells you to buy or sell, never predicts prices,
+            never executes. Not SEBI-registered advice. Decisions and outcomes are yours.
+          </p>
+        </section>
+      )}
+
+      {/* step 1 — founder: the situation */}
+      {!trader && (
+      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · What&apos;s the situation?</h2>
         <textarea
           value={f.situation}
@@ -94,15 +149,17 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
           </Field>
         </div>
       </section>
+      )}
 
-      {/* step 2 — depth */}
+      {/* step 2 — depth (founder mode; the trader desk is a fixed 13-agent crew) */}
+      {!trader && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
             ["pulse", "Pulse", "11 specialists · ~2 min · the fast read"],
             ["board", "Board Meeting", "19 specialists · full venture board + devil's advocate"],
-            ["war_room", "War Room", "full board · debate rounds land in Phase 3b"],
+            ["war_room", "War Room", "full board + live debate rounds"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -113,17 +170,22 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
           ))}
         </div>
       </section>
+      )}
 
       {/* step 3 — your board (hand-pick the employees) */}
+      {!trader && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Pick your board</h2>
         <BoardPicker depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)} />
       </section>
+      )}
 
-      {/* step 4 — engine */}
+      {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">04 · Choose the engine</h2>
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
+          {trader ? "02" : "04"} · Choose the engine
+        </h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
             <span className={`rounded border px-1.5 py-0.5 ${
@@ -138,10 +200,12 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* run bar */}
       <div className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl border border-line bg-panel/90 p-4 backdrop-blur">
         <span className="font-mono text-[11px] text-muted">
-          {ready
-            ? `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : 19} specialists ready · ${
-                { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`
-            : "describe your situation (≥ 20 chars) to begin"}
+          {!ready
+            ? trader ? "enter a symbol to begin" : "describe your situation (≥ 20 chars) to begin"
+            : trader
+              ? `13 specialists ready · Trader desk · ${f.symbol}`
+              : `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : 19} specialists ready · ${
+                  { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
           className="rounded-lg bg-gradient-to-r from-brand to-cyan px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">

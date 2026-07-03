@@ -13,6 +13,7 @@ from fastapi import HTTPException
 
 from ..agents.registry import ROSTER
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
+from ..graphs.trading import run_trading
 from ..graphs.venture import run_venture
 from ..core.events import Emitter
 from ..memory import store
@@ -31,6 +32,11 @@ class RunRequest(BaseModel):
     uncertainty: str = ""
     depth: str = "pulse"                 # pulse | board | war_room
     agents_enabled: list[str] = Field(default_factory=list)  # empty = full scope for depth
+    # trader mode
+    symbol: str = ""
+    trading_style: str = "swing"         # intraday | swing | position | options_edu
+    capital: float = 100000.0
+    risk_pct: float = 1.0
     engine: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -42,7 +48,8 @@ _TASKS: set[asyncio.Task] = set()
 async def run(req: RunRequest) -> StreamingResponse:
     run_id = uuid.uuid4().hex[:12]
     emitter = Emitter()
-    task = asyncio.create_task(run_venture(run_id, req.model_dump(), emitter))
+    pipeline = run_trading if req.mode == "trader" else run_venture
+    task = asyncio.create_task(pipeline(run_id, req.model_dump(), emitter))
     _TASKS.add(task)
     task.add_done_callback(_TASKS.discard)
 

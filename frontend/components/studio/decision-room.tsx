@@ -10,6 +10,7 @@ import { AgentAccordion } from "./agent-accordion";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
 import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
+import { TradeDesk } from "./trade-desk";
 
 const BAND_STYLE: Record<string, { label: string; cls: string }> = {
   GO: { label: "GO", cls: "text-ok border-ok/40 bg-ok/10" },
@@ -135,6 +136,7 @@ export function DecisionRoom() {
       </div>
 
       <Disagreements />
+      <TradeDesk />
 
       {/* the simulation layer — bend every insight and watch the math move */}
       <RunwaySim />

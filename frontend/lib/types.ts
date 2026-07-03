@@ -28,6 +28,11 @@ export interface IntakeForm {
   depth: "pulse" | "board" | "war_room";
   /** empty = the full scope for the chosen depth; else the hand-picked board */
   agents_enabled: string[];
+  /** trader mode */
+  symbol: string;
+  trading_style: "intraday" | "swing" | "position" | "options_edu";
+  capital: number;
+  risk_pct: number;
   engine: EngineSelection;
 }
 
