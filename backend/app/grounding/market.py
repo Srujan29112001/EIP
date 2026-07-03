@@ -56,10 +56,14 @@ def _pulse_sync(symbol: str, label: str) -> dict[str, Any]:
     # annualised volatility from daily returns
     daily = close.pct_change().dropna()
     vol = float(daily.std()) * (252 ** 0.5) * 100 if len(daily) > 10 else 0.0
+    # ~weekly sampled series → the frontend's interactive past/future chart
+    weekly = close.iloc[::5]
+    series = [[idx.strftime("%Y-%m-%d"), round(float(val), 2)] for idx, val in weekly.items()][-60:]
     return {
         "symbol": symbol, "label": label, "last": round(last, 2),
         "ret_1y_pct": round(ret_1y, 1), "ret_3m_pct": round(ret_3m, 1),
         "volatility_pct": round(vol, 1),
+        "series": series,
         "source_url": f"https://finance.yahoo.com/quote/{symbol}",
     }
 

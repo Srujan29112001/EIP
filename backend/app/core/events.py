@@ -40,6 +40,11 @@ class Emitter:
     async def conflict(self, a: str, b: str, topic: str) -> None:
         await self.queue.put({"type": "conflict", "a": a, "b": b, "topic": topic})
 
+    async def prompt(self, agent: str, system: str, user: str) -> None:
+        """Radical transparency: the exact prompt an agent sends to its model."""
+        await self.queue.put({"type": "prompt", "agent": agent,
+                              "system": system[:1600], "user": user[:2800]})
+
     async def bias(self, target: str, bias: str, note: str) -> None:
         await self.queue.put({"type": "bias", "target": target, "bias": bias, "note": note})
 

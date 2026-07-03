@@ -53,7 +53,7 @@ async def intake_parser(ctx: Ctx) -> None:
         f"geography={raw.get('geography','India')} stage={raw.get('stage','')} "
         f"budget={raw.get('budget_band','')} team={raw.get('team_size','')} "
         f"biggest_uncertainty={raw.get('uncertainty','')}",
-        schema,
+        schema, agent=aid,
     )
     if data:
         for k, v in data.items():
@@ -105,6 +105,18 @@ async def scope_planner(ctx: Ctx) -> None:
     label = {"pulse": "Pulse", "board": "Board Meeting", "war_room": "War Room"}.get(depth, "Pulse")
     if depth == "war_room":
         await ctx.emit.log(aid, "war-room debate rounds land in Phase 3b — full board scope for now", "muted")
+
+    # the user can hand-pick the board (agent toggles in the wizard); the
+    # synthesis layer is never optional — someone has to sign the verdict
+    enabled = set(ctx.state.raw.get("agents_enabled") or [])
+    if enabled:
+        mandatory = {"weighing_engine", "verdict_composer"}
+        dropped = [a for a in scope if a not in enabled and a not in mandatory]
+        scope = [a for a in scope if a in enabled or a in mandatory]
+        if dropped:
+            await ctx.emit.log(aid, f"benched by you: {', '.join(dropped)}", "muted")
+            for d in dropped:
+                await ctx.emit.stage(d, "skipped", "")
     ctx.state.scope = scope
     await ctx.emit.log(aid, f"convening {len(scope)} specialists for a {label} run", "info")
     for s in scope:
@@ -232,12 +244,13 @@ def _num(value: Any, default: float) -> float:
 
 async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
                            fallback: dict[str, Any]) -> dict[str, Any]:
+    system_full = (system + " Cite evidence-board items when possible; any uninvented figure "
+                   "must be tagged ESTIMATE. Be specific, never generic.")
+    user_full = (f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
+                 f"EVIDENCE BOARD:\n{ctx.state.evidence_digest()}\n\nTASK: {ask}")
+    await ctx.emit.prompt(aid, system_full, user_full)   # glass box: show the exact prompt
     data, res = await ctx.llm.structured(
-        "t2", system + " Cite evidence-board items when possible; any uninvented figure "
-        "must be tagged ESTIMATE. Be specific, never generic.",
-        f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
-        f"EVIDENCE BOARD:\n{ctx.state.evidence_digest()}\n\nTASK: {ask}",
-        _ANALYSIS_SCHEMA, max_tokens=900,
+        "t2", system_full, user_full, _ANALYSIS_SCHEMA, max_tokens=900, agent=aid,
     )
     if data and isinstance(data.get("score"), (int, float)):
         for k, v in fallback.items():          # partial LLM output inherits fallback keys
@@ -336,7 +349,7 @@ async def red_team(ctx: Ctx) -> None:
         f"BRIEF: {ctx.state.brief}\nANALYST OUTPUTS: {outputs}\n"
         f"EVIDENCE:\n{ctx.state.evidence_digest()}\n"
         "Produce the 3 strongest attacks and the single most likely kill risk.",
-        schema, max_tokens=800,
+        schema, max_tokens=800, agent=aid,
     )
     if data:
         # untrusted LLM shape: attacks must be dicts, severity numeric
@@ -405,7 +418,7 @@ async def fact_checker(ctx: Ctx) -> None:
         "You are a fact checker. For each analyst claim, judge ONLY from the evidence provided — "
         "supported / partly / unsupported / contradicted. Never assume outside knowledge.",
         f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(20)}\n\nCLAIMS:\n" + "\n".join(claims),
-        schema, max_tokens=700,
+        schema, max_tokens=700, agent=aid,
     )
     checks = data.get("checks") if data else None
     if checks and isinstance(checks, list):
@@ -474,7 +487,7 @@ async def bias_auditor(ctx: Ctx) -> None:
         "FRAMING of their situation (not in the idea itself). Only report biases with a verbatim quote "
         "as evidence. Empty list if the framing is clean.",
         f"FOUNDER'S FRAMING:\n{framing[:1200]}\n\nPROFILE: {ctx.state.profile}",
-        schema, max_tokens=600,
+        schema, max_tokens=600, agent=aid,
     )
     if data and isinstance(data.get("biases"), list):
         llm_findings = [b for b in data["biases"] if isinstance(b, dict) and b.get("bias")][:5]
@@ -619,7 +632,7 @@ async def verdict_composer(ctx: Ctx) -> None:
         f"ANALYST SUMMARIES: {compact}\n"
         f"RED TEAM ATTACKS: {[{'target': a.get('target_agent'), 'attack': str(a.get('attack',''))[:140], 'severity': a.get('severity')} for a in ctx.state.conflicts[:4]]}\n"
         f"EVIDENCE:\n{ctx.state.evidence_digest(10)}",
-        _VERDICT_SCHEMA, max_tokens=1100,
+        _VERDICT_SCHEMA, max_tokens=1100, agent=aid,
     )
     if data:
         data["recommendation"] = data.get("recommendation") or band

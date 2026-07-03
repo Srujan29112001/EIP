@@ -31,6 +31,10 @@ class EngineConfig:
     api_key: str = ""                # BYOK from the UI (never persisted)
     model: str = ""                  # explicit model override
     routes: dict[str, str] = field(default_factory=dict)  # tier → "provider:model"
+    api_keys: dict[str, str] = field(default_factory=dict)     # provider → key (multi-BYOK)
+    agent_routes: dict[str, str] = field(default_factory=dict)  # agent_id → "provider:model"
+    temperature: float | None = None  # global override (per-call default when None)
+    max_tokens_cap: int = 0           # 0 = no cap; else clamp every call
 
 
 @dataclass
@@ -45,13 +49,15 @@ class LLMResult:
 
 
 def _key_for(provider: str, cfg: EngineConfig) -> str:
+    if cfg.api_keys.get(provider):
+        return cfg.api_keys[provider]
     if cfg.provider == provider and cfg.api_key:
         return cfg.api_key
     return getattr(settings, f"{provider}_api_key", "")
 
 
 def _available_cloud(cfg: EngineConfig) -> list[str]:
-    order = ["anthropic", "openai", "google", "groq", "deepseek", "openrouter"]
+    order = ["anthropic", "openai", "google", "groq", "deepseek", "openrouter", "mistral", "xai"]
     if cfg.provider in order:  # user's pick first
         order.remove(cfg.provider)
         order.insert(0, cfg.provider)
@@ -76,8 +82,8 @@ async def local_models() -> list[str]:
         return []
 
 
-def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool) -> list[tuple[str, str]]:
-    """Ordered (provider, model) candidates for a tier."""
+def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "") -> list[tuple[str, str]]:
+    """Ordered (provider, model) candidates for a tier (per-agent route wins)."""
     plan: list[tuple[str, str]] = []
 
     def parse(route: str) -> tuple[str, str] | None:
@@ -86,8 +92,9 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool) -> list[tuple[st
         p, m = route.split(":", 1)
         return (p.strip(), m.strip())
 
-    # explicit route (request beats env)
-    explicit = parse(cfg.routes.get(tier, "")) or parse(getattr(settings, f"{tier}_route", ""))
+    # precedence: per-agent route → per-tier request route → env route
+    explicit = (parse(cfg.agent_routes.get(agent, "")) if agent else None) \
+        or parse(cfg.routes.get(tier, "")) or parse(getattr(settings, f"{tier}_route", ""))
     if explicit:
         plan.append(explicit)
 
@@ -187,6 +194,8 @@ _OPENAI_COMPAT_BASES = {
     "deepseek": "https://api.deepseek.com/v1",
     "groq": "https://api.groq.com/openai/v1",
     "openrouter": "https://openrouter.ai/api/v1",
+    "mistral": "https://api.mistral.ai/v1",
+    "xai": "https://api.x.ai/v1",
 }
 
 
@@ -231,9 +240,14 @@ class Gateway:
         }
 
     async def complete(self, tier: Tier, system: str, user: str,
-                       max_tokens: int = 1200, temperature: float = 0.4) -> LLMResult:
+                       max_tokens: int = 1200, temperature: float = 0.4,
+                       agent: str = "") -> LLMResult:
         """Walk the degradation ladder. Returns LLMResult(ok=False) if nothing worked."""
-        plan = _route_plan(tier, self.cfg, await self._local_ok())
+        if self.cfg.temperature is not None:
+            temperature = max(0.0, min(1.5, self.cfg.temperature))
+        if self.cfg.max_tokens_cap:
+            max_tokens = min(max_tokens, self.cfg.max_tokens_cap)
+        plan = _route_plan(tier, self.cfg, await self._local_ok(), agent)
         for provider, model in plan:
             for attempt in (0, 1, 2):
                 try:
@@ -259,13 +273,13 @@ class Gateway:
         return LLMResult(text="", route="none")
 
     async def structured(self, tier: Tier, system: str, user: str, schema_hint: str,
-                         max_tokens: int = 1200) -> tuple[dict[str, Any] | None, LLMResult]:
+                         max_tokens: int = 1200, agent: str = "") -> tuple[dict[str, Any] | None, LLMResult]:
         """JSON-schema-shaped output with one repair retry, then regex extraction."""
         prompt = (
             f"{user}\n\nRespond with ONLY a JSON object matching exactly this shape "
             f"(no markdown fences, no commentary):\n{schema_hint}"
         )
-        res = await self.complete(tier, system, prompt, max_tokens=max_tokens, temperature=0.2)
+        res = await self.complete(tier, system, prompt, max_tokens=max_tokens, temperature=0.2, agent=agent)
         for attempt in range(2):
             data = _extract_json(res.text)
             if data is not None:
@@ -275,7 +289,7 @@ class Gateway:
                     tier, system,
                     f"Convert this into ONLY the valid JSON object described "
                     f"({schema_hint}). Text:\n{res.text[:3000]}",
-                    max_tokens=max_tokens, temperature=0.0,
+                    max_tokens=max_tokens, temperature=0.0, agent=agent,
                 )
         return None, res
 

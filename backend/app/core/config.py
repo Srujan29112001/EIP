@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     groq_api_key: str = ""
     openrouter_api_key: str = ""
+    mistral_api_key: str = ""
+    xai_api_key: str = ""
 
     # explicit tier routes, "provider:model" (model may itself contain ':')
     t1_route: str = ""
@@ -43,4 +45,6 @@ DEFAULT_MODELS: dict[str, str] = {
     "deepseek": "deepseek-chat",
     "groq": "llama-3.3-70b-versatile",
     "openrouter": "deepseek/deepseek-chat",
+    "mistral": "mistral-large-latest",
+    "xai": "grok-4",
 }

@@ -30,6 +30,7 @@ class RunRequest(BaseModel):
     team_size: str = ""
     uncertainty: str = ""
     depth: str = "pulse"                 # pulse | board | war_room
+    agents_enabled: list[str] = Field(default_factory=list)  # empty = full scope for depth
     engine: dict[str, Any] = Field(default_factory=dict)
 
 

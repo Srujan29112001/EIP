@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Cpu, Rocket, Sparkles, Zap } from "lucide-react";
 import type { EngineStatus } from "@/lib/api";
 import type { IntakeForm } from "@/lib/types";
+import { BoardPicker } from "./board-picker";
+import { EnginePanel } from "./engine-panel";
 
 const DEFAULTS: IntakeForm = {
   mode: "founder",
@@ -15,7 +16,11 @@ const DEFAULTS: IntakeForm = {
   team_size: "solo",
   uncertainty: "",
   depth: "pulse",
-  engine: { compute: "auto", provider: "", api_key: "", model: "" },
+  agents_enabled: [],
+  engine: {
+    compute: "auto", provider: "", api_key: "", model: "",
+    api_keys: {}, agent_routes: {}, temperature: null, max_tokens_cap: 0,
+  },
 };
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -109,66 +114,32 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         </div>
       </section>
 
-      {/* step 3 — engine */}
+      {/* step 3 — your board (hand-pick the employees) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Choose the engine</h2>
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Pick your board</h2>
+        <BoardPicker depth={f.depth} enabled={f.agents_enabled}
+          onChange={(ids) => set("agents_enabled", ids)} />
+      </section>
+
+      {/* step 4 — engine */}
+      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">04 · Choose the engine</h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
-            <span className="uppercase tracking-wider text-slate-500">server engines:</span>
-            {engine.cloud.map((p) => (
-              <span key={p} className="rounded border border-ok/40 bg-ok/10 px-1.5 py-0.5 text-ok">{p} ✓</span>
-            ))}
             <span className={`rounded border px-1.5 py-0.5 ${
               engine.local ? "border-ok/40 bg-ok/10 text-ok" : "border-line text-slate-600"}`}>
               local gpu ({engine.local_model}) {engine.local ? "✓" : "not detected"}
             </span>
-            {engine.cloud.length === 0 && !engine.local && (
-              <span className="text-slate-500">none — deterministic cores only, add a key below</span>
-            )}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          {([
-            ["auto", "Auto", Sparkles, "best available"],
-            ["local", "Local GPU", Cpu, "private · free · Ollama"],
-            ["cloud", "My API key", Zap, "full depth"],
-            ["demo", "Demo", Rocket, "zero keys · simulated"],
-          ] as const).map(([id, label, Icon, sub]) => (
-            <button key={id} onClick={() => setF((p) => ({ ...p, engine: { ...p.engine, compute: id } }))}
-              className={`rounded-lg border p-3 text-left transition ${
-                f.engine.compute === id ? "border-cyan/70 bg-cyan/10" : "border-line bg-panel-2 hover:border-slate-500"}`}>
-              <Icon size={15} className="mb-1 text-cyan" />
-              <div className="text-sm font-semibold">{label}</div>
-              <div className="font-mono text-[10px] text-muted">{sub}</div>
-            </button>
-          ))}
-        </div>
-        {f.engine.compute === "cloud" && (
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <Field label="Provider">
-              <select value={f.engine.provider}
-                onChange={(e) => setF((p) => ({ ...p, engine: { ...p.engine, provider: e.target.value } }))}
-                className={selectCls}>
-                <option value="">choose…</option>
-                {["anthropic", "openai", "google", "deepseek", "groq", "openrouter"].map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="API key (never stored)">
-              <input type="password" value={f.engine.api_key}
-                onChange={(e) => setF((p) => ({ ...p, engine: { ...p.engine, api_key: e.target.value } }))}
-                placeholder="sk-…" className={selectCls} />
-            </Field>
-          </div>
-        )}
+        <EnginePanel engine={f.engine} onChange={(e) => set("engine", e)} status={engine} />
       </section>
 
       {/* run bar */}
       <div className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl border border-line bg-panel/90 p-4 backdrop-blur">
         <span className="font-mono text-[11px] text-muted">
           {ready
-            ? `${f.depth === "pulse" ? 11 : 19} specialists ready · ${
+            ? `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : 19} specialists ready · ${
                 { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`
             : "describe your situation (≥ 20 chars) to begin"}
         </span>

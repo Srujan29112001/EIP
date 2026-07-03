@@ -1,0 +1,177 @@
+"use client";
+
+/** Pipeline v2 — Helix-grade stage cards. Every agent gets a card showing:
+ * what went in, its live terminal log, the EXACT prompt it sent its model
+ * (radical transparency), and what came out. Connector lines fill as data
+ * flows down the pipeline.
+ */
+
+import { useState } from "react";
+import { Check, ChevronDown, Eye, Loader2, X } from "lucide-react";
+import { AGENTS, agentById } from "@/lib/agents";
+import { useRun } from "@/lib/store";
+import type { AgentOutput, LogKind, StageStatus } from "@/lib/types";
+
+const KIND_CLS: Record<LogKind, string> = {
+  info: "text-slate-300", code: "text-cyan/90", ok: "text-ok",
+  err: "text-err", warn: "text-warn", muted: "text-slate-500",
+};
+
+/** what goes in / what comes out, per agent (Helix STAGE_IO idiom) */
+const STAGE_IO: Record<string, { in: string; out: string }> = {
+  intake_parser: { in: "Your raw description", out: "Structured brief" },
+  context_profiler: { in: "Brief", out: "Who is asking — capital, risk, stage" },
+  scope_planner: { in: "Brief + depth + your toggles", out: "The convened board" },
+  web_researcher: { in: "Brief keywords", out: "Sourced web evidence" },
+  news_intel: { in: "Industry + geography", out: "Live headlines on the board" },
+  market_data: { in: "Geography + sector", out: "Index & sector pulse (yfinance)" },
+  macro_data: { in: "Geography", out: "GDP · inflation · rates (World Bank)" },
+  market_analyst: { in: "Brief + evidence board", out: "Market score + analysis" },
+  finance_modeler: { in: "Budget + team", out: "Runway math + economics score" },
+  competitor_intel: { in: "Evidence board", out: "Positioning, moats, whitespace" },
+  gtm_distribution: { in: "Brief + team + stage", out: "Channels + execution score" },
+  legal: { in: "Brief", out: "Structure + legal exposure" },
+  tax: { in: "Brief + geography", out: "GST posture + optimization" },
+  policy_compliance: { in: "Evidence board", out: "Acts, licences, compliance" },
+  industry_expert: { in: "Brief + evidence", out: "Insider benchmarks" },
+  red_team: { in: "All analyst outputs", out: "Evidence-backed attacks" },
+  fact_checker: { in: "Claims vs evidence board", out: "supported / unsupported verdicts" },
+  bias_auditor: { in: "Your own framing", out: "Named biases with quotes" },
+  devils_advocate: { in: "All outputs", out: "The steel-manned NO case" },
+  connecting_dots: { in: "Every domain verdict", out: "Cross-domain patterns" },
+  weighing_engine: { in: "Scores × penalties × evidence", out: "Deterministic weighted verdict" },
+  verdict_composer: { in: "The weighed number", out: "The decision document" },
+};
+
+function StatusBadge({ status, accent }: { status: StageStatus; accent: string }) {
+  if (status === "active")
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[9px]"
+      style={{ color: accent, background: `${accent}24` }}><Loader2 size={11} className="animate-spin" /> running</span>;
+  if (status === "done")
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok/15 px-2 py-0.5 font-mono text-[9px] text-ok"><Check size={11} /> done</span>;
+  if (status === "error")
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-err/15 px-2 py-0.5 font-mono text-[9px] text-err"><X size={11} /> error</span>;
+  if (status === "skipped")
+    return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[9px] text-slate-500">benched</span>;
+  return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800/60 px-2 py-0.5 font-mono text-[9px] text-slate-500">queued</span>;
+}
+
+export function StageCards() {
+  const { agentStatus, logs, prompts, agentOutputs, scope, brief } = useRun();
+  const [openPrompt, setOpenPrompt] = useState<string | null>(null);
+
+  const order = scope.length
+    ? scope.filter((id) => id !== "scope_planner")
+    : AGENTS.map((a) => a.id);
+  const cards = ["intake_parser", "context_profiler", "scope_planner",
+    ...order.filter((id) => !["intake_parser", "context_profiler", "scope_planner"].includes(id))]
+    .filter((id, i, arr) => arr.indexOf(id) === i)
+    .filter((id) => agentStatus[id] || logs.some((l) => l.agent === id));
+
+  const logsByAgent = logs.reduce<Record<string, typeof logs>>((acc, l) => {
+    (acc[l.agent] ||= [] as typeof logs).push(l);
+    return acc;
+  }, {});
+
+  if (!cards.length) {
+    return <div className="rounded-xl border border-line bg-panel p-5 font-mono text-xs text-slate-500">waiting for the board…</div>;
+  }
+
+  return (
+    <div className="scroll-thin max-h-[74vh] space-y-3 overflow-y-auto pr-1">
+      {/* input chips — what the whole run started from */}
+      {brief && (
+        <div className="rounded-xl border border-brand/30 bg-brand/5 p-3">
+          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-500">input</div>
+          <div className="flex flex-wrap gap-1.5 text-xs">
+            {Object.entries(brief).filter(([k, v]) => v && k !== "keywords").map(([k, v]) => (
+              <span key={k} className="rounded-lg border border-line bg-panel-2 px-2 py-0.5">
+                <span className="font-mono text-[9px] uppercase text-slate-500">{k}: </span>
+                <span className="text-slate-300">{String(v).slice(0, 60)}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {cards.map((id, idx) => {
+        const a = agentById(id);
+        const st = agentStatus[id] ?? "queued";
+        const alogs = logsByAgent[id] ?? [];
+        const out = agentOutputs[id] as AgentOutput | undefined;
+        const io = STAGE_IO[id];
+        const prompt = prompts[id];
+        const done = st === "done";
+        return (
+          <div key={id} className="relative pl-12">
+            {/* connector line that fills as the stage completes */}
+            {idx < cards.length - 1 && (
+              <div className="absolute bottom-[-12px] left-[19px] top-12 w-px bg-white/10">
+                <div className="w-full transition-[height] duration-700 ease-out"
+                  style={{ height: done ? "100%" : "0%", background: `linear-gradient(${a.accent}, ${a.accent}22)` }} />
+              </div>
+            )}
+            {/* icon dot */}
+            <span className="absolute left-1.5 top-1.5 grid h-9 w-9 place-items-center rounded-xl border"
+              style={{ borderColor: `${a.accent}${st === "queued" ? "26" : "80"}`,
+                background: `${a.accent}${st === "queued" ? "0a" : "24"}`,
+                boxShadow: st === "active" ? `0 0 20px -2px ${a.accent}e0` : "none" }}>
+              <span className="h-2 w-2 rounded-full" style={{ background: a.accent }} />
+            </span>
+
+            <div className={`rounded-xl border bg-panel p-3 transition ${st === "active" ? "border-cyan/40" : "border-line"}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[9px] text-slate-600">{String(idx + 1).padStart(2, "0")}</span>
+                <span className="text-sm font-semibold" style={{ color: st === "queued" ? "#64748b" : a.accent }}>{a.name}</span>
+                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-600">{a.layer} · {a.cluster}</span>
+                <span className="ml-auto"><StatusBadge status={st} accent={a.accent} /></span>
+              </div>
+
+              {io && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
+                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-500">in → {io.in}</span>
+                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-500">out → {io.out}</span>
+                </div>
+              )}
+
+              {alogs.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-lg bg-ink/70 p-2.5 font-mono text-[11px] leading-relaxed">
+                  {alogs.map((l, i) => (
+                    <div key={i} className={KIND_CLS[l.kind]}>{l.text}</div>
+                  ))}
+                </div>
+              )}
+
+              {prompt && (
+                <div className="mt-2">
+                  <button onClick={() => setOpenPrompt(openPrompt === id ? null : id)}
+                    className="flex items-center gap-1.5 font-mono text-[10px] text-slate-500 transition hover:text-cyan">
+                    <Eye size={11} /> show exact prompt
+                    <ChevronDown size={11} className={`transition ${openPrompt === id ? "rotate-180" : ""}`} />
+                  </button>
+                  {openPrompt === id && (
+                    <div className="mt-1.5 space-y-1.5 rounded-lg border border-line bg-ink/70 p-2.5 font-mono text-[10px] leading-relaxed">
+                      <div><span className="text-brand">system ›</span> <span className="text-slate-400 whitespace-pre-wrap">{prompt.system}</span></div>
+                      <div><span className="text-cyan">user ›</span> <span className="text-slate-400 whitespace-pre-wrap">{prompt.user}</span></div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {out?.verdict_line && (
+                <div className="mt-2 rounded-lg border px-2.5 py-1.5 text-xs"
+                  style={{ borderColor: `${a.accent}40`, background: `${a.accent}0d` }}>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">output › </span>
+                  <span className="text-slate-200">{out.verdict_line}</span>
+                  {typeof out.score === "number" && (
+                    <span className="ml-2 font-mono text-[10px]" style={{ color: a.accent }}>{out.score}/10</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

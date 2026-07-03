@@ -33,22 +33,30 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         await v.context_profiler(ctx)
         await v.scope_planner(ctx)
 
-        # L1 — grounding in parallel (web, news, live market, official macro)
-        await asyncio.gather(v.web_researcher(ctx), v.news_intel(ctx),
-                             v.market_data(ctx), v.macro_data(ctx))
-
-        # L2 — domain analysis in parallel (depth-scoped: spine + board wave)
+        # every wave is scope-driven: depth + the user's agent toggles decide who runs
         scoped = set(ctx.state.scope)
-        l2_extra = [fn for aid, fn in board.BOARD_AGENTS.items()
-                    if aid in scoped and aid not in ("devils_advocate", "connecting_dots")]
-        await asyncio.gather(v.market_analyst(ctx), v.finance_modeler(ctx),
-                             *(fn(ctx) for fn in l2_extra))
+
+        def wave(mapping: dict) -> list:
+            return [fn(ctx) for aid, fn in mapping.items() if aid in scoped]
+
+        # L1 — grounding in parallel (web, news, live market, official macro)
+        await asyncio.gather(*wave({
+            "web_researcher": v.web_researcher, "news_intel": v.news_intel,
+            "market_data": v.market_data, "macro_data": v.macro_data,
+        }))
+
+        # L2 — domain analysis in parallel (spine + board wave)
+        await asyncio.gather(*wave({
+            "market_analyst": v.market_analyst, "finance_modeler": v.finance_modeler,
+            **{a: f for a, f in board.BOARD_AGENTS.items()
+               if a not in ("devils_advocate", "connecting_dots")},
+        }))
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
-        crucible = [v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx)]
-        if "devils_advocate" in scoped:
-            crucible.append(board.devils_advocate(ctx))
-        await asyncio.gather(*crucible)
+        await asyncio.gather(*wave({
+            "red_team": v.red_team, "fact_checker": v.fact_checker,
+            "bias_auditor": v.bias_auditor, "devils_advocate": board.devils_advocate,
+        }))
 
         # L4 — synthesis
         if "connecting_dots" in scoped:

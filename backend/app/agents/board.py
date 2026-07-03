@@ -178,7 +178,7 @@ async def devils_advocate(ctx: Ctx) -> None:
         f"BRIEF: {ctx.state.brief}\nANALYST VERDICT LINES: "
         f"{ {k: v.get('verdict_line') for k, v in ctx.state.outputs.items() if isinstance(v, dict) and v.get('verdict_line')} }\n"
         f"EVIDENCE:\n{ctx.state.evidence_digest(12)}",
-        schema, max_tokens=600,
+        schema, max_tokens=600, agent=aid,
     )
     if not data:
         data = {"no_case": "At this stage the honest NO case is generic but real: most ventures die of "
@@ -211,7 +211,7 @@ async def connecting_dots(ctx: Ctx) -> None:
         "domains are combined (e.g. macro trend × regulatory shift × competitor move). Never repeat "
         "what a single agent already said.",
         f"BRIEF: {ctx.state.brief}\nDOMAIN VERDICTS: {lines}\nEVIDENCE:\n{ctx.state.evidence_digest(14)}",
-        schema, max_tokens=700,
+        schema, max_tokens=700, agent=aid,
     )
     insights = (data or {}).get("insights") or []
     insights = [i for i in insights if isinstance(i, dict)][:3]

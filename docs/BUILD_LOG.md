@@ -52,5 +52,17 @@ Phase-by-phase progress against `MASTER_PLAN.md`.
 - [x] Gateway: process-wide cloud-concurrency gate (semaphore 3) + escalating 429 backoff — a full 19-agent board now survives a free-tier Groq key (12 LLM-routed calls verified, real devil's-advocate + connecting-dots output)
 - Verified: board-depth run → done, 6-dim radar with Regulatory 5.8, verdict 6.3 CONDITIONAL_GO, run persisted
 
+## Frontend Overhaul — "world-class studio" (built 2026-07-03, user feedback round)
+Deep extraction pass over all 4 inspiration apps (Helix per-agent AI config + pipeline cards + what-if; SRUJAN.K neural map verbatim; Clinical uncertainty UI; Finance-and-Trading desk patterns), then:
+- [x] **4-step wizard:** situation → depth → **Pick your board** (layer-grouped agent toggles; core synthesis locked; scope planner benches the rest with `skipped` stages — verified) → **Engine panel v2**
+- [x] **8 providers** (groq / gemini / anthropic / openai / deepseek / mistral / xai / openrouter), each with its own key input (eye-toggle, localStorage-persisted, never stored server-side) + typeable model with suggestions; server-key badges
+- [x] **Temperature + max-token sliders** (Helix pattern) honored by the gateway
+- [x] **Per-agent routing** ("one engine / per-agent" pill): agent → provider:model overrides, wired through `EngineConfig.agent_routes` into every LLM call
+- [x] **Pipeline v2 stage cards:** input chips, per-agent terminal logs, in→out labels, output chips, **"show exact prompt"** reveal (new `prompt` SSE event from `_scored_analysis`) with connector lines that fill as stages complete
+- [x] **Flow tab:** the whole workflow as an animated SVG tree — 5 layer columns, pulsing edges into active agents, click-to-inspect (22 nodes / 88 edges on a board run)
+- [x] **3D Decision Graph:** SRUJAN.K KnowledgeGraph3D ported (hand-rolled force sim in Float32Arrays, InstancedMesh, hover/click/light-it-up query) — data = agents, sourced/unsourced claims, risks, conflict edges. In the Decision Room + standalone `/graph` page with run selector (three + R3F + drei)
+- [x] **Simulation charts on every insight** (new zero-dep `TimeSeries` chart: hover crosshair, projection cones, event markers): Survival simulator (cash curve ±30mo, capital/burn/revenue sliders, cash-out marker), Market pulse (real 1y yfinance series → 6-month scenario cone with drift/volatility sliders), Verdict sensitivity (every dimension bendable)
+- [x] market.py ships weekly price series; verified live NIFTY chart + cone in browser; tsc clean
+
 ## Phase 3b — next
-Debate rounds on ConflictLog (war_room), gap-detector replay loop, Wealth/World/Markets clusters, boardroom `debate` events. Then Phase 4 Trading Co-Pilot.
+Debate rounds on ConflictLog (war_room), gap-detector replay loop, Wealth/World/Markets clusters, boardroom `debate` events. Then Phase 4 Trading Co-Pilot (its desk will reuse TimeSeries + the flow/graph components).

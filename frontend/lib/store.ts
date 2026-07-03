@@ -20,6 +20,7 @@ interface RunStore {
   verdict: Verdict | null;
   agentOutputs: Record<string, AgentOutput>;
   financeCore: FinanceCore | null;
+  prompts: Record<string, { system: string; user: string }>;
   tokens: number;
   routes: Set<string>;
   fatal: string | null;
@@ -38,6 +39,7 @@ const EMPTY = {
   verdict: null,
   agentOutputs: {},
   financeCore: null,
+  prompts: {},
   tokens: 0,
   routes: new Set<string>(),
   fatal: null,
@@ -57,6 +59,8 @@ export const useRun = create<RunStore>((set) => ({
           return { agentStatus: { ...s.agentStatus, [e.agent]: e.status } };
         case "log":
           return { logs: [...s.logs, { agent: e.agent, kind: e.kind, text: e.text }] };
+        case "prompt":
+          return { prompts: { ...s.prompts, [e.agent]: { system: e.system, user: e.user } } };
         case "claim":
           return {
             board: [...s.board, {

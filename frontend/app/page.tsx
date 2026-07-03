@@ -17,6 +17,10 @@ export default function Landing() {
           EIP<span className="text-cyan">.</span>
         </span>
         <span className="flex items-center gap-2">
+          <Link href="/graph"
+            className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-500 transition hover:text-cyan">
+            Graph
+          </Link>
           <Link href="/history"
             className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-500 transition hover:text-cyan">
             History

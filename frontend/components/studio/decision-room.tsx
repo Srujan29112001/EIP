@@ -1,13 +1,15 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, Download, FileJson, GraduationCap, Lightbulb, Scale } from "lucide-react";
+import { AlertTriangle, ArrowRight, Download, FileJson, GraduationCap, Lightbulb, Network, Scale } from "lucide-react";
+import { NeuralMap } from "@/components/graph/neural-map";
 import { agentById } from "@/lib/agents";
 import { buildMarkdown, download } from "@/lib/export";
+import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AgentAccordion } from "./agent-accordion";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
-import { WhatIf } from "./whatif";
+import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
 
 const BAND_STYLE: Record<string, { label: string; cls: string }> = {
   GO: { label: "GO", cls: "text-ok border-ok/40 bg-ok/10" },
@@ -133,8 +135,21 @@ export function DecisionRoom() {
       </div>
 
       <Disagreements />
-      <WhatIf />
+
+      {/* the simulation layer — bend every insight and watch the math move */}
+      <RunwaySim />
+      <MarketSim />
+      <ScoreSim />
+
       <AgentAccordion />
+
+      {/* the decision graph — this run as a living neural map */}
+      <section className="rounded-xl border border-line bg-panel p-4">
+        <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+          <Network size={13} /> The Decision Graph — everything the board produced
+        </h3>
+        <NeuralMap {...buildGraph({ brief, board, agentOutputs, verdict })} height={460} />
+      </section>
 
       <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.

@@ -8,6 +8,12 @@ export interface EngineSelection {
   provider: string;
   api_key: string;
   model: string;
+  /** provider id → API key (multi-BYOK; never persisted server-side) */
+  api_keys: Record<string, string>;
+  /** agent id → "provider:model" per-agent override */
+  agent_routes: Record<string, string>;
+  temperature: number | null;
+  max_tokens_cap: number;
 }
 
 export interface IntakeForm {
@@ -20,6 +26,8 @@ export interface IntakeForm {
   team_size: string;
   uncertainty: string;
   depth: "pulse" | "board" | "war_room";
+  /** empty = the full scope for the chosen depth; else the hand-picked board */
+  agents_enabled: string[];
   engine: EngineSelection;
 }
 
@@ -80,6 +88,7 @@ export interface Verdict {
 export type RunEvent =
   | { type: "stage"; agent: string; status: StageStatus; layer: string }
   | { type: "log"; agent: string; kind: LogKind; text: string }
+  | { type: "prompt"; agent: string; system: string; user: string }
   | { type: "claim"; agent: string; claim: { text: string; source?: Source | null; confidence: number } }
   | { type: "conflict"; a: string; b: string; topic: string }
   | { type: "bias"; target: string; bias: string; note: string }
