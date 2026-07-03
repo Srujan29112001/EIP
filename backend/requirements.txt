@@ -8,3 +8,5 @@ orjson>=3.10
 ddgs>=9.0
 feedparser>=6.0
 yfinance>=0.2.50
+pypdf>=5.0
+python-multipart>=0.0.9

@@ -412,3 +412,27 @@ Later (post-launch): broker BYO-key ticks, PPTX export, mobile PWA, hosted multi
 ---
 
 *Plan complete. Nothing has been modified in the repo other than adding this file. Say "go ahead" (optionally "go ahead with Phase 0–1") and building starts exactly as phased above.*
+
+
+---
+
+# PART 11 — BLUEPRINT RECONCILIATION (added 2026-07-04, original EIP blueprint recovered)
+
+The founder recovered the original EIP blueprint document. Audit of this build against it:
+
+## 11.1 Achieved
+Multi-agent A2A over a shared typed blackboard (every agent reads/writes the same evidence board + outputs; debates + conflicts are the visible A2A protocol) · real-time intelligence layer (news/web/market/macro before any opinion) · conversational advisor (Ask the Board, grounded) · Founder + Trader modes end-to-end · transparency studio (exact prompts, flow tree, boardroom) · memory (run persistence + 3D Decision Graph) · hybrid multi-LLM (8 cloud + local) · what-if simulation · tax/legal/policy/market/distribution/investment/news coverage.
+
+## 11.2 Deliberately replaced (same outcome, honest engineering)
+Kafka/Spark/Airflow/K8s/Neo4j/Mongo/MLflow → asyncio + SQLite + SSE at this scale (the old repo's big-data stack was wired to nothing). GraphRAG → Decision Graph store + retrieval. These return at hosted scale (Phase 10), not before real load exists.
+
+## 11.3 Gaps → new phases (append-only; nothing already built changes)
+
+| Phase | Scope | Exit gate |
+|---|---|---|
+| **7. Full board** | Wealth mode (salary/budget, portfolio allocator, debt & banking, FIRE planner, real estate, location scout — deterministic money math + LLM narrative) · remaining venture wave (business model, marketing strategy, subsidies & schemes, HR & talent, loophole/optimization predictor, regulator analysis) · world cluster (macroeconomist, geopolitics, international markets, trends & weak signals, ESG) · markets extras (fund analyst, options desk — educational, HFT/microstructure — educational) | A Wealth run and a War-Room founder run fire 40+ agents with real outputs |
+| **8. Document intelligence** | Upload P&L/pitch/contract (PDF/TXT) → extraction → Document Analyst (L1) puts cited chunks on the evidence board for ALL agents; full OCR (images/scans) later in the phase | A run grounded in an uploaded document, chunks cited in claims |
+| **9. Advisor & memory v2** | Global advisor chat across ALL runs + profile · outcome tracking ("what happened after") · gap-detector replay loop · compliance calendar & alerts · PDF report export | Second run visibly uses memory of the first; alerts land |
+| **10. Hosted scale** | Auth + user tiers (blueprint T1/T2/T3) · Postgres/Redis swap-in · queue/workers · observability · mobile PWA · (only now) streaming infra if load demands | Public multi-user deployment |
+
+Constitution, SEBI guardrails, and glass-box rules apply to every new agent unchanged.

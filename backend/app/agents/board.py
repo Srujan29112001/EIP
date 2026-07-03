@@ -227,6 +227,132 @@ async def connecting_dots(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, {"insights": insights, "weak_signal": (data or {}).get("weak_signal", "")})
 
 
+# ── Phase-7 venture extras + world cluster ────────────────────────────────────
+# Same contract, same blackboard; each is a domain lens over the shared evidence.
+
+async def _lens(ctx: Ctx, aid: str, system: str, ask: str, det_line: str, det_score: float = 5.0) -> None:
+    """Compact _scored_analysis wrapper for narrative-first agents."""
+    await ctx.start(aid, "L2")
+    fallback = {"verdict_line": det_line, "score": det_score, "confidence": 0.25,
+                "analysis": "Add a key/model for the full read.", "assumptions": [], "numbers_used": []}
+    out = await _scored_analysis(ctx, aid, system, ask, fallback)
+    await ctx.emit.claim(aid, out["verdict_line"], confidence=out["confidence"])
+    await ctx.finish(aid, "L2", out)
+
+
+async def business_model(ctx: Ctx) -> None:
+    await _lens(ctx, "business_model",
+        "You are a business-model analyst (canvas thinking: value prop, channels, revenue streams, "
+        "cost structure) and recommender.",
+        "Map the implied business model, name its weakest block, and recommend the best-fit model "
+        "variant (e.g. subscription vs D2C one-off vs B2B2C) with one revenue experiment. "
+        "Score 0-10 for model soundness.",
+        "Business-model canvas needs a model — no deterministic prior")
+
+
+async def marketing_strategy(ctx: Ctx) -> None:
+    await _lens(ctx, "marketing_strategy",
+        "You are a growth marketer: positioning, CAC/LTV realism, brand wedge, growth loops.",
+        "Design the marketing wedge: positioning line, first growth loop, CAC pressure-test against "
+        "the evidence. Score 0-10 for marketing leverage.",
+        "Marketing plan needs a model — evidence-density screen only")
+
+
+async def subsidies_schemes(ctx: Ctx) -> None:
+    await _lens(ctx, "subsidies_schemes",
+        "You are a government-schemes analyst (India-first: Startup India, MSME, PLI, state schemes, "
+        "DPIIT, Mudra). You surface money founders leave on the table.",
+        "List the 2-3 schemes/subsidies this venture most plausibly qualifies for, what each is worth, "
+        "and the catch. Score 0-10 for scheme leverage available.",
+        "Scheme scan needs a model — none detectable deterministically", 4.0)
+
+
+async def hr_talent(ctx: Ctx) -> None:
+    await _lens(ctx, "hr_talent",
+        "You are a startup talent strategist: team gaps, hiring order, salary benchmarks, ESOP hygiene.",
+        "Given team size and stage: the first 2 hires (in order), realistic salary bands [ESTIMATE], "
+        "and the biggest team risk. Score 0-10 for team readiness.",
+        "Team screen: size/stage heuristic only")
+
+
+async def optimization_predictor(ctx: Ctx) -> None:
+    await _lens(ctx, "optimization_predictor",
+        "You are the loophole/optimization predictor: legitimate structural optimizations (tax, "
+        "regulatory, incentive stacking) AND the risk each carries. Never advise anything illegal; "
+        "flag grey zones explicitly.",
+        "Identify 2 legitimate optimizations others in this sector use (structure, timing, incentive "
+        "stacking), each with its risk/grey-zone rating. Score 0-10 for optimization headroom.",
+        "Optimization scan needs a model", 4.5)
+
+
+async def regulator(ctx: Ctx) -> None:
+    await _lens(ctx, "regulator",
+        "You are a regulator-watch analyst (SEBI, RBI, CCI, FSSAI, TRAI, state bodies): who regulates "
+        "this, their current enforcement mood, what draws scrutiny.",
+        "Name the regulators that matter here, their current posture from the evidence, and the one "
+        "action most likely to draw scrutiny. Score 0-10 for regulatory calm (10 = friendly).",
+        "Regulator map needs a model — evidence signals only")
+
+
+async def macroeconomist(ctx: Ctx) -> None:
+    await _lens(ctx, "macroeconomist",
+        "You are a macroeconomist. Use the macro series on the evidence board (GDP, inflation, rates) — "
+        "never invent figures.",
+        "Read the cycle from the board's macro data: where are we, what does it mean for THIS decision "
+        "(funding climate, demand, input costs)? Score 0-10 for macro tailwind.",
+        "Macro read uses board data only — needs a model for narrative")
+
+
+async def geopolitics(ctx: Ctx) -> None:
+    await _lens(ctx, "geopolitics",
+        "You are a geopolitics analyst: trade routes, sanctions, supply chains, bilateral tensions.",
+        "From the evidence, the 1-2 geopolitical exposures this decision has (supply chain, export "
+        "market, input dependency) and one hedge. Score 0-10 for geopolitical insulation.",
+        "Geopolitical scan needs a model", 6.0)
+
+
+async def intl_markets(ctx: Ctx) -> None:
+    await _lens(ctx, "intl_markets",
+        "You are an international-expansion analyst: which foreign market fits first, entry mode, "
+        "cross-border friction.",
+        "If this ever goes beyond its home market: the most natural first foreign market, entry mode, "
+        "and the friction to expect. Score 0-10 for international optionality.",
+        "International read needs a model", 5.0)
+
+
+async def trends(ctx: Ctx) -> None:
+    await _lens(ctx, "trends",
+        "You are a trends and weak-signals analyst. You look for what is emerging in the evidence "
+        "before it is obvious — never repeat what other agents already said.",
+        "From the news/evidence: one emerging trend that helps this decision, one that threatens it, "
+        "one weak signal nobody prices in yet. Score 0-10 for trend alignment.",
+        "Trend scan needs a model — headline density only")
+
+
+async def esg_impact(ctx: Ctx) -> None:
+    await _lens(ctx, "esg_impact",
+        "You are an ESG and impact analyst: environmental footprint, social impact, governance "
+        "hygiene — and where impact is a commercial edge, not a cost.",
+        "Assess the ESG posture: the material environmental/social factor here, one way impact "
+        "becomes a moat (procurement, brand, capital access). Score 0-10 for ESG position.",
+        "ESG read needs a model", 5.5)
+
+
+WORLD_WAVE = {
+    "business_model": business_model,
+    "marketing_strategy": marketing_strategy,
+    "subsidies_schemes": subsidies_schemes,
+    "hr_talent": hr_talent,
+    "optimization_predictor": optimization_predictor,
+    "regulator": regulator,
+    "macroeconomist": macroeconomist,
+    "geopolitics": geopolitics,
+    "intl_markets": intl_markets,
+    "trends": trends,
+    "esg_impact": esg_impact,
+}
+
+
 # ── L3.5: debate rounds (War Room) ───────────────────────────────────────────
 # When the Crucible lands an attack, the attacked analyst gets one rebuttal.
 # Concessions lower that analyst's confidence; standing firm is preserved as

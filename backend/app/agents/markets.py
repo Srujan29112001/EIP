@@ -222,6 +222,68 @@ async def stock_analyst(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, out)
 
 
+# ── L2: fund analyst / options desk / microstructure (education lenses) ──────
+
+async def fund_analyst(ctx: Ctx) -> None:
+    from .venture import _scored_analysis
+    aid, layer = "fund_analyst", "L2"
+    await ctx.start(aid, layer)
+    fallback = {"verdict_line": "Fund comparison needs a model — index-first principle applies",
+                "score": 6.0, "confidence": 0.3,
+                "analysis": "Default principle: low-cost index funds beat most active funds after fees; "
+                            "check expense ratio, tracking error, AUM before anything else.",
+                "assumptions": [], "numbers_used": []}
+    out = await _scored_analysis(
+        ctx, aid,
+        "You are a mutual-fund and hedge-strategy analyst (India-first: index funds, flexicap, ELSS; "
+        "hedge strategies as education only).",
+        "For someone interested in this symbol/sector: how funds give the same exposure with less "
+        "single-stock risk, which fund CATEGORY fits (never a specific scheme pick), and what a hedge "
+        "fund would do differently (education). Score 0-10 for fund-route attractiveness vs direct stock.",
+        fallback)
+    await ctx.emit.claim(aid, out["verdict_line"], confidence=out["confidence"])
+    await ctx.finish(aid, layer, out)
+
+
+async def options_desk(ctx: Ctx) -> None:
+    from .venture import _scored_analysis
+    aid, layer = "options_desk", "L2"
+    await ctx.start(aid, layer)
+    await ctx.emit.log(aid, "education only — defined-risk structures, never naked positions", "muted")
+    tech = ctx.state.outputs.get("technical_analyst", {})
+    fallback = {"verdict_line": "Options education needs a model", "score": 5.0, "confidence": 0.25,
+                "analysis": "Principle: buy defined-risk (spreads), never sell naked; theta decays you, "
+                            "IV crush around events.", "assumptions": [], "numbers_used": []}
+    out = await _scored_analysis(
+        ctx, aid,
+        "You are an options educator (NSE F&O context). You explain defined-risk structures that fit a "
+        "view — you never recommend a trade, never naked selling.",
+        f"Given the technical read (bias: {tech.get('bias', 'mixed')}, ATR {tech.get('atr_pct', '?')}%/day, "
+        f"support {tech.get('support', '?')} / resistance {tech.get('resistance', '?')}): explain which "
+        "defined-risk structure MATCHES that view and its max loss/gain shape, as education. "
+        "Score 0-10 for how options-suitable this underlying is (liquidity, IV regime).", fallback)
+    await ctx.emit.claim(aid, out["verdict_line"], confidence=out["confidence"])
+    await ctx.finish(aid, layer, out)
+
+
+async def microstructure(ctx: Ctx) -> None:
+    from .venture import _scored_analysis
+    aid, layer = "microstructure", "L2"
+    await ctx.start(aid, layer)
+    await ctx.emit.log(aid, "education: how the plumbing works — retail cannot out-speed HFT and shouldn't try", "muted")
+    fallback = {"verdict_line": "Microstructure read needs a model", "score": 5.0, "confidence": 0.2,
+                "analysis": "Principle: retail edge is time horizon, not speed. Use limit orders, avoid "
+                            "open/close auctions volatility, mind impact costs.", "assumptions": [], "numbers_used": []}
+    out = await _scored_analysis(
+        ctx, aid,
+        "You are a market-microstructure educator: HFT, spreads, slippage, order types — teaching a "
+        "retail trader what the plumbing means for THEM.",
+        "Explain what microstructure means for trading this symbol at retail size: realistic slippage, "
+        "best order type, one mistake HFTs profit from. Score 0-10 for execution friendliness.", fallback)
+    await ctx.emit.claim(aid, out["verdict_line"], confidence=out["confidence"])
+    await ctx.finish(aid, layer, out)
+
+
 # ── L4: trader weighing (t0) + verdict ────────────────────────────────────────
 
 async def weighing_trader(ctx: Ctx) -> None:

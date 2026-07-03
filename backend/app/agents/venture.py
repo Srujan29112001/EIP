@@ -101,10 +101,15 @@ async def scope_planner(ctx: Ctx) -> None:
              "weighing_engine", "verdict_composer"]
     board_wave = ["competitor_intel", "gtm_distribution", "legal", "tax",
                   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
-    scope = spine if depth == "pulse" else spine + board_wave
+    world_wave = ["business_model", "marketing_strategy", "subsidies_schemes", "hr_talent",
+                  "optimization_predictor", "regulator", "macroeconomist", "geopolitics",
+                  "intl_markets", "trends", "esg_impact"]
+    scope = (spine if depth == "pulse"
+             else spine + board_wave if depth == "board"
+             else spine + board_wave + world_wave)
     label = {"pulse": "Pulse", "board": "Board Meeting", "war_room": "War Room"}.get(depth, "Pulse")
     if depth == "war_room":
-        await ctx.emit.log(aid, "war room: full board + open debate rounds on every landed attack", "muted")
+        await ctx.emit.log(aid, "war room: full board + world cluster + open debate rounds", "muted")
 
     # the user can hand-pick the board (agent toggles in the wizard); the
     # synthesis layer is never optional — someone has to sign the verdict
@@ -225,6 +230,44 @@ async def macro_data(ctx: Ctx) -> None:
     await ctx.emit.log(aid, f"{len(rows)} official macro indicators captured" if rows
                        else "world bank unreachable — continuing", kind)
     await ctx.finish(aid, layer, {"series": rows})
+
+
+# ── L1: document analyst (uploads → the evidence board) ──────────────────────
+
+async def doc_analyst(ctx: Ctx) -> None:
+    aid, layer = "doc_analyst", "L1"
+    docs = [d for d in (ctx.state.raw.get("documents") or [])
+            if isinstance(d, dict) and (d.get("text") or "").strip()]
+    if not docs:
+        return  # nothing uploaded — agent silently stands down
+    await ctx.start(aid, layer)
+    total_chunks = 0
+    for d in docs[:3]:
+        name = str(d.get("name") or "document")[:60]
+        text = str(d["text"])[:20000]
+        await ctx.emit.log(aid, f"reading {name} · {len(text):,} chars", "code")
+        # coarse chunks straight onto the shared board — every agent sees them
+        chunks = [text[i:i + 700] for i in range(0, min(len(text), 5600), 700)]
+        for ch in chunks:
+            ctx.state.evidence.append({"text": f"DOC[{name}]: {ch[:300]}",
+                                       "source": {"name": name}, "agent": aid})
+        total_chunks += len(chunks)
+        schema = '{"key_facts": [str x3 (figures/clauses/claims worth flagging)], "doc_type": str}'
+        data, res = await ctx.llm.structured(
+            "t2",
+            "You extract the decision-relevant facts from a business document. Only facts present "
+            "in the text; include figures verbatim.",
+            f"DOCUMENT ({name}), first pages:\n{text[:6000]}", schema, max_tokens=500, agent=aid)
+        if data and isinstance(data.get("key_facts"), list):
+            await ctx.emit.usage(aid, res.tokens, res.route)
+            for fact in data["key_facts"][:3]:
+                await ctx.emit.claim(aid, f"{name}: {fact}", source={"name": name}, confidence=0.75)
+                ctx.state.evidence.append({"text": f"DOC-FACT[{name}]: {fact}",
+                                           "source": {"name": name}, "agent": aid})
+        else:
+            await ctx.emit.log(aid, "LLM unavailable — raw chunks on the board without extraction", "warn")
+    await ctx.emit.log(aid, f"{total_chunks} chunks from {len(docs)} document(s) now ground every agent", "ok")
+    await ctx.finish(aid, layer, {"documents": [d.get("name") for d in docs], "chunks": total_chunks})
 
 
 # ── L2 helper: scored analysis via LLM with deterministic fallback ────────────
@@ -550,13 +593,13 @@ async def weighing_engine(ctx: Ctx) -> None:
         return sum(vals) / len(vals) if vals else None
 
     dims = {
-        "Market": avg(["market_analyst", "competitor_intel", "industry_expert"]) or 5.0,
-        "Economics": avg(["finance_modeler", "tax"]) or 5.0,
+        "Market": avg(["market_analyst", "competitor_intel", "industry_expert", "trends"]) or 5.0,
+        "Economics": avg(["finance_modeler", "tax", "subsidies_schemes"]) or 5.0,
         "Evidence": evidence_dim,
-        "Execution": avg(["gtm_distribution"]) or 5.0,  # 5.0 = placeholder on Pulse depth
+        "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy", "hr_talent"]) or 5.0,
         "Timing": max(1.0, min(9.5, timing)),
     }
-    regulatory = avg(["policy_compliance", "legal"])
+    regulatory = avg(["policy_compliance", "legal", "regulator"])
     if regulatory is not None:
         dims["Regulatory"] = regulatory
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}

@@ -39,17 +39,18 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         def wave(mapping: dict) -> list:
             return [fn(ctx) for aid, fn in mapping.items() if aid in scoped]
 
-        # L1 — grounding in parallel (web, news, live market, official macro)
+        # L1 — grounding in parallel (web, news, live market, official macro, uploads)
         await asyncio.gather(*wave({
             "web_researcher": v.web_researcher, "news_intel": v.news_intel,
             "market_data": v.market_data, "macro_data": v.macro_data,
-        }))
+        }), v.doc_analyst(ctx))
 
-        # L2 — domain analysis in parallel (spine + board wave)
+        # L2 — domain analysis in parallel (spine + board wave + world wave)
         await asyncio.gather(*wave({
             "market_analyst": v.market_analyst, "finance_modeler": v.finance_modeler,
             **{a: f for a, f in board.BOARD_AGENTS.items()
                if a not in ("devils_advocate", "connecting_dots")},
+            **board.WORLD_WAVE,
         }))
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)

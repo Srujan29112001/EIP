@@ -9,12 +9,13 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 
 from ..agents.registry import ROSTER
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
 from ..graphs.trading import run_trading
 from ..graphs.venture import run_venture
+from ..graphs.wealth import run_wealth
 from ..core.events import Emitter
 from ..memory import store
 
@@ -37,6 +38,16 @@ class RunRequest(BaseModel):
     trading_style: str = "swing"         # intraday | swing | position | options_edu
     capital: float = 100000.0
     risk_pct: float = 1.0
+    # wealth mode
+    monthly_income: float = 0.0
+    monthly_expenses: float = 0.0
+    current_savings: float = 0.0
+    age: int = 30
+    risk_appetite: str = "moderate"      # conservative | moderate | aggressive
+    city: str = ""
+    goals: str = ""
+    # document intelligence (Phase 8): extracted client-side via POST /api/extract
+    documents: list[dict[str, Any]] = Field(default_factory=list)
     engine: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -48,7 +59,8 @@ _TASKS: set[asyncio.Task] = set()
 async def run(req: RunRequest) -> StreamingResponse:
     run_id = uuid.uuid4().hex[:12]
     emitter = Emitter()
-    pipeline = run_trading if req.mode == "trader" else run_venture
+    pipeline = (run_trading if req.mode == "trader"
+                else run_wealth if req.mode == "wealth" else run_venture)
     task = asyncio.create_task(pipeline(run_id, req.model_dump(), emitter))
     _TASKS.add(task)
     task.add_done_callback(_TASKS.discard)
@@ -83,6 +95,35 @@ async def agents() -> list[dict[str, Any]]:
 async def local() -> dict[str, Any]:
     models = await local_models()
     return {"available": bool(models), "models": models}
+
+
+@router.post("/extract")
+async def extract_document(file: UploadFile) -> dict[str, Any]:
+    """Upload → text. PDF via pypdf; txt/md/csv as-is. Full OCR (scans/images)
+    arrives later in Phase 8 — this covers digital documents today."""
+    raw = await file.read()
+    name = file.filename or "document"
+    if len(raw) > 15 * 1024 * 1024:
+        raise HTTPException(413, "file too large (15MB max)")
+    text = ""
+    if name.lower().endswith(".pdf"):
+        try:
+            import io as _io
+
+            from pypdf import PdfReader
+            reader = PdfReader(_io.BytesIO(raw))
+            text = "\n".join((page.extract_text() or "") for page in reader.pages[:40])
+        except Exception:
+            raise HTTPException(422, "could not read this PDF (scanned/encrypted? OCR lands in Phase 8)")
+    else:
+        try:
+            text = raw.decode("utf-8", errors="replace")
+        except Exception:
+            raise HTTPException(422, "unsupported file type — PDF, TXT, MD or CSV")
+    text = text.strip()
+    if not text:
+        raise HTTPException(422, "no extractable text — if this is a scan, OCR lands later in Phase 8")
+    return {"name": name, "text": text[:20000], "chars": len(text)}
 
 
 class AskRequest(BaseModel):

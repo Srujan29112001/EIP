@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { EngineStatus } from "@/lib/api";
+import { API_BASE, type EngineStatus } from "@/lib/api";
 import type { IntakeForm } from "@/lib/types";
 import { BoardPicker } from "./board-picker";
 import { EnginePanel } from "./engine-panel";
@@ -21,6 +21,14 @@ const DEFAULTS: IntakeForm = {
   trading_style: "swing",
   capital: 100000,
   risk_pct: 1.0,
+  monthly_income: 80000,
+  monthly_expenses: 50000,
+  current_savings: 500000,
+  age: 30,
+  risk_appetite: "moderate",
+  city: "",
+  goals: "",
+  documents: [],
   engine: {
     compute: "auto", provider: "", api_key: "", model: "",
     api_keys: {}, agent_routes: {}, temperature: null, max_tokens_cap: 0,
@@ -39,9 +47,32 @@ const selectCls =
 
 export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void; engine?: EngineStatus | null }) {
   const [f, setF] = useState<IntakeForm>(DEFAULTS);
+  const [docBusy, setDocBusy] = useState(false);
+  const [docError, setDocError] = useState("");
   const set = <K extends keyof IntakeForm>(k: K, v: IntakeForm[K]) => setF((p) => ({ ...p, [k]: v }));
+
+  const addDocument = async (file: File) => {
+    setDocBusy(true);
+    setDocError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const r = await fetch(`${API_BASE}/api/extract`, { method: "POST", body });
+      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? `extract failed (${r.status})`);
+      const doc = await r.json();
+      setF((p) => ({ ...p, documents: [...p.documents, { name: doc.name, text: doc.text }].slice(0, 3) }));
+    } catch (e) {
+      setDocError(e instanceof Error ? e.message : "extraction failed");
+    } finally {
+      setDocBusy(false);
+    }
+  };
   const trader = f.mode === "trader";
-  const ready = trader ? f.symbol.trim().length >= 2 : f.situation.trim().length >= 20;
+  const wealth = f.mode === "wealth";
+  const founder = f.mode === "founder";
+  const ready = trader ? f.symbol.trim().length >= 2
+    : wealth ? f.monthly_income > 0
+    : f.situation.trim().length >= 20;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -55,7 +86,8 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* mode tabs */}
       <div className="mt-6 flex gap-2">
         {([["founder", "🚀 Founder", "validate an idea or dilemma"],
-           ["trader", "📈 Trader", "analyse any listed stock"]] as const).map(([id, label, sub]) => (
+           ["trader", "📈 Trader", "analyse any listed stock"],
+           ["wealth", "💰 Wealth", "salary, savings, FIRE, property"]] as const).map(([id, label, sub]) => (
           <button key={id} onClick={() => set("mode", id)}
             className={`flex-1 rounded-xl border p-3 text-left transition ${
               f.mode === id ? "border-cyan/70 bg-cyan/10" : "border-line bg-panel hover:border-slate-500"}`}>
@@ -101,8 +133,58 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         </section>
       )}
 
+      {/* step 1 — wealth: the money picture */}
+      {wealth && (
+        <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · Your money picture</h2>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Field label="Monthly income (₹)">
+              <input type="number" min={0} step={5000} value={f.monthly_income}
+                onChange={(e) => set("monthly_income", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Monthly expenses (₹)">
+              <input type="number" min={0} step={5000} value={f.monthly_expenses}
+                onChange={(e) => set("monthly_expenses", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Current savings (₹)">
+              <input type="number" min={0} step={50000} value={f.current_savings}
+                onChange={(e) => set("current_savings", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Age">
+              <input type="number" min={18} max={80} value={f.age}
+                onChange={(e) => set("age", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Risk appetite">
+              <select value={f.risk_appetite}
+                onChange={(e) => set("risk_appetite", e.target.value as IntakeForm["risk_appetite"])}
+                className={selectCls}>
+                <option value="conservative">conservative</option>
+                <option value="moderate">moderate</option>
+                <option value="aggressive">aggressive</option>
+              </select>
+            </Field>
+            <Field label="City (for local scout)">
+              <input value={f.city} onChange={(e) => set("city", e.target.value)}
+                placeholder="Bangalore" className={selectCls} />
+            </Field>
+            <Field label="Goals">
+              <input value={f.goals} onChange={(e) => set("goals", e.target.value)}
+                placeholder="house in 5y, FIRE by 45…" className={selectCls} />
+            </Field>
+            <Field label="Biggest worry">
+              <input value={f.uncertainty} onChange={(e) => set("uncertainty", e.target.value)}
+                placeholder="am I saving enough?" className={selectCls} />
+            </Field>
+          </div>
+          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
+            The wealth board teaches money math — it never recommends specific securities and is not
+            SEBI-registered advice. Numbers stay on your machine unless you choose a cloud engine.
+          </p>
+        </section>
+      )}
+
       {/* step 1 — founder: the situation */}
-      {!trader && (
+      {founder && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · What&apos;s the situation?</h2>
         <textarea
@@ -148,18 +230,44 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
               placeholder="what keeps you up at night?" className={selectCls} />
           </Field>
         </div>
+
+        {/* ground it — document intelligence (PDF/TXT/MD/CSV; scans/OCR later) */}
+        <div className="mt-4 rounded-lg border border-dashed border-line bg-panel-2 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+              ground it (optional) · pitch deck / P&L / contract
+            </span>
+            <label className="cursor-pointer rounded-md border border-line px-2.5 py-1 font-mono text-[10px] text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              {docBusy ? "extracting…" : "+ add PDF / TXT"}
+              <input type="file" accept=".pdf,.txt,.md,.csv" className="hidden" disabled={docBusy}
+                onChange={(e) => e.target.files?.[0] && addDocument(e.target.files[0])} />
+            </label>
+            {docError && <span className="font-mono text-[10px] text-err">{docError}</span>}
+          </div>
+          {f.documents.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {f.documents.map((d, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 rounded border border-cyan/30 bg-cyan/5 px-2 py-0.5 font-mono text-[10px] text-cyan">
+                  📄 {d.name} · {(d.text.length / 1000).toFixed(1)}k chars
+                  <button onClick={() => set("documents", f.documents.filter((_, x) => x !== i))}
+                    className="text-slate-500 hover:text-err">✕</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
       )}
 
-      {/* step 2 — depth (founder mode; the trader desk is a fixed 13-agent crew) */}
-      {!trader && (
+      {/* step 2 — depth (founder mode; trader/wealth desks are fixed crews) */}
+      {founder && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
             ["pulse", "Pulse", "11 specialists · ~2 min · the fast read"],
             ["board", "Board Meeting", "19 specialists · full venture board + devil's advocate"],
-            ["war_room", "War Room", "full board + live debate rounds"],
+            ["war_room", "War Room", "30 specialists · world cluster + live debate rounds"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -173,7 +281,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       )}
 
       {/* step 3 — your board (hand-pick the employees) */}
-      {!trader && (
+      {founder && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Pick your board</h2>
         <BoardPicker depth={f.depth} enabled={f.agents_enabled}
@@ -184,7 +292,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
-          {trader ? "02" : "04"} · Choose the engine
+          {founder ? "04" : "02"} · Choose the engine
         </h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
@@ -201,11 +309,13 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       <div className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl border border-line bg-panel/90 p-4 backdrop-blur">
         <span className="font-mono text-[11px] text-muted">
           {!ready
-            ? trader ? "enter a symbol to begin" : "describe your situation (≥ 20 chars) to begin"
-            : trader
-              ? `13 specialists ready · Trader desk · ${f.symbol}`
-              : `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : 19} specialists ready · ${
-                  { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`}
+            ? trader ? "enter a symbol to begin"
+              : wealth ? "enter your monthly income to begin"
+              : "describe your situation (≥ 20 chars) to begin"
+            : trader ? `16 specialists ready · Trader desk · ${f.symbol}`
+            : wealth ? "12 specialists ready · Wealth desk"
+            : `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : f.depth === "board" ? 19 : 30} specialists ready · ${
+                { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
           className="rounded-lg bg-gradient-to-r from-brand to-cyan px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">

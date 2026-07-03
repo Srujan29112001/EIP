@@ -33,6 +33,16 @@ export interface IntakeForm {
   trading_style: "intraday" | "swing" | "position" | "options_edu";
   capital: number;
   risk_pct: number;
+  /** wealth mode */
+  monthly_income: number;
+  monthly_expenses: number;
+  current_savings: number;
+  age: number;
+  risk_appetite: "conservative" | "moderate" | "aggressive";
+  city: string;
+  goals: string;
+  /** document intelligence — extracted via POST /api/extract */
+  documents: { name: string; text: string }[];
   engine: EngineSelection;
 }
 

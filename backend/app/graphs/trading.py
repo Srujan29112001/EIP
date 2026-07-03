@@ -20,6 +20,7 @@ from ..memory.store import save_run
 TRADER_SCOPE = ["news_intel", "market_data", "macro_data",
                 "technical_analyst", "stock_analyst", "backtest_engineer",
                 "quant_signals", "risk_manager",
+                "fund_analyst", "options_desk", "microstructure",
                 "red_team", "fact_checker", "bias_auditor",
                 "weighing_engine", "verdict_composer"]
 
@@ -65,6 +66,8 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
         await asyncio.gather(m.backtest_engineer(ctx), m.stock_analyst(ctx))
         await m.quant_signals(ctx)
         await m.risk_manager(ctx)
+        # education lenses ride the same blackboard (funds / options / plumbing)
+        await asyncio.gather(m.fund_analyst(ctx), m.options_desk(ctx), m.microstructure(ctx))
 
         # L3 — crucible
         await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx))

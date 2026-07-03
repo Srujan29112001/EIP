@@ -84,5 +84,19 @@ Deep extraction pass over all 4 inspiration apps (Helix per-agent AI config + pi
 - [x] Decision Room chat panel (suggestions, threaded messages, route chip); runId captured from the done event
 - Verified on the RELIANCE run via Groq: answer cited the run's actual 0.8-severity risk
 
+## Phase 7 — Wealth mode + full roster (built 2026-07-04, blueprint reconciliation round)
+Original EIP blueprint recovered → MASTER_PLAN Part 11 added (gap audit + Phases 7-10, append-only).
+- [x] **Wealth mode (3rd pillar):** `agents/wealth.py` — Salary & Budget (50/30/20 + savings-rate math), Portfolio Allocator (age/risk glide path + emergency fund), FIRE Planner (4%-rule arithmetic, years-to-FIRE), Debt & Banking, Real Estate (rent-vs-buy), Location Scout (city schemes/opportunities); `graphs/wealth.py` (12 specialists incl. crucible); money-health radar (Cashflow/Allocation/GoalFit/DebtHealth/Opportunity); 💰 Wealth wizard tab
+- [x] **Venture extras + world cluster (11 agents in board.py):** Business Model, Marketing Strategist, Subsidies & Schemes, HR & Talent, **Loophole/Optimization Predictor**, Regulator Watch, Macroeconomist, Geopolitics, International Markets, Trends & Weak Signals, ESG & Impact — **War Room now = 30 specialists** (world wave unlocked); weighing v4 folds them into Market/Economics/Execution/Regulatory dims
+- [x] **Markets extras:** Fund Analyst (mutual/hedge — education), Options Desk (defined-risk education), HFT/Microstructure (education) — trader desk now 16 specialists
+- [x] Registry: **46 of 49 roster agents implemented**
+- Verified: wealth run → savings rate 46% (excellent), 82/8/5 allocation, FIRE ₹1.95Cr in ~16y, 7.3/10 ON_TRACK
+
+## Phase 8 (part 1) — Document intelligence (built 2026-07-04)
+- [x] POST /api/extract: PDF (pypdf) / TXT / MD / CSV → text (15MB cap; scans/OCR = phase 8 part 2)
+- [x] Document Analyst (L1): uploads chunked onto the shared evidence board + LLM key-fact extraction as cited claims — every downstream agent reads them
+- [x] Wizard "ground it" drop zone (founder mode): extract → chips → run payload
+- Verified: uploaded P&L → doc_analyst extracted "Revenue Rs 1.8 Crore", "EBITDA Rs 18 Lakh", vendor dispute as cited claims via Groq; run completed grounded
+
 ## Next
-Phase 3b part 2 (gap-detector replay, Wealth/World clusters), Phase 5 part 2 (outcome tracking, cross-run memory into the Context Profiler), Phase 6 (deploy — Vercel + HF Space, has manual user steps). Options/futures education mode and broker deep-links remain post-launch per MASTER_PLAN §5.4.
+Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).
