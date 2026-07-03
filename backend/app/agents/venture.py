@@ -104,7 +104,7 @@ async def scope_planner(ctx: Ctx) -> None:
     scope = spine if depth == "pulse" else spine + board_wave
     label = {"pulse": "Pulse", "board": "Board Meeting", "war_room": "War Room"}.get(depth, "Pulse")
     if depth == "war_room":
-        await ctx.emit.log(aid, "war-room debate rounds land in Phase 3b — full board scope for now", "muted")
+        await ctx.emit.log(aid, "war room: full board + open debate rounds on every landed attack", "muted")
 
     # the user can hand-pick the board (agent toggles in the wizard); the
     # synthesis layer is never optional — someone has to sign the verdict

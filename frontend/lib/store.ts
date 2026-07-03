@@ -70,6 +70,10 @@ export const useRun = create<RunStore>((set) => ({
           };
         case "conflict":
           return { board: [...s.board, { kind: "conflict" as const, agent: e.a, vs: e.b, text: e.topic }] };
+        case "debate":
+          return { board: [...s.board, {
+            kind: "debate" as const, agent: e.agent, text: e.text, round: e.round, stance: e.stance,
+          }] };
         case "bias":
           return { board: [...s.board, { kind: "bias" as const, agent: e.target, text: `${e.bias} — ${e.note}` }] };
         case "partial": {

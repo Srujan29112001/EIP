@@ -45,6 +45,11 @@ class Emitter:
         await self.queue.put({"type": "prompt", "agent": agent,
                               "system": system[:1600], "user": user[:2800]})
 
+    async def debate(self, agent: str, round_: int, text: str, stance: str = "rebuttal") -> None:
+        """A live agent-to-agent debate turn (War Room)."""
+        await self.queue.put({"type": "debate", "agent": agent, "round": round_,
+                              "stance": stance, "text": text})
+
     async def bias(self, target: str, bias: str, note: str) -> None:
         await self.queue.put({"type": "bias", "target": target, "bias": bias, "note": note})
 

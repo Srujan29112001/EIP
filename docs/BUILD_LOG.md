@@ -64,5 +64,9 @@ Deep extraction pass over all 4 inspiration apps (Helix per-agent AI config + pi
 - [x] **Simulation charts on every insight** (new zero-dep `TimeSeries` chart: hover crosshair, projection cones, event markers): Survival simulator (cash curve ±30mo, capital/burn/revenue sliders, cash-out marker), Market pulse (real 1y yfinance series → 6-month scenario cone with drift/volatility sliders), Verdict sensitivity (every dimension bendable)
 - [x] market.py ships weekly price series; verified live NIFTY chart + cone in browser; tsc clean
 
-## Phase 3b — next
-Debate rounds on ConflictLog (war_room), gap-detector replay loop, Wealth/World/Markets clusters, boardroom `debate` events. Then Phase 4 Trading Co-Pilot (its desk will reuse TimeSeries + the flow/graph components).
+## Phase 3b (part 1) — War Room debates (built 2026-07-03)
+- [x] `debate` SSE event + `debate_rounds`: top-3 landed attacks go to open debate — the attacked analyst rebuts or concedes (concession lowers its confidence); Boardroom renders attack/rebuttal/concession turns
+- Verified with Groq: finance_modeler + market_analyst produced real rebuttals citing their own evidence
+
+## Next
+Phase 3b (part 2): gap-detector replay loop, Wealth/World/Markets clusters. Phase 4: Trading Co-Pilot desk (reuses TimeSeries + flow/graph components). Phase 5: Ask-the-Board grounded chat + outcome tracking. Phase 6: deploy (Vercel + HF Space).

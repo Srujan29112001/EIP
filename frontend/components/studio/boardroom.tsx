@@ -36,6 +36,22 @@ export function Boardroom() {
             </div>
           );
         }
+        if (b.kind === "debate") {
+          const style = b.stance === "attack"
+            ? { border: "border-err/30", bg: "bg-err/5", tag: "text-err", label: "⚔ attacks" }
+            : b.stance === "concession"
+              ? { border: "border-warn/30", bg: "bg-warn/5", tag: "text-warn", label: "concedes" }
+              : { border: "border-cyan/30", bg: "bg-cyan/5", tag: "text-cyan", label: "rebuts" };
+          return (
+            <div key={i} className={`ml-4 rounded-lg border ${style.border} ${style.bg} p-3 text-xs`}>
+              <div className={`mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider ${style.tag}`}>
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.accent }} />
+                {a.name} {style.label} · debate round {b.round}
+              </div>
+              <p className="text-slate-300">{b.text}</p>
+            </div>
+          );
+        }
         if (b.kind === "bias") {
           return (
             <div key={i} className="rounded-lg border border-warn/30 bg-warn/5 p-3 text-xs">

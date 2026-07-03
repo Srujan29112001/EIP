@@ -58,6 +58,10 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             "bias_auditor": v.bias_auditor, "devils_advocate": board.devils_advocate,
         }))
 
+        # L3.5 — War Room only: attacked analysts defend themselves in the open
+        if (payload.get("depth") or "").lower() == "war_room":
+            await board.debate_rounds(ctx)
+
         # L4 — synthesis
         if "connecting_dots" in scoped:
             await board.connecting_dots(ctx)

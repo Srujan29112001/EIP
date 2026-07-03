@@ -37,14 +37,16 @@ export interface Source {
   date?: string;
 }
 
-/** One entry in the Boardroom feed (claims, conflicts, bias flags). */
+/** One entry in the Boardroom feed (claims, conflicts, bias flags, debate turns). */
 export interface BoardItem {
-  kind: "claim" | "conflict" | "bias";
+  kind: "claim" | "conflict" | "bias" | "debate";
   agent: string;
   text: string;
   vs?: string;
   confidence?: number;
   source?: Source | null;
+  round?: number;
+  stance?: "attack" | "rebuttal" | "concession";
 }
 
 export interface RadarData {
@@ -91,6 +93,7 @@ export type RunEvent =
   | { type: "prompt"; agent: string; system: string; user: string }
   | { type: "claim"; agent: string; claim: { text: string; source?: Source | null; confidence: number } }
   | { type: "conflict"; a: string; b: string; topic: string }
+  | { type: "debate"; agent: string; round: number; stance: "attack" | "rebuttal" | "concession"; text: string }
   | { type: "bias"; target: string; bias: string; note: string }
   | { type: "partial"; section: string; data: unknown }
   | { type: "usage"; agent: string; tokens: number; route: string }

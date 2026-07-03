@@ -227,6 +227,58 @@ async def connecting_dots(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, {"insights": insights, "weak_signal": (data or {}).get("weak_signal", "")})
 
 
+# ── L3.5: debate rounds (War Room) ───────────────────────────────────────────
+# When the Crucible lands an attack, the attacked analyst gets one rebuttal.
+# Concessions lower that analyst's confidence; standing firm is preserved as
+# open dissent. Either way the argument itself streams to the Boardroom.
+
+async def debate_rounds(ctx: Ctx) -> None:
+    attacks = sorted(
+        (a for a in ctx.state.conflicts if isinstance(a, dict) and a.get("target_agent") in ctx.state.outputs),
+        key=lambda a: -float(a.get("severity", 0.5) or 0.5),
+    )[:3]
+    if not attacks:
+        return
+    await ctx.emit.log("red_team", f"war room: {len(attacks)} attacks go to open debate", "muted")
+
+    for rnd, atk in enumerate(attacks, start=1):
+        target = str(atk.get("target_agent"))
+        out = ctx.state.outputs.get(target, {})
+        await ctx.emit.debate("red_team", rnd, str(atk.get("attack", ""))[:400], stance="attack")
+
+        schema = ('{"rebuttal": str (<=60 words, specific), "concede": bool, '
+                  '"revised_confidence": float (0-1)}')
+        data, res = await ctx.llm.structured(
+            "t3",
+            f"You are the {target} agent defending your analysis in front of the board. "
+            "If the attack is right, concede honestly and revise your confidence down. "
+            "If it is wrong, rebut with specifics from your analysis or the evidence.",
+            f"YOUR ANALYSIS: {out.get('verdict_line','')} — {str(out.get('analysis',''))[:500]}\n"
+            f"YOUR CONFIDENCE: {out.get('confidence', 0.5)}\n"
+            f"THE ATTACK: {atk.get('attack','')}\nATTACK EVIDENCE: {atk.get('evidence','')}",
+            schema, max_tokens=400, agent=target,
+        )
+        if data and data.get("rebuttal"):
+            await ctx.emit.usage(target, res.tokens, res.route)
+            conceded = bool(data.get("concede"))
+            await ctx.emit.debate(target, rnd, str(data["rebuttal"])[:400],
+                                  stance="concession" if conceded else "rebuttal")
+            if conceded:
+                try:
+                    revised = max(0.05, min(float(data.get("revised_confidence", 0.3)),
+                                            float(out.get("confidence", 0.5))))
+                except (TypeError, ValueError):
+                    revised = 0.3
+                out["confidence"] = revised
+                await ctx.emit.log(target, f"conceded — confidence revised to {revised:.2f}", "warn")
+            else:
+                await ctx.emit.log(target, "stands by the analysis — dissent preserved", "info")
+        else:
+            await ctx.emit.debate(target, rnd,
+                                  "Stands by the deterministic core; the attack is noted and preserved as dissent.",
+                                  stance="rebuttal")
+
+
 # id → coroutine map for the depth-aware graph
 BOARD_AGENTS = {
     "competitor_intel": competitor_intel,
