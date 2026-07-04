@@ -250,11 +250,14 @@ async def reporter(ctx: Ctx) -> None:
         f"TOP EVIDENCE:\n{ctx.state.evidence_digest(12)}",
         _REPORT_SCHEMA, max_tokens=1800, agent=aid)
     report = (data or {}).get("report_markdown")
+    degraded = False
     if report and len(str(report)) > 300:
         await ctx.emit.usage(aid, res.tokens, res.route)
         await ctx.emit.log(aid, f"report written · {len(str(report)):,} chars", "ok")
     else:
         report = fallback_report()
+        degraded = True
         await ctx.emit.log(aid, "LLM unavailable — deterministic report assembly", "warn")
     await ctx.emit.partial("report", str(report))
-    await ctx.finish(aid, layer, {"verdict_line": "full decision report ready", "chars": len(str(report))})
+    await ctx.finish(aid, layer, {"verdict_line": "full decision report ready",
+                                  "chars": len(str(report)), "degraded": degraded})

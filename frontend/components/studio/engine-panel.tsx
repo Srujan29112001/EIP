@@ -73,7 +73,7 @@ export function EnginePanel({ engine, onChange, status }: {
   // the badge/available-provider logic keeps working unchanged
   const keysOf = (p: string): string[] => {
     const arr = engine.api_keys_multi?.[p] ?? [];
-    return Array.from({ length: 5 }, (_, i) => arr[i] ?? "");
+    return Array.from({ length: 7 }, (_, i) => arr[i] ?? "");
   };
   const setKeyAt = (p: string, i: number, key: string) => {
     const arr = keysOf(p);
@@ -163,10 +163,10 @@ export function EnginePanel({ engine, onChange, status }: {
             <div className="mt-2 rounded-lg border border-cyan/30 bg-panel-2 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-                  {p.label} · up to 5 keys — rotates automatically when one is exhausted
+                  {p.label} · up to 7 keys — load spreads across all of them (round-robin)
                 </span>
-                <span className={`font-mono text-[9px] ${filled >= 3 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
-                  {filled}/5 keys{filled < 3 ? " · 3+ recommended for a full ~50-agent run" : " ✓"}
+                <span className={`font-mono text-[9px] ${filled >= 5 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
+                  {filled}/7 keys{filled < 5 ? " · 5+ recommended for a full War Room (~40 agents)" : " ✓"}
                 </span>
               </div>
               <div className="space-y-1.5">
@@ -199,8 +199,9 @@ export function EnginePanel({ engine, onChange, status }: {
                 </datalist>
               </label>
               <p className="mt-2 font-mono text-[9px] leading-relaxed text-slate-600">
-                Keys are sent per-run and never stored server-side. Add 3-5 free keys of the same provider
-                (e.g. Groq/Gemini free tiers) so a long analysis keeps running as each key hits its limit.
+                Keys are sent per-run and never stored server-side. Add 5-7 free keys of the same provider
+                (e.g. several Groq/Gemini free keys) — the board round-robins across them so a full War Room
+                stays narrated instead of exhausting one key half-way.
               </p>
             </div>
           );

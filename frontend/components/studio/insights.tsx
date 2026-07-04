@@ -10,6 +10,7 @@ import { BarChart3, ChevronDown, FileText, Lightbulb } from "lucide-react";
 import { AGENTS, agentById } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput } from "@/lib/types";
+import { AgentSim } from "./agent-sim";
 import { ChartCard, type ChartSpec } from "./chart-kit";
 
 /* ── chart gallery — every insight, visualized ────────────────────────────── */
@@ -36,7 +37,7 @@ export function SmartInsights() {
     outputs[a.id]?.verdict_line &&
     !["weighing_engine", "verdict_composer", "visualizer", "reporter",
       "intake_parser", "context_profiler", "scope_planner"].includes(a.id));
-  if (rows.length < 3) return null;
+  if (rows.length < 1) return null;
 
   return (
     <section>
@@ -59,6 +60,12 @@ export function SmartInsights() {
                   {a.name}
                 </span>
                 <span className="rounded bg-panel-2 px-1 py-0.5 font-mono text-[8px] uppercase text-slate-600">{a.cluster}</span>
+                {out.degraded ? (
+                  <span title={String(out.degraded_reason ?? "no LLM reached this agent")}
+                    className="rounded-full border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[8px] text-warn">
+                    reduced depth
+                  </span>
+                ) : null}
                 {score !== null && (
                   <span className="ml-auto shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold"
                     style={{ color: score >= 7 ? "#9ae64a" : score >= 4.5 ? "#fbbf24" : "#fb7185",
@@ -76,34 +83,39 @@ export function SmartInsights() {
                   <span className="font-mono text-[9px] text-slate-500">{Math.round(conf * 100)}%</span>
                 </div>
               )}
-              {out.analysis ? (
-                <>
-                  <button onClick={() => setOpen(isOpen ? null : a.id)}
-                    className="mt-2 flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-slate-500 hover:text-cyan">
-                    full analysis <ChevronDown size={10} className={`transition ${isOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {isOpen && (
-                    <div className="mt-1.5 space-y-1.5 border-t border-line pt-1.5">
-                      <p className="text-[11px] leading-relaxed text-slate-400">{String(out.analysis)}</p>
-                      {out.what_would_change ? (
-                        <p className="text-[10px] text-slate-500">
-                          <span className="font-mono uppercase tracking-wider text-cyan/70">flips my score: </span>
-                          {String(out.what_would_change)}
-                        </p>
-                      ) : null}
-                      {Array.isArray(out.assumptions) && out.assumptions.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {out.assumptions.slice(0, 3).map((s, i) => (
-                            <span key={i} className="rounded border border-warn/25 bg-warn/5 px-1.5 py-0.5 font-mono text-[9px] text-warn/90">
-                              assumes: {String(s).slice(0, 50)}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+              <button onClick={() => setOpen(isOpen ? null : a.id)}
+                className="mt-2 flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-slate-500 hover:text-cyan">
+                full analysis · chart · what-if <ChevronDown size={10} className={`transition ${isOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isOpen && (
+                <div className="mt-1.5 space-y-1.5 border-t border-line pt-1.5">
+                  {out.degraded && (
+                    <p className="rounded border border-warn/30 bg-warn/5 p-1.5 text-[10px] leading-relaxed text-warn/90">
+                      ⚠ ran on its deterministic core only — {String(out.degraded_reason ?? "no LLM reached this agent")}
+                    </p>
+                  )}
+                  {out.analysis ? (
+                    <p className="text-[11px] leading-relaxed text-slate-400">{String(out.analysis)}</p>
+                  ) : null}
+                  {out.what_would_change ? (
+                    <p className="text-[10px] text-slate-500">
+                      <span className="font-mono uppercase tracking-wider text-cyan/70">flips my score: </span>
+                      {String(out.what_would_change)}
+                    </p>
+                  ) : null}
+                  {Array.isArray(out.assumptions) && out.assumptions.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {out.assumptions.slice(0, 3).map((s, i) => (
+                        <span key={i} className="rounded border border-warn/25 bg-warn/5 px-1.5 py-0.5 font-mono text-[9px] text-warn/90">
+                          assumes: {String(s).slice(0, 50)}
+                        </span>
+                      ))}
                     </div>
                   )}
-                </>
-              ) : null}
+                  {/* per-agent chart + what-if simulator */}
+                  <AgentSim agentId={a.id} />
+                </div>
+              )}
             </div>
           );
         })}

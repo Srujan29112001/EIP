@@ -119,6 +119,12 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
                     <text x={p.x + 10} y={p.y - 6.5} textAnchor="middle" style={{ font: "700 6.5px sans-serif", fill: "#04060f" }}>✓</text>
                   </g>
                 )}
+                {st === "degraded" && (
+                  <g>
+                    <circle cx={p.x + 10} cy={p.y - 9} r="4.5" fill="#fbbf24" />
+                    <text x={p.x + 10} y={p.y - 6} textAnchor="middle" style={{ font: "700 7px sans-serif", fill: "#04060f" }}>!</text>
+                  </g>
+                )}
                 {st === "error" && (
                   <g>
                     <circle cx={p.x + 10} cy={p.y - 9} r="4.5" fill="#fb7185" />

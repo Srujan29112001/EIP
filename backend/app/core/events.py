@@ -10,7 +10,10 @@ from typing import Any, AsyncIterator, Literal
 
 import orjson
 
-StageStatus = Literal["queued", "active", "done", "error", "skipped"]
+# "degraded" = the agent ran but only on its deterministic core (no LLM
+# reachable — rate-limited or no key), so its depth is reduced. It is NOT the
+# same as a clean "done"; the UI shows it amber and explains why.
+StageStatus = Literal["queued", "active", "done", "degraded", "error", "skipped"]
 LogKind = Literal["info", "code", "ok", "err", "warn", "muted"]
 
 

@@ -99,6 +99,9 @@ def _cool_key(provider: str, key: str, seconds: float) -> None:
     _KEY_COOLDOWN[tag] = max(_KEY_COOLDOWN.get(tag, 0.0), now + seconds)
 
 
+_KEY_RR = 0  # round-robin cursor so every key shares the load from the first call
+
+
 def _available_cloud(cfg: EngineConfig) -> list[str]:
     order = ["anthropic", "openai", "google", "groq", "deepseek", "openrouter", "mistral", "xai"]
     if cfg.provider in order:  # user's pick first
@@ -275,8 +278,9 @@ async def _dispatch(provider: str, model: str, cfg: EngineConfig, system: str, u
 
 # ── public API ────────────────────────────────────────────────────────────────
 
-# process-wide: cloud providers rate-limit per key, not per run
-_CLOUD_SEM = asyncio.Semaphore(3)
+# process-wide cloud concurrency: high enough that several keys work in
+# parallel (per-key pacing is the real throttle), low enough to stay polite
+_CLOUD_SEM = asyncio.Semaphore(6)
 
 # provider → event-loop time until which it is cooling down after a 429.
 # One rate-limited key must not eat every agent's retry budget — skip it,
@@ -300,14 +304,17 @@ _PACE_LOCK: dict[str, asyncio.Lock] = {}
 _MIN_INTERVAL = 1.3  # seconds between calls per cloud provider
 
 
-async def _pace(provider: str) -> None:
-    lock = _PACE_LOCK.setdefault(provider, asyncio.Lock())
+async def _pace(provider: str, key: str = "") -> None:
+    # pace PER KEY, not per provider — so N keys each get their own 1.3s drip
+    # and together deliver N× the throughput (the whole point of multi-key)
+    tag = _key_tag(provider, key) if key else provider
+    lock = _PACE_LOCK.setdefault(tag, asyncio.Lock())
     async with lock:
         now = asyncio.get_event_loop().time()
-        wait = _LAST_CALL.get(provider, 0.0) + _MIN_INTERVAL - now
+        wait = _LAST_CALL.get(tag, 0.0) + _MIN_INTERVAL - now
         if wait > 0:
             await asyncio.sleep(wait)
-        _LAST_CALL[provider] = asyncio.get_event_loop().time()
+        _LAST_CALL[tag] = asyncio.get_event_loop().time()
 
 
 class Gateway:
@@ -359,12 +366,20 @@ class Gateway:
             if not fresh:
                 all_cooling.append((provider, model, keys[0]))
                 continue
+            # ROUND-ROBIN: start each call at a different key so N keys share the
+            # load evenly from the first request — 7 keys ≈ 7× the free-tier
+            # requests/minute instead of hammering key #1 until it dies.
+            if len(fresh) > 1:
+                global _KEY_RR
+                _KEY_RR += 1
+                off = _KEY_RR % len(fresh)
+                fresh = fresh[off:] + fresh[:off]
             for key in fresh:
                 got_429 = False
                 for attempt in (0, 1):
                     try:
                         async with _CLOUD_SEM:
-                            await _pace(provider)
+                            await _pace(provider, key)
                             res = await _dispatch(provider, model, self.cfg, system, user,
                                                   max_tokens, temperature, key=key)
                         if res.ok:
@@ -373,10 +388,17 @@ class Gateway:
                         break
                     except httpx.HTTPStatusError as e:
                         if e.response.status_code == 429:
-                            if attempt == 0:
-                                await asyncio.sleep(2.0)
+                            # honor Retry-After when the provider tells us how long
+                            ra = e.response.headers.get("retry-after", "")
+                            cool = 30.0
+                            try:
+                                cool = max(5.0, min(90.0, float(ra)))
+                            except (TypeError, ValueError):
+                                pass
+                            if attempt == 0 and cool <= 6.0:
+                                await asyncio.sleep(cool)
                                 continue
-                            _cool_key(provider, key, 30.0)   # park this key, try the next
+                            _cool_key(provider, key, cool)   # park this key, try the next
                             got_429 = True
                         break
                     except Exception:

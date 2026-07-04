@@ -7,7 +7,7 @@
  */
 
 import { useState } from "react";
-import { Check, ChevronDown, Eye, Loader2, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, Eye, Loader2, X } from "lucide-react";
 import { AGENTS, STAGE_IO, agentById } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput, LogKind, StageStatus } from "@/lib/types";
@@ -23,6 +23,9 @@ function StatusBadge({ status, accent }: { status: StageStatus; accent: string }
       style={{ color: accent, background: `${accent}24` }}><Loader2 size={11} className="animate-spin" /> running</span>;
   if (status === "done")
     return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok/15 px-2 py-0.5 font-mono text-[9px] text-ok"><Check size={11} /> done</span>;
+  if (status === "degraded")
+    return <span title="ran on its deterministic core only — no LLM reached this agent"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-warn/15 px-2 py-0.5 font-mono text-[9px] text-warn"><AlertTriangle size={11} /> reduced depth</span>;
   if (status === "error")
     return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-err/15 px-2 py-0.5 font-mono text-[9px] text-err"><X size={11} /> error</span>;
   if (status === "skipped")
@@ -52,7 +55,7 @@ export function StageCards() {
   }
 
   return (
-    <div className="scroll-thin max-h-[74vh] space-y-3 overflow-y-auto pr-1">
+    <div className="space-y-3 pb-4">
       {/* input chips — what the whole run started from */}
       {brief && (
         <div className="rounded-xl border border-brand/30 bg-brand/5 p-3">

@@ -129,5 +129,16 @@ User feedback: single key exhausts mid-analysis (agents fall back); results has 
 - [x] Visualizer: added a labelled "Every dimension, scored" column chart beside the radar (labelling-accuracy ask)
 - Verified: 7 chart types render, layout natural-scroll, 5-key UI in browser, tsc clean
 
+## Round 6 — honest degraded status + 7-key round-robin + per-agent sims (built 2026-07-04)
+User feedback: agents show green tick even when LLM-unavailable (should be honest + say why); 5 keys still exhaust in War Room; want charts+what-if per agent in "full analysis"; boardroom black box still there.
+- [x] **Round-robin key rotation (the real reliability fix):** keys now share load from the FIRST call (round-robin start index) instead of hammering key #1 to death; pacing is PER-KEY (not per-provider) so N keys deliver ~N× throughput; cloud concurrency 3→6; Retry-After honored. 7 keys ≈ 7× the free-tier RPM.
+- [x] **7 key slots** per provider (was 5), "5+ recommended for a full War Room" note
+- [x] **Honest "degraded" status:** new StageStatus "degraded" (amber) — an agent that only got its deterministic core no longer shows a green "done" tick. `Ctx.finish` reads `result.degraded`; `_scored_analysis`/verdict/reporter set it + a `degraded_reason`. Verified: bad keys → 16 agents amber "reduced depth", 15 legit-deterministic agents still "done".
+- [x] **Results "reduced-depth" notice:** lists exactly which agents fell back + why + the fix (add keys). Amber badges on Smart Insight cards + stage cards + flow nodes + rail.
+- [x] **Per-agent chart + what-if** in every Smart Insight "full analysis": a comparison chart (agent vs its dimension vs board avg), its sourced/estimate number chips, and a live simulator — drag the agent's score, watch the whole verdict move through the real weighing math (lib/dimensions.ts maps agent→dimension for all 3 modes)
+- [x] **Boardroom + pipeline black box fixed** (natural page scroll, was nested max-h boxes)
+- [x] Lowered results-panel thresholds so Smart Insights / Agent Table / Domain Screens render at Pulse depth too
+- Verified in browser: per-agent chart + what-if, degraded notice, natural-scroll boardroom, tsc clean
+
 ## Next
 Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).

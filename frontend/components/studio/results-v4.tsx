@@ -97,7 +97,7 @@ export function InsightBullets() {
     }
     return out.slice(0, 18);
   }, [agentOutputs]);
-  if (items.length < 3) return null;
+  if (items.length < 1) return null;
   return (
     <section className="rounded-xl border border-line bg-panel p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
@@ -127,7 +127,7 @@ export function AgentTable() {
   const rows = Object.entries(agentOutputs)
     .filter(([, o]) => typeof o.score === "number")
     .sort((a, b) => ((b[1][sortBy] as number) ?? 0) - ((a[1][sortBy] as number) ?? 0));
-  if (rows.length < 4) return null;
+  if (rows.length < 2) return null;
   return (
     <section className="rounded-xl border border-line bg-panel p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
@@ -187,7 +187,7 @@ export function DomainScreens() {
       .map(([k, v]) => ({ cluster: k, avg: v.total / v.n, n: v.n, accent: v.accent }))
       .sort((a, b) => b.avg - a.avg);
   }, [agentOutputs]);
-  if (clusters.length < 3) return null;
+  if (clusters.length < 1) return null;
   return (
     <section className="rounded-xl border border-line bg-panel p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
@@ -207,6 +207,40 @@ export function DomainScreens() {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+/* ── reduced-depth notice — honest about which agents didn't get an LLM ──── */
+export function DegradedNotice() {
+  const { agentStatus, agentOutputs } = useRun();
+  const degraded = AGENTS.filter((a) =>
+    agentStatus[a.id] === "degraded" || (agentOutputs[a.id] as AgentOutput | undefined)?.degraded);
+  const ran = Object.keys(agentOutputs).length;
+  if (!degraded.length) return null;
+  const reason = (agentOutputs[degraded[0].id] as AgentOutput | undefined)?.degraded_reason
+    ?? "no LLM reached these agents — every configured key was rate-limited or missing.";
+  return (
+    <section className="rounded-xl border border-warn/40 bg-warn/5 p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">⚠</span>
+        <span className="font-mono text-[11px] uppercase tracking-widest text-warn">
+          {degraded.length} of {ran} specialists ran reduced-depth
+        </span>
+      </div>
+      <p className="mt-1 text-xs leading-relaxed text-slate-400">
+        These agents produced a deterministic-core answer but couldn&apos;t get AI narration: <span className="text-slate-300">{reason}</span>
+      </p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {degraded.map((a) => (
+          <span key={a.id} className="inline-flex items-center gap-1 rounded border border-warn/30 bg-warn/10 px-1.5 py-0.5 font-mono text-[9px] text-warn">
+            <span>{a.icon}</span> {a.name}
+          </span>
+        ))}
+      </div>
+      <p className="mt-2 font-mono text-[9px] text-slate-500">
+        Fix: add more API keys in the engine step (up to 7 per provider — they rotate automatically), or re-run at a lighter depth.
+      </p>
     </section>
   );
 }

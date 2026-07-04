@@ -378,10 +378,16 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
         data["score"] = max(0.0, min(10.0, _num(data["score"], 5.0)))
         data["confidence"] = max(0.05, min(0.95, _num(data.get("confidence"), 0.5)))
         data["route"] = res.route
+        data["degraded"] = False
         await ctx.emit.log(aid, f"analysis via {res.route}", "ok")
         await ctx.emit.usage(aid, res.tokens, res.route)
         return data
     await ctx.emit.log(aid, "LLM unavailable — deterministic core only (reduced depth)", "warn")
+    fallback["degraded"] = True
+    fallback["degraded_reason"] = ("No LLM answered this agent — every configured key was rate-limited "
+                                   "or missing. Add more API keys (the studio takes up to 7 per provider) "
+                                   "so the whole board gets narrated.")
+    fallback.setdefault("route", "deterministic")
     return fallback
 
 
@@ -766,6 +772,7 @@ async def verdict_composer(ctx: Ctx) -> None:
         await ctx.emit.usage(aid, res.tokens, res.route)
     else:
         data = fallback
+        data["degraded"] = True
         await ctx.emit.log(aid, "LLM unavailable — deterministic verdict document", "warn")
 
     verdict = {"score": overall, "band": band, "dimensions": ctx.state.dimensions, **data}

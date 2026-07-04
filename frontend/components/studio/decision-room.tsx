@@ -8,7 +8,7 @@ import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AskBoard } from "./ask-board";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
-import { AgentTable, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
+import { AgentTable, DegradedNotice, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
 import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
@@ -42,6 +42,7 @@ export function DecisionRoom() {
   return (
     <div className="space-y-4 pb-4">
       <QualityBanner />
+      <DegradedNotice />
       <KpiTiles />
       {/* verdict card */}
       <section className={`rounded-xl border p-5 ${band.cls}`}>

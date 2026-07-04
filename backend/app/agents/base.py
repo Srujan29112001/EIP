@@ -48,7 +48,9 @@ class Ctx:
             await self.emit.partial("agent_output", {"agent": agent_id, "output": result})
         if tokens:
             await self.emit.usage(agent_id, tokens, route)
-        await self.emit.stage(agent_id, "done", layer)
+        # honest status: a fallback-only run is "degraded" (amber), not "done"
+        degraded = bool(isinstance(result, dict) and result.get("degraded"))
+        await self.emit.stage(agent_id, "degraded" if degraded else "done", layer)
 
     async def fail(self, agent_id: str, layer: str, msg: str) -> None:
         await self.emit.log(agent_id, msg, "err")

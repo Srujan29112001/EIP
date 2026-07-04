@@ -8,6 +8,7 @@ const DOT: Record<StageStatus, string> = {
   queued: "bg-slate-600",
   active: "bg-cyan",
   done: "bg-ok",
+  degraded: "bg-warn",
   error: "bg-err",
   skipped: "bg-slate-700",
 };
@@ -42,7 +43,9 @@ export function PipelineRail() {
                     <span className="truncate" style={{ color: st === "queued" ? "#64748b" : a.accent }}>
                       {a.name}
                     </span>
-                    <span className="ml-auto font-mono text-[9px] text-slate-600">{st}</span>
+                    <span className={`ml-auto font-mono text-[9px] ${st === "degraded" ? "text-warn" : "text-slate-600"}`}>
+                      {st === "degraded" ? "no-LLM" : st}
+                    </span>
                   </li>
                 );
               })}

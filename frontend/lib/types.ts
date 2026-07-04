@@ -1,6 +1,6 @@
 /** Shared types — the client half of the SSE contract (backend/app/core/events.py). */
 
-export type StageStatus = "queued" | "active" | "done" | "error" | "skipped";
+export type StageStatus = "queued" | "active" | "done" | "degraded" | "error" | "skipped";
 export type LogKind = "info" | "code" | "ok" | "err" | "warn" | "muted";
 
 export interface EngineSelection {
@@ -101,6 +101,8 @@ export type AgentOutput = {
   assumptions?: string[];
   numbers_used?: { figure: string; source: string }[];
   route?: string;
+  degraded?: boolean;
+  degraded_reason?: string;
 } & Record<string, unknown>;
 
 export interface Verdict {

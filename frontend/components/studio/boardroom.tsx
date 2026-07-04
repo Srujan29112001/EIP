@@ -18,7 +18,7 @@ export function Boardroom() {
   const board = useRun((s) => s.board);
 
   return (
-    <div className="scroll-thin max-h-[70vh] space-y-2 overflow-y-auto">
+    <div className="space-y-2 pb-4">
       {board.length === 0 && (
         <div className="rounded-xl border border-line bg-panel p-4 text-xs text-slate-500">
           Claims, conflicts and bias flags appear here as agents talk to each other.
