@@ -9,6 +9,7 @@ import { useRun } from "@/lib/store";
 import { AgentAccordion } from "./agent-accordion";
 import { AskBoard } from "./ask-board";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
+import { AgentTable, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
 import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
@@ -41,6 +42,8 @@ export function DecisionRoom() {
 
   return (
     <div className="scroll-thin max-h-[74vh] space-y-4 overflow-y-auto pr-1">
+      <QualityBanner />
+      <KpiTiles />
       {/* verdict card */}
       <section className={`rounded-xl border p-5 ${band.cls}`}>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -137,12 +140,18 @@ export function DecisionRoom() {
         </section>
       </div>
 
+      {/* results v4 — the density layer */}
+      <KeyFindings />
+      <InsightBullets />
+      <DomainScreens />
+
       <Disagreements />
       <TradeDesk />
 
-      {/* results v3 — the Visualizer's gallery + every specialist's finding */}
+      {/* the Visualizer's gallery + every specialist's finding */}
       <ChartGallery />
       <SmartInsights />
+      <AgentTable />
 
       {/* the simulation layer — bend every insight and watch the math move */}
       <RunwaySim />

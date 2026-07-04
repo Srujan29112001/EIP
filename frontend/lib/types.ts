@@ -28,11 +28,17 @@ export interface IntakeForm {
   depth: "pulse" | "board" | "war_room";
   /** empty = the full scope for the chosen depth; else the hand-picked board */
   agents_enabled: string[];
+  /** founder extras */
+  target_customer: string;
+  competitors: string;
+  revenue_model: string;
   /** trader mode */
   symbol: string;
   trading_style: "intraday" | "swing" | "position" | "options_edu";
   capital: number;
   risk_pct: number;
+  thesis: string;
+  existing_position: number;
   /** wealth mode */
   monthly_income: number;
   monthly_expenses: number;
@@ -41,6 +47,9 @@ export interface IntakeForm {
   risk_appetite: "conservative" | "moderate" | "aggressive";
   city: string;
   goals: string;
+  dependents: number;
+  current_debt: number;
+  monthly_sip: number;
   /** document intelligence — extracted via POST /api/extract */
   documents: { name: string; text: string }[];
   /** per-agent user briefs from the board picker */
@@ -85,6 +94,8 @@ export type AgentOutput = {
   score?: number;
   confidence?: number;
   analysis?: string;
+  key_insights?: string[];
+  what_would_change?: string;
   assumptions?: string[];
   numbers_used?: { figure: string; source: string }[];
   route?: string;

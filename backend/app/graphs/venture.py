@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
-from ..agents import board, studio, venture as v
+from ..agents import board, catalog, studio, venture as v
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -45,12 +45,10 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             "market_data": v.market_data, "macro_data": v.macro_data,
         }), v.doc_analyst(ctx))
 
-        # L2 — domain analysis in parallel (spine + board wave + world wave)
+        # L2 — domain analysis in parallel (spine + every convened lens agent)
         await asyncio.gather(*wave({
             "market_analyst": v.market_analyst, "finance_modeler": v.finance_modeler,
-            **{a: f for a, f in board.BOARD_AGENTS.items()
-               if a not in ("devils_advocate", "connecting_dots")},
-            **board.WORLD_WAVE,
+            **catalog.LENS_AGENTS,
         }))
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)

@@ -66,6 +66,14 @@ export const AGENTS: AgentInfo[] = [
   { id: "debt_banking", name: "Debt & Banking", layer: "L2", cluster: "wealth", blurb: "What to pay off first and why", accent: "#fb923c" },
   { id: "real_estate", name: "Real Estate", layer: "L2", cluster: "wealth", blurb: "Rent-vs-buy math, REITs, timing", accent: "#fdba74" },
   { id: "location_scout", name: "Location Scout", layer: "L2", cluster: "wealth", blurb: "Schemes & opportunities where you are", accent: "#ea580c" },
+  // L2 — Human layer (pink family — does this fit the human, not just the market)
+  { id: "human_behaviour", name: "Human Behaviour", layer: "L2", cluster: "human", blurb: "How real people will actually behave toward this", accent: "#ec4899" },
+  { id: "human_needs", name: "Human Needs", layer: "L2", cluster: "human", blurb: "Does this serve a real, durable need (Maslow)", accent: "#f472b6" },
+  { id: "consumer_analysis", name: "Consumer Analysis", layer: "L2", cluster: "human", blurb: "Segments, willingness to pay, purchase journey", accent: "#f9a8d4" },
+  { id: "production_ops", name: "Production & Ops", layer: "L2", cluster: "human", blurb: "Making the thing: inputs, capacity, fragility", accent: "#db2777" },
+  { id: "philosophy_ethics", name: "Philosophy & Ethics", layer: "L2", cluster: "human", blurb: "The examined view — stakeholders, 2nd-order effects", accent: "#be185d" },
+  { id: "money_happiness", name: "Money & Happiness", layer: "L2", cluster: "human", blurb: "Will this actually buy a better life", accent: "#fb7185" },
+  { id: "philanthropy_impact", name: "Philanthropy & Impact", layer: "L2", cluster: "human", blurb: "Where doing good compounds the mission", accent: "#fda4af" },
   // L2 — Markets cluster (green family — the Trading Co-Pilot)
   { id: "technical_analyst", name: "Technical Analyst", layer: "L2", cluster: "markets", blurb: "Indicators, levels, multi-signal read — pure math", accent: "#34d399" },
   { id: "stock_analyst", name: "Stock Analyst", layer: "L2", cluster: "markets", blurb: "Fundamentals + what the market is pricing in", accent: "#6ee7b7" },
@@ -101,6 +109,8 @@ const ICONS: Record<string, string> = {
   risk_manager: "🛡️", fund_analyst: "🧺", options_desk: "🎛️", microstructure: "⚡",
   salary_budget: "💵", portfolio_allocator: "🥧", fire_planner: "🔥", debt_banking: "🏧",
   real_estate: "🏠", location_scout: "📍",
+  human_behaviour: "🧠", human_needs: "🪷", consumer_analysis: "🛒", production_ops: "🏗️",
+  philosophy_ethics: "🦉", money_happiness: "😊", philanthropy_impact: "🤲",
   red_team: "⚔️", devils_advocate: "😈", bias_auditor: "🪞", fact_checker: "✅",
   connecting_dots: "🕸️", weighing_engine: "⚖️", verdict_composer: "📜",
   visualizer: "🎨", reporter: "🖋️",
@@ -150,6 +160,13 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   debt_banking: { in: "Profile", out: "Debt payoff order" },
   real_estate: { in: "City + profile", out: "Rent-vs-buy read" },
   location_scout: { in: "City + profile", out: "Local schemes + opportunities" },
+  human_behaviour: { in: "Brief + evidence", out: "Psychological forces for/against" },
+  human_needs: { in: "Brief", out: "Needs-hierarchy fit + durability" },
+  consumer_analysis: { in: "Brief + evidence", out: "Segments + willingness to pay" },
+  production_ops: { in: "Brief + evidence", out: "Inputs, capacity, breaking point" },
+  philosophy_ethics: { in: "All context", out: "Stakeholder costs + examined view" },
+  money_happiness: { in: "Profile + brief", out: "Life-fit: time vs money vs wellbeing" },
+  philanthropy_impact: { in: "Brief + evidence", out: "Impact angle + giving structure" },
   red_team: { in: "All analyst outputs", out: "Evidence-backed attacks" },
   devils_advocate: { in: "All outputs", out: "The steel-manned NO case" },
   bias_auditor: { in: "Your own framing", out: "Named biases with quotes" },
@@ -160,6 +177,63 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   visualizer: { in: "Every output + evidence figure", out: "Interactive chart gallery" },
   reporter: { in: "Everything the board produced", out: "The full written report" },
 };
+
+/** Capability card data for the board picker: what an agent can do, who it
+ * talks to on the blackboard, and the sub-agents working under it. */
+export interface AgentCaps {
+  can: string[];
+  talks_to: string[];
+  subagents: string[];
+}
+
+const T0_SUB = "🧮 deterministic math core (no LLM — cannot hallucinate)";
+const RESEARCH_SUB = "🔎 research sub-agent — runs its own live web query at Board/War-Room depth";
+const T0_IDS = new Set(["market_data", "macro_data", "technical_analyst", "backtest_engineer",
+  "quant_signals", "risk_manager", "salary_budget", "portfolio_allocator", "fire_planner",
+  "weighing_engine"]);
+const NO_RESEARCH = new Set(["intake_parser", "context_profiler", "scope_planner", "web_researcher",
+  "news_intel", "market_data", "macro_data", "doc_analyst", "finance_modeler", "technical_analyst",
+  "backtest_engineer", "quant_signals", "risk_manager", "portfolio_allocator", "fire_planner",
+  "salary_budget", "red_team", "fact_checker", "bias_auditor", "devils_advocate", "connecting_dots",
+  "weighing_engine", "verdict_composer", "visualizer", "reporter", "options_desk", "microstructure"]);
+
+/** who reads whose output — the A2A communication map, humanized */
+const TALKS: Record<string, string[]> = {
+  web_researcher: ["every L2 specialist (via the evidence board)"],
+  news_intel: ["every L2 specialist (via the evidence board)"],
+  market_data: ["technical analyst", "quant signals", "weighing engine (Timing)"],
+  macro_data: ["macroeconomist", "weighing engine (Timing)"],
+  doc_analyst: ["every specialist (your documents become shared evidence)"],
+  technical_analyst: ["backtest engineer", "quant signals", "options desk", "risk manager"],
+  backtest_engineer: ["quant signals (no un-backtested signal may speak)"],
+  quant_signals: ["risk manager", "verdict composer"],
+  risk_manager: ["verdict composer (position plan)"],
+  red_team: ["every analyst it attacks — they rebut in War Room debates"],
+  fact_checker: ["weighing engine (failed checks lower Evidence)"],
+  bias_auditor: ["you — it audits YOUR framing"],
+  devils_advocate: ["verdict composer (the NO case is preserved)"],
+  connecting_dots: ["verdict composer (cross-domain patterns)"],
+  weighing_engine: ["verdict composer (it may not change the number)"],
+  verdict_composer: ["visualizer", "reporter"],
+  visualizer: ["you — every insight becomes an interactive chart"],
+  reporter: ["you — the full written decision report"],
+};
+
+export function capsFor(id: string): AgentCaps {
+  const a = agentById(id);
+  const io = STAGE_IO[id];
+  const can: string[] = [a.blurb];
+  if (io) can.push(`reads: ${io.in}`, `produces: ${io.out}`);
+  const subagents: string[] = [];
+  if (T0_IDS.has(id)) subagents.push(T0_SUB);
+  if (!NO_RESEARCH.has(id)) subagents.push(RESEARCH_SUB);
+  if (id === "doc_analyst") subagents.push("📄 extraction sub-agent — PDF/TXT → cited chunks + key facts");
+  if (id === "visualizer") subagents.push("📊 chart-picker sub-agent — chooses the best chart type per insight");
+  const talks_to = TALKS[id]
+    ?? ["red team (it will attack this analysis)", "fact checker (claims get verified)",
+        "weighing engine (score feeds a dimension)", "connecting dots (patterns across domains)"];
+  return { can, talks_to, subagents };
+}
 
 const BY_ID = new Map(AGENTS.map((a) => [a.id, a]));
 

@@ -17,10 +17,18 @@ const DEFAULTS: IntakeForm = {
   uncertainty: "",
   depth: "pulse",
   agents_enabled: [],
+  target_customer: "",
+  competitors: "",
+  revenue_model: "",
   symbol: "",
   trading_style: "swing",
   capital: 100000,
   risk_pct: 1.0,
+  thesis: "",
+  existing_position: 0,
+  dependents: 0,
+  current_debt: 0,
+  monthly_sip: 0,
   monthly_income: 80000,
   monthly_expenses: 50000,
   current_savings: 500000,
@@ -126,6 +134,14 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 onChange={(e) => set("risk_pct", Number(e.target.value))}
                 className="mt-3 w-full accent-[#06b6d4]" />
             </Field>
+            <Field label="Your thesis (why this stock?)">
+              <input value={f.thesis} onChange={(e) => set("thesis", e.target.value)}
+                placeholder="the board will stress-test it" className={selectCls} />
+            </Field>
+            <Field label="Shares already held">
+              <input type="number" min={0} value={f.existing_position}
+                onChange={(e) => set("existing_position", Number(e.target.value))} className={selectCls} />
+            </Field>
           </div>
           <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
             EIP analyses setups and teaches — it never tells you to buy or sell, never predicts prices,
@@ -175,6 +191,18 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
             <Field label="Biggest worry">
               <input value={f.uncertainty} onChange={(e) => set("uncertainty", e.target.value)}
                 placeholder="am I saving enough?" className={selectCls} />
+            </Field>
+            <Field label="Dependents">
+              <input type="number" min={0} max={10} value={f.dependents}
+                onChange={(e) => set("dependents", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Outstanding debt (₹)">
+              <input type="number" min={0} step={10000} value={f.current_debt}
+                onChange={(e) => set("current_debt", Number(e.target.value))} className={selectCls} />
+            </Field>
+            <Field label="Existing SIP (₹/month)">
+              <input type="number" min={0} step={1000} value={f.monthly_sip}
+                onChange={(e) => set("monthly_sip", Number(e.target.value))} className={selectCls} />
             </Field>
           </div>
           <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
@@ -230,6 +258,18 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
             <input value={f.uncertainty} onChange={(e) => set("uncertainty", e.target.value)}
               placeholder="what keeps you up at night?" className={selectCls} />
           </Field>
+          <Field label="Target customer (optional)">
+            <input value={f.target_customer} onChange={(e) => set("target_customer", e.target.value)}
+              placeholder="e.g. urban working women 25-40" className={selectCls} />
+          </Field>
+          <Field label="Known competitors (optional)">
+            <input value={f.competitors} onChange={(e) => set("competitors", e.target.value)}
+              placeholder="names or links — the board digs in" className={selectCls} />
+          </Field>
+          <Field label="Revenue model (optional)">
+            <input value={f.revenue_model} onChange={(e) => set("revenue_model", e.target.value)}
+              placeholder="subscription · one-off · B2B…" className={selectCls} />
+          </Field>
         </div>
 
         {/* ground it — document intelligence (PDF/TXT/MD/CSV; scans/OCR later) */}
@@ -260,15 +300,17 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </section>
       )}
 
-      {/* step 2 — depth (founder mode; trader/wealth desks are fixed crews) */}
-      {founder && (
+      {/* step 2 — depth (every mode: deeper = more specialists convened) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
-            ["pulse", "Pulse", "11 specialists · ~2 min · the fast read"],
-            ["board", "Board Meeting", "19 specialists · full venture board + devil's advocate"],
-            ["war_room", "War Room", "30 specialists · world cluster + live debate rounds"],
+            ["pulse", "Pulse", founder ? "13 specialists · ~2 min · the fast read"
+              : trader ? "18 specialists · the core trading desk" : "14 specialists · the money desk"],
+            ["board", "Board Meeting", founder ? "26 specialists · venture board + human layer"
+              : trader ? "26 specialists · + macro, geopolitics, psychology" : "22 specialists · + macro, funds, life-fit"],
+            ["war_room", "War Room", founder ? "37 specialists · world cluster + live debates"
+              : trader ? "34 specialists · the full house" : "29 specialists · the full house"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -279,12 +321,11 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
           ))}
         </div>
       </section>
-      )}
 
       {/* your board — hand-pick and brief the employees (every mode) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
-          {founder ? "03" : "02"} · Pick your board
+          03 · Pick your board
         </h2>
         <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)}
@@ -295,7 +336,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
-          {founder ? "04" : "03"} · Choose the engine
+          04 · Choose the engine
         </h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
@@ -315,10 +356,13 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
             ? trader ? "enter a symbol to begin"
               : wealth ? "enter your monthly income to begin"
               : "describe your situation (≥ 20 chars) to begin"
-            : trader ? `16 specialists ready · Trader desk · ${f.symbol}`
-            : wealth ? "12 specialists ready · Wealth desk"
-            : `${f.agents_enabled.length > 0 ? f.agents_enabled.length : f.depth === "pulse" ? 11 : f.depth === "board" ? 19 : 30} specialists ready · ${
-                { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]} depth`}
+            : `${f.agents_enabled.length > 0 ? f.agents_enabled.length
+                : { founder: { pulse: 13, board: 26, war_room: 37 },
+                    trader: { pulse: 18, board: 26, war_room: 34 },
+                    wealth: { pulse: 14, board: 22, war_room: 29 } }[f.mode][f.depth]
+              } specialists ready · ${
+                { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]}${
+                trader ? ` · ${f.symbol}` : ""}`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
           className="rounded-lg bg-gradient-to-r from-brand to-cyan px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">

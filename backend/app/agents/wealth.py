@@ -197,10 +197,19 @@ async def weighing_wealth(ctx: Ctx) -> None:
         "DebtHealth": sc("debt_banking"),
         "Opportunity": (sc("real_estate") + sc("location_scout")) / 2,
     }
+    # human layer (board/war_room depth): money is for a life, not a ledger
+    hvals = [_num(o[i].get("score"), -1) for i in
+             ("money_happiness", "human_needs", "philosophy_ethics", "philanthropy_impact")
+             if isinstance(o.get(i), dict) and isinstance(o[i].get("score"), (int, float))]
+    if hvals:
+        dims["LifeFit"] = max(0.5, sum(hvals) / len(hvals))
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}
     ctx.state.dimensions = dims
-    weights = {"Cashflow": 0.3, "Allocation": 0.2, "GoalFit": 0.25, "DebtHealth": 0.15, "Opportunity": 0.1}
-    overall = round(sum(dims[k] * w for k, w in weights.items()), 1)
+    base_w = {"Cashflow": 0.3, "Allocation": 0.2, "GoalFit": 0.25, "DebtHealth": 0.15,
+              "Opportunity": 0.1, "LifeFit": 0.15}
+    weights = {k: base_w[k] for k in dims if k in base_w}
+    tw = sum(weights.values()) or 1.0
+    overall = round(sum(dims[k] * (w / tw) for k, w in weights.items()), 1)
     for k, v in dims.items():
         await ctx.emit.log(aid, f"{k:<11} {v}/10", "code")
     await ctx.emit.partial("radar", {"dimensions": dims, "overall": overall})

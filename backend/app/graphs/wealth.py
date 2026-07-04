@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
+from ..agents import catalog
 from ..agents import studio
 from ..agents import wealth as wl
 from ..agents import venture as v
@@ -42,13 +43,21 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
             "persona": "earner/saver", "age": payload.get("age"),
             "income_band": payload.get("monthly_income"), "city": city,
             "risk_capacity": payload.get("risk_appetite", "moderate"),
+            "dependents": payload.get("dependents", 0),
+            "current_debt": payload.get("current_debt", 0),
+            "monthly_sip": payload.get("monthly_sip", 0),
             "geography": payload.get("geography", "India"),
         }
+        # depth unlocks the wider board for savers too (world + human lenses)
+        depth = str(payload.get("depth") or "pulse").lower()
+        full_scope = WEALTH_SCOPE + [a for a in catalog.WEALTH_EXTRA.get(depth, [])
+                                     if a not in WEALTH_SCOPE]
+
         # honor the board picker (money math core + synthesis always run)
         enabled = set(payload.get("agents_enabled") or [])
-        scope = ([a for a in WEALTH_SCOPE if a in enabled or a in WEALTH_MANDATORY]
-                 if enabled else WEALTH_SCOPE)
-        benched = [a for a in WEALTH_SCOPE if a not in scope]
+        scope = ([a for a in full_scope if a in enabled or a in WEALTH_MANDATORY]
+                 if enabled else full_scope)
+        benched = [a for a in full_scope if a not in scope]
 
         await emitter.stage("intake_parser", "done", "L0")
         await emitter.stage("context_profiler", "done", "L0")
@@ -77,7 +86,10 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
                                     ("fire_planner", wl.fire_planner))))
         await asyncio.gather(*wave((("debt_banking", wl.debt_banking),
                                     ("real_estate", wl.real_estate),
-                                    ("location_scout", wl.location_scout))))
+                                    ("location_scout", wl.location_scout))),
+                             *(catalog.LENS_AGENTS[a](ctx) for a in on
+                               if a in catalog.LENS_AGENTS
+                               and a not in ("debt_banking", "real_estate", "location_scout")))
 
         # L3 — crucible (red team attacks the plan; bias auditor reads the framing)
         await asyncio.gather(*wave((("red_team", v.red_team), ("bias_auditor", v.bias_auditor))))

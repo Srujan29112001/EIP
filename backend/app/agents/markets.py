@@ -308,10 +308,19 @@ async def weighing_trader(ctx: Ctx) -> None:
         "History": sc("quant_signals"),
         "RiskFit": sc("risk_manager"),
     }
+    # human layer (board/war_room depth): trading is a psychology game too
+    hvals = [_num(o[i].get("score"), -1) for i in
+             ("human_behaviour", "money_happiness", "philosophy_ethics")
+             if isinstance(o.get(i), dict) and isinstance(o[i].get("score"), (int, float))]
+    if hvals:
+        dims["Psychology"] = max(0.5, sum(hvals) / len(hvals))
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}
     ctx.state.dimensions = dims
-    weights = {"Trend": 0.25, "Momentum": 0.2, "Value": 0.2, "History": 0.2, "RiskFit": 0.15}
-    overall = round(sum(dims[k] * w for k, w in weights.items()), 1)
+    base_w = {"Trend": 0.25, "Momentum": 0.2, "Value": 0.2, "History": 0.2,
+              "RiskFit": 0.15, "Psychology": 0.12}
+    weights = {k: base_w[k] for k in dims if k in base_w}
+    tw = sum(weights.values()) or 1.0
+    overall = round(sum(dims[k] * (w / tw) for k, w in weights.items()), 1)
     for k, v in dims.items():
         await ctx.emit.log(aid, f"{k:<10} {v}/10", "code")
     await ctx.emit.log(aid, f"setup quality {overall}/10 · dissent: {len(ctx.state.conflicts)} attacks", "info")

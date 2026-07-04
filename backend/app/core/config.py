@@ -48,3 +48,18 @@ DEFAULT_MODELS: dict[str, str] = {
     "mistral": "mistral-large-latest",
     "xai": "grok-4",
 }
+
+# Cheaper/faster sibling per provider for mechanical & analysis tiers (t1/t2).
+# Free-tier quotas are usually MUCH larger on these (e.g. groq 8b-instant has
+# ~5× the daily tokens of 70b) — this is what lets a 30-agent board actually
+# get narrated on free keys instead of collapsing to deterministic fallbacks.
+FAST_MODELS: dict[str, str] = {
+    "anthropic": "claude-haiku-4-5",
+    "openai": "gpt-5-mini",
+    "google": "gemini-2.5-flash-lite",
+    "deepseek": "deepseek-chat",
+    "groq": "llama-3.1-8b-instant",
+    "openrouter": "deepseek/deepseek-chat",
+    "mistral": "mistral-small-latest",
+    "xai": "grok-3-mini",
+}

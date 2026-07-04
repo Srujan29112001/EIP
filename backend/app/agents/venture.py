@@ -24,7 +24,7 @@ def _heuristic_brief(raw: dict[str, Any]) -> dict[str, Any]:
     text = (raw.get("situation") or "").strip()
     lower = text.lower()
     stage = next((s for s in _STAGES if s in lower), raw.get("stage") or "ideation")
-    return {
+    brief = {
         "summary": text[:400] or "Unspecified venture idea",
         "industry": raw.get("industry") or "",
         "geography": raw.get("geography") or "India",
@@ -34,6 +34,11 @@ def _heuristic_brief(raw: dict[str, Any]) -> dict[str, Any]:
         "uncertainty": raw.get("uncertainty") or "",
         "keywords": re.findall(r"[a-zA-Z]{4,}", lower)[:8],
     }
+    # founder extras flow straight to every specialist via the brief
+    for k in ("target_customer", "competitors", "revenue_model"):
+        if raw.get(k):
+            brief[k] = str(raw[k])[:200]
+    return brief
 
 
 async def intake_parser(ctx: Ctx) -> None:
@@ -101,12 +106,14 @@ async def scope_planner(ctx: Ctx) -> None:
              "weighing_engine", "verdict_composer", "visualizer", "reporter"]
     board_wave = ["competitor_intel", "gtm_distribution", "legal", "tax",
                   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
+    human_wave = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
+                  "philosophy_ethics", "money_happiness", "philanthropy_impact"]
     world_wave = ["business_model", "marketing_strategy", "subsidies_schemes", "hr_talent",
                   "optimization_predictor", "regulator", "macroeconomist", "geopolitics",
                   "intl_markets", "trends", "esg_impact"]
     scope = (spine if depth == "pulse"
-             else spine + board_wave if depth == "board"
-             else spine + board_wave + world_wave)
+             else spine + board_wave + human_wave if depth == "board"
+             else spine + board_wave + human_wave + world_wave)
     label = {"pulse": "Pulse", "board": "Board Meeting", "war_room": "War Room"}.get(depth, "Pulse")
     if depth == "war_room":
         await ctx.emit.log(aid, "war room: full board + world cluster + open debate rounds", "muted")
@@ -273,8 +280,50 @@ async def doc_analyst(ctx: Ctx) -> None:
 # ── L2 helper: scored analysis via LLM with deterministic fallback ────────────
 
 _ANALYSIS_SCHEMA = ('{"verdict_line": str, "score": float (0-10), "confidence": float (0-1), '
-                    '"analysis": str (<=180 words), "assumptions": [str], "numbers_used": '
+                    '"analysis": str (<=200 words, specific), '
+                    '"key_insights": [str x2 (non-obvious, each <=25 words — the things a paying '
+                    'client underlines)], '
+                    '"what_would_change": str (<=20 words: what evidence would flip your score), '
+                    '"assumptions": [str], "numbers_used": '
                     '[{"figure": str, "source": "url or ESTIMATE"}]}')
+
+# each domain agent's research sub-agent: a targeted live query template.
+# {industry}/{geo}/{city}/{summary} are filled from the brief at run time.
+_RESEARCH_Q: dict[str, str] = {
+    "market_analyst": "{industry} market size growth {geo}",
+    "competitor_intel": "{industry} top competitors funding {geo}",
+    "gtm_distribution": "{industry} customer acquisition channels {geo}",
+    "legal": "{industry} legal requirements business {geo}",
+    "tax": "{industry} GST tax treatment {geo}",
+    "policy_compliance": "{industry} regulations licence requirements {geo}",
+    "industry_expert": "{industry} industry benchmarks margins {geo}",
+    "business_model": "{industry} business model unit economics",
+    "marketing_strategy": "{industry} marketing CAC benchmarks {geo}",
+    "subsidies_schemes": "{industry} government scheme subsidy startup {geo}",
+    "hr_talent": "{industry} startup salary benchmarks {geo}",
+    "optimization_predictor": "{industry} tax structure optimization {geo}",
+    "regulator": "{industry} regulator enforcement news {geo}",
+    "macroeconomist": "{geo} economic outlook interest rates 2026",
+    "geopolitics": "{industry} supply chain geopolitics risk",
+    "intl_markets": "{industry} international expansion exports {geo}",
+    "trends": "{industry} emerging trends 2026",
+    "esg_impact": "{industry} sustainability ESG {geo}",
+    "stock_analyst": "{summary} outlook analysis",
+    "fund_analyst": "{industry} sector mutual funds performance",
+    "debt_banking": "loan interest rates {geo} 2026",
+    "real_estate": "{city} property prices rent trends 2026",
+    "location_scout": "{city} government schemes business opportunities",
+    "consumer_analysis": "{industry} consumer behaviour survey {geo}",
+    "human_behaviour": "{industry} customer psychology buying triggers",
+    "human_needs": "{industry} customer pain points unmet needs",
+    "production_ops": "{industry} manufacturing supply chain costs {geo}",
+    "philanthropy_impact": "{industry} social impact CSR {geo}",
+}
+
+
+class _SafeDict(dict):
+    def __missing__(self, key: str) -> str:
+        return ""
 
 
 def _num(value: Any, default: float) -> float:
@@ -288,11 +337,35 @@ def _num(value: Any, default: float) -> float:
 async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
                            fallback: dict[str, Any]) -> dict[str, Any]:
     system_full = (system + " Cite evidence-board items when possible; any uninvented figure "
-                   "must be tagged ESTIMATE. Be specific, never generic.")
+                   "must be tagged ESTIMATE. Be specific, never generic — think like the one "
+                   "specialist in the room who has actually done this before.")
     user_ctx = (ctx.state.raw.get("agent_context") or {}).get(aid, "")
+
+    # ── research sub-agent: a targeted live query just for THIS specialist ──
+    research_block = ""
+    q_tpl = _RESEARCH_Q.get(aid)
+    depth = str(ctx.state.raw.get("depth") or "pulse").lower()
+    if q_tpl and (depth != "pulse" or aid in ("market_analyst", "stock_analyst")):
+        b = ctx.state.brief
+        q = " ".join(q_tpl.format_map(_SafeDict(
+            industry=b.get("industry", ""), geo=b.get("geography", ""),
+            city=str(ctx.state.raw.get("city") or b.get("geography", "")),
+            summary=str(b.get("summary", ""))[:60])).split())
+        await ctx.emit.log(aid, f"└ research sub-agent ⌕ {q}", "muted")
+        hits = await web.search(q, 3)
+        if hits:
+            for h in hits:
+                if h.get("url"):
+                    ctx.state.evidence.append({"text": f"[{aid}] {h['title']} — {h['snippet'][:160]}",
+                                               "source": {"url": h["url"]}, "agent": aid})
+            research_block = ("MY SUB-AGENT'S FRESH RESEARCH (cite these):\n"
+                              + "\n".join(f"- {h['title']}: {h['snippet'][:140]}" for h in hits) + "\n")
+            await ctx.emit.log(aid, f"└ sub-agent returned {len(hits)} sources", "muted")
+
     user_full = (f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
                  + (f"USER'S DIRECT BRIEF TO YOU: {str(user_ctx)[:500]}\n" if user_ctx else "")
-                 + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest()}\n\nTASK: {ask}")
+                 + research_block
+                 + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(14)}\n\nTASK: {ask}")
     if user_ctx:
         await ctx.emit.log(aid, f"user brief → me: {str(user_ctx)[:90]}", "muted")
     await ctx.emit.prompt(aid, system_full, user_full)   # glass box: show the exact prompt
@@ -597,25 +670,32 @@ async def weighing_engine(ctx: Ctx) -> None:
         return sum(vals) / len(vals) if vals else None
 
     dims = {
-        "Market": avg(["market_analyst", "competitor_intel", "industry_expert", "trends"]) or 5.0,
+        "Market": avg(["market_analyst", "competitor_intel", "industry_expert", "trends",
+                       "consumer_analysis"]) or 5.0,
         "Economics": avg(["finance_modeler", "tax", "subsidies_schemes"]) or 5.0,
         "Evidence": evidence_dim,
-        "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy", "hr_talent"]) or 5.0,
+        "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy",
+                          "hr_talent", "production_ops"]) or 5.0,
         "Timing": max(1.0, min(9.5, timing)),
     }
     regulatory = avg(["policy_compliance", "legal", "regulator"])
     if regulatory is not None:
         dims["Regulatory"] = regulatory
+    # the human layer gets its own axis — does this fit the human, not just the market
+    human_fit = avg(["human_behaviour", "human_needs", "money_happiness",
+                     "philosophy_ethics", "philanthropy_impact"])
+    if human_fit is not None:
+        dims["HumanFit"] = human_fit
     dims = {k: round(min(10.0, v), 1) for k, v in dims.items()}
     ctx.state.dimensions = dims
 
-    # weights must sum to 1.0 in both depths (client What-If mirrors these — keep in sync)
-    if "Regulatory" in dims:
-        weights = {"Market": 0.25, "Economics": 0.25, "Regulatory": 0.125,
-                   "Evidence": 0.10, "Execution": 0.125, "Timing": 0.15}
-    else:
-        weights = {"Market": 0.3, "Economics": 0.3, "Evidence": 0.15,
-                   "Execution": 0.125, "Timing": 0.125}
+    # base weights, renormalized over whichever dimensions this depth produced
+    # (client What-If mirrors this — keep sim-charts.tsx weightsFor() in sync)
+    base_w = {"Market": 0.25, "Economics": 0.25, "Evidence": 0.10, "Execution": 0.125,
+              "Timing": 0.15, "Regulatory": 0.125, "HumanFit": 0.12}
+    weights = {k: base_w[k] for k in dims if k in base_w}
+    total_w = sum(weights.values()) or 1.0
+    weights = {k: v / total_w for k, v in weights.items()}
     overall = round(sum(dims[k] * w for k, w in weights.items()), 1)
 
     conf_spread = abs(_num(market.get("confidence"), 0.5) - _num(fin.get("confidence"), 0.5))

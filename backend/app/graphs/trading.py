@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
+from ..agents import catalog
 from ..agents import markets as m
 from ..agents import studio
 from ..agents import venture as v
@@ -44,15 +45,22 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
             "industry": "", "geography": payload.get("geography", "India"),
             "stage": style, "keywords": [symbol.lower()],
             "uncertainty": payload.get("uncertainty", ""),
+            **({"user_thesis": str(payload["thesis"])[:300]} if payload.get("thesis") else {}),
         }
         ctx.state.profile = {"persona": f"{style} trader", "capital_band": payload.get("capital", ""),
                              "risk_capacity": f"{payload.get('risk_pct', 1)}% per trade",
+                             "existing_position": payload.get("existing_position", 0),
                              "geography": payload.get("geography", "India")}
+        # depth unlocks the wider board for traders too (world + human lenses)
+        depth = str(payload.get("depth") or "pulse").lower()
+        full_scope = TRADER_SCOPE + [a for a in catalog.TRADER_EXTRA.get(depth, [])
+                                     if a not in TRADER_SCOPE]
+
         # honor the board picker (mandatory data spine + synthesis always run)
         enabled = set(payload.get("agents_enabled") or [])
-        scope = ([a for a in TRADER_SCOPE if a in enabled or a in TRADER_MANDATORY]
-                 if enabled else TRADER_SCOPE)
-        benched = [a for a in TRADER_SCOPE if a not in scope]
+        scope = ([a for a in full_scope if a in enabled or a in TRADER_MANDATORY]
+                 if enabled else full_scope)
+        benched = [a for a in full_scope if a not in scope]
 
         await emitter.stage("intake_parser", "done", "L0")
         await emitter.stage("context_profiler", "done", "L0")
@@ -87,10 +95,14 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
             await m.quant_signals(ctx)
         if "risk_manager" in on:
             await m.risk_manager(ctx)
-        # education lenses ride the same blackboard (funds / options / plumbing)
+        # education + wider lenses ride the same blackboard (funds/options/plumbing
+        # plus whatever world/human specialists this depth convened)
         await asyncio.gather(*(f(ctx) for a, f in
                                (("fund_analyst", m.fund_analyst), ("options_desk", m.options_desk),
-                                ("microstructure", m.microstructure)) if a in on))
+                                ("microstructure", m.microstructure)) if a in on),
+                             *(catalog.LENS_AGENTS[a](ctx) for a in on
+                               if a in catalog.LENS_AGENTS
+                               and a not in ("fund_analyst", "options_desk", "microstructure")))
 
         # L3 — crucible
         await asyncio.gather(*(f(ctx) for a, f in

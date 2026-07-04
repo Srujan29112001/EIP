@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 import orjson
 
-from .config import DEFAULT_MODELS, settings
+from .config import DEFAULT_MODELS, FAST_MODELS, settings
 
 Tier = str  # "t1" | "t2" | "t3"
 
@@ -106,9 +106,20 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
     if cfg.compute == "local":
         return plan + ([local] if ollama_up else [])
     # a user model override applies ONLY to the provider it was chosen for —
-    # sending e.g. an Anthropic model name to Groq guarantees 404s on fallback
+    # sending e.g. an Anthropic model name to Groq guarantees 404s on fallback.
+    # t1/t2 ride each provider's fast sibling (bigger free-tier quotas), t3
+    # gets the flagship — this is what keeps a 30-agent board narrated.
     def model_for(p: str) -> str:
-        return cfg.model if (cfg.model and p == cfg.provider) else DEFAULT_MODELS[p]
+        if cfg.model and p == cfg.provider:
+            return cfg.model
+        return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
+
+    # rotate which keyed provider leads for t1/t2 so one free key's rate
+    # limits don't starve every agent (t3 keeps the user's preferred order)
+    if tier in ("t1", "t2") and len(clouds) > 1:
+        global _ROTATE
+        _ROTATE += 1
+        clouds = clouds[_ROTATE % len(clouds):] + clouds[:_ROTATE % len(clouds)]
 
     if cfg.compute == "cloud":
         return plan + [(p, model_for(p)) for p in clouds]
@@ -123,6 +134,9 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         if ollama_up:
             plan.append(local)
     return plan
+
+
+_ROTATE = 0
 
 
 # ── provider calls ────────────────────────────────────────────────────────────
@@ -220,6 +234,37 @@ async def _dispatch(provider: str, model: str, cfg: EngineConfig, system: str, u
 # process-wide: cloud providers rate-limit per key, not per run
 _CLOUD_SEM = asyncio.Semaphore(3)
 
+# provider → event-loop time until which it is cooling down after a 429.
+# One rate-limited key must not eat every agent's retry budget — skip it,
+# let the next provider (or the fast local model) answer instead.
+_COOLDOWN: dict[str, float] = {}
+
+
+def _cooling(provider: str) -> bool:
+    return _COOLDOWN.get(provider, 0.0) > asyncio.get_event_loop().time()
+
+
+def _cool(provider: str, seconds: float) -> None:
+    now = asyncio.get_event_loop().time()
+    _COOLDOWN[provider] = max(_COOLDOWN.get(provider, 0.0), now + seconds)
+
+
+# pacer: minimum spacing between calls to the same provider — a steady drip
+# stays inside free-tier tokens-per-minute windows where a burst 429-storms
+_LAST_CALL: dict[str, float] = {}
+_PACE_LOCK: dict[str, asyncio.Lock] = {}
+_MIN_INTERVAL = 1.3  # seconds between calls per cloud provider
+
+
+async def _pace(provider: str) -> None:
+    lock = _PACE_LOCK.setdefault(provider, asyncio.Lock())
+    async with lock:
+        now = asyncio.get_event_loop().time()
+        wait = _LAST_CALL.get(provider, 0.0) + _MIN_INTERVAL - now
+        if wait > 0:
+            await asyncio.sleep(wait)
+        _LAST_CALL[provider] = asyncio.get_event_loop().time()
+
 
 class Gateway:
     def __init__(self, cfg: EngineConfig | None = None) -> None:
@@ -248,7 +293,11 @@ class Gateway:
         if self.cfg.max_tokens_cap:
             max_tokens = min(max_tokens, self.cfg.max_tokens_cap)
         plan = _route_plan(tier, self.cfg, await self._local_ok(), agent)
+        skipped_cooling: list[tuple[str, str]] = []
         for provider, model in plan:
+            if _cooling(provider) and provider not in ("ollama", "lmstudio"):
+                skipped_cooling.append((provider, model))
+                continue
             for attempt in (0, 1, 2):
                 try:
                     if provider in ("ollama", "lmstudio"):
@@ -257,19 +306,35 @@ class Gateway:
                         # gate cloud concurrency — a parallel 8-agent wave on a
                         # free-tier key otherwise 429s half the board
                         async with _CLOUD_SEM:
+                            await _pace(provider)
                             res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
                     if res.ok:
                         res.route = f"{provider}:{model}"
                         return res
                     break
                 except httpx.HTTPStatusError as e:
-                    # rate limit: back off before falling down the ladder
-                    if e.response.status_code == 429 and attempt < 2:
-                        await asyncio.sleep(3.0 * (attempt + 1))
-                        continue
+                    # rate limit: brief backoff, then cool this provider down and move on
+                    if e.response.status_code == 429:
+                        if attempt < 2:
+                            await asyncio.sleep(4.0 * (attempt + 1))
+                            continue
+                        _cool(provider, 15.0)
                     break
                 except Exception:
                     break
+        # everyone else failed — as a last resort, wait out the shortest cooldown once
+        if skipped_cooling:
+            provider, model = skipped_cooling[0]
+            wait = max(0.5, min(20.0, _COOLDOWN.get(provider, 0.0) - asyncio.get_event_loop().time()))
+            await asyncio.sleep(wait)
+            try:
+                async with _CLOUD_SEM:
+                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                if res.ok:
+                    res.route = f"{provider}:{model}"
+                    return res
+            except Exception:
+                pass
         return LLMResult(text="", route="none")
 
     async def structured(self, tier: Tier, system: str, user: str, schema_hint: str,

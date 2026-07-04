@@ -31,13 +31,19 @@ class RunRequest(BaseModel):
     budget_band: str = ""
     team_size: str = ""
     uncertainty: str = ""
-    depth: str = "pulse"                 # pulse | board | war_room
+    depth: str = "pulse"                 # pulse | board | war_room (all modes)
+    # founder extras
+    target_customer: str = ""
+    competitors: str = ""
+    revenue_model: str = ""
     agents_enabled: list[str] = Field(default_factory=list)  # empty = full scope for depth
     # trader mode
     symbol: str = ""
     trading_style: str = "swing"         # intraday | swing | position | options_edu
     capital: float = 100000.0
     risk_pct: float = 1.0
+    thesis: str = ""                     # trader: why are you even looking at this
+    existing_position: float = 0.0       # shares already held
     # wealth mode
     monthly_income: float = 0.0
     monthly_expenses: float = 0.0
@@ -46,6 +52,9 @@ class RunRequest(BaseModel):
     risk_appetite: str = "moderate"      # conservative | moderate | aggressive
     city: str = ""
     goals: str = ""
+    dependents: int = 0
+    current_debt: float = 0.0            # outstanding loans total
+    monthly_sip: float = 0.0             # already-automated investing
     # document intelligence (Phase 8): extracted client-side via POST /api/extract
     documents: list[dict[str, Any]] = Field(default_factory=list)
     # per-agent user briefs from the board picker ("here's what I want YOU to focus on")

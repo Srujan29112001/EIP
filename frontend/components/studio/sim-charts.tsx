@@ -13,6 +13,22 @@ import { SimSlider, TimeSeries, type SeriesPoint } from "./charts";
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/** Mirror of the backend weighing engines: base weights per mode, renormalized
+ * over whichever dimensions this run produced. Keep in sync with venture/
+ * markets/wealth weighing. */
+export function weightsFor(dims: Record<string, number>): Record<string, number> {
+  const founder = { Market: 0.25, Economics: 0.25, Evidence: 0.10, Execution: 0.125,
+    Timing: 0.15, Regulatory: 0.125, HumanFit: 0.12 } as Record<string, number>;
+  const trader = { Trend: 0.25, Momentum: 0.2, Value: 0.2, History: 0.2,
+    RiskFit: 0.15, Psychology: 0.12 } as Record<string, number>;
+  const wealth = { Cashflow: 0.3, Allocation: 0.2, GoalFit: 0.25, DebtHealth: 0.15,
+    Opportunity: 0.1, LifeFit: 0.15 } as Record<string, number>;
+  const base = "Trend" in dims ? trader : "Cashflow" in dims ? wealth : founder;
+  const picked = Object.fromEntries(Object.keys(dims).filter((k) => k in base).map((k) => [k, base[k]]));
+  const total = Object.values(picked).reduce((s, v) => s + v, 0) || 1;
+  return Object.fromEntries(Object.entries(picked).map(([k, v]) => [k, v / total]));
+}
+
 /* ── 1 · Cash & runway simulator (Economics insight) ─────────────────────── */
 
 export function RunwaySim() {
@@ -43,9 +59,7 @@ export function RunwaySim() {
   const baseRaw = clamp(core.runway_months / 3.0, 1.0, 9.0);
   const penalty = baseRaw - (dims.Economics ?? baseRaw);
   const newEcon = clamp(clamp(runway / 3.0, 1.0, 9.0) - penalty, 0.5, 10);
-  const weights: Record<string, number> = "Regulatory" in dims
-    ? { Market: 0.25, Economics: 0.25, Regulatory: 0.125, Evidence: 0.10, Execution: 0.125, Timing: 0.15 }
-    : { Market: 0.3, Economics: 0.3, Evidence: 0.15, Execution: 0.125, Timing: 0.125 };
+  const weights = weightsFor(dims);
   const overall = Object.entries(weights).reduce(
     (s, [k, w]) => s + (k === "Economics" ? newEcon : dims[k] ?? 5) * w, 0);
   const delta = overall - (verdict.score ?? overall);
@@ -165,9 +179,7 @@ export function ScoreSim() {
 
   if (!verdict?.dimensions) return null;
   const dims = verdict.dimensions;
-  const weights: Record<string, number> = "Regulatory" in dims
-    ? { Market: 0.25, Economics: 0.25, Regulatory: 0.125, Evidence: 0.10, Execution: 0.125, Timing: 0.15 }
-    : { Market: 0.3, Economics: 0.3, Evidence: 0.15, Execution: 0.125, Timing: 0.125 };
+  const weights = weightsFor(dims);
   const val = (k: string) => overrides[k] ?? dims[k] ?? 5;
   const overall = Object.entries(weights).reduce((s, [k, w]) => s + val(k) * w, 0);
   const delta = overall - (verdict.score ?? overall);

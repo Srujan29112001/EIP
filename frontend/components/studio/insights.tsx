@@ -58,6 +58,7 @@ export function SmartInsights() {
                 <span className="truncate font-mono text-[10px] uppercase tracking-wider" style={{ color: a.accent }}>
                   {a.name}
                 </span>
+                <span className="rounded bg-panel-2 px-1 py-0.5 font-mono text-[8px] uppercase text-slate-600">{a.cluster}</span>
                 {score !== null && (
                   <span className="ml-auto shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold"
                     style={{ color: score >= 7 ? "#9ae64a" : score >= 4.5 ? "#fbbf24" : "#fb7185",
@@ -82,9 +83,24 @@ export function SmartInsights() {
                     full analysis <ChevronDown size={10} className={`transition ${isOpen ? "rotate-180" : ""}`} />
                   </button>
                   {isOpen && (
-                    <p className="mt-1.5 border-t border-line pt-1.5 text-[11px] leading-relaxed text-slate-400">
-                      {String(out.analysis)}
-                    </p>
+                    <div className="mt-1.5 space-y-1.5 border-t border-line pt-1.5">
+                      <p className="text-[11px] leading-relaxed text-slate-400">{String(out.analysis)}</p>
+                      {out.what_would_change ? (
+                        <p className="text-[10px] text-slate-500">
+                          <span className="font-mono uppercase tracking-wider text-cyan/70">flips my score: </span>
+                          {String(out.what_would_change)}
+                        </p>
+                      ) : null}
+                      {Array.isArray(out.assumptions) && out.assumptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {out.assumptions.slice(0, 3).map((s, i) => (
+                            <span key={i} className="rounded border border-warn/25 bg-warn/5 px-1.5 py-0.5 font-mono text-[9px] text-warn/90">
+                              assumes: {String(s).slice(0, 50)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </>
               ) : null}

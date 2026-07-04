@@ -8,7 +8,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { AGENTS, LAYER_LABELS, agentById, type Layer } from "@/lib/agents";
+import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, capsFor, type Layer } from "@/lib/agents";
 
 const MANDATORY = new Set(["intake_parser", "context_profiler", "scope_planner",
   "weighing_engine", "verdict_composer", "visualizer", "reporter"]);
@@ -19,16 +19,29 @@ const PULSE_ONLY = new Set(["web_researcher", "news_intel", "market_data", "macr
 const BOARD_EXTRA = new Set(["competitor_intel", "gtm_distribution", "legal", "tax",
   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]);
 
-const TRADER_ROSTER = ["news_intel", "market_data", "macro_data", "technical_analyst",
+const HUMAN_WAVE = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
+  "philosophy_ethics", "money_happiness", "philanthropy_impact"];
+
+const TRADER_CORE = ["news_intel", "market_data", "macro_data", "technical_analyst",
   "stock_analyst", "backtest_engineer", "quant_signals", "risk_manager",
   "fund_analyst", "options_desk", "microstructure", "red_team", "fact_checker",
   "bias_auditor", "weighing_engine", "verdict_composer", "visualizer", "reporter"];
+const TRADER_BOARD = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends", "regulator",
+  "industry_expert", "human_behaviour", "money_happiness", "philosophy_ethics"];
+const TRADER_WAR = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends", "regulator",
+  "industry_expert", "intl_markets", "esg_impact", "policy_compliance",
+  "optimization_predictor", ...HUMAN_WAVE];
 const TRADER_MANDATORY = new Set(["market_data", "technical_analyst", "weighing_engine",
   "verdict_composer", "visualizer", "reporter"]);
 
-const WEALTH_ROSTER = ["news_intel", "macro_data", "salary_budget", "portfolio_allocator",
+const WEALTH_CORE = ["news_intel", "macro_data", "salary_budget", "portfolio_allocator",
   "fire_planner", "debt_banking", "real_estate", "location_scout", "red_team",
   "bias_auditor", "weighing_engine", "verdict_composer", "visualizer", "reporter"];
+const WEALTH_BOARD = [...WEALTH_CORE, "macroeconomist", "trends", "regulator", "fund_analyst",
+  "money_happiness", "human_needs", "philosophy_ethics", "philanthropy_impact"];
+const WEALTH_WAR = [...WEALTH_CORE, "macroeconomist", "trends", "regulator", "fund_analyst",
+  "geopolitics", "intl_markets", "esg_impact", "optimization_predictor", "subsidies_schemes",
+  ...HUMAN_WAVE];
 const WEALTH_MANDATORY = new Set(["salary_budget", "weighing_engine", "verdict_composer",
   "visualizer", "reporter"]);
 
@@ -46,24 +59,25 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
 
   const { roster, mandatory } = useMemo(() => {
     if (mode === "trader") {
-      return { roster: AGENTS.filter((a) => TRADER_ROSTER.includes(a.id)), mandatory: TRADER_MANDATORY };
+      const list = depth === "war_room" ? TRADER_WAR : depth === "board" ? TRADER_BOARD : TRADER_CORE;
+      return { roster: AGENTS.filter((a) => list.includes(a.id)), mandatory: TRADER_MANDATORY };
     }
     if (mode === "wealth") {
-      return { roster: AGENTS.filter((a) => WEALTH_ROSTER.includes(a.id)), mandatory: WEALTH_MANDATORY };
+      const list = depth === "war_room" ? WEALTH_WAR : depth === "board" ? WEALTH_BOARD : WEALTH_CORE;
+      return { roster: AGENTS.filter((a) => list.includes(a.id)), mandatory: WEALTH_MANDATORY };
     }
     const inDepth = (id: string) => depth === "war_room" ? true
-      : depth === "board" ? PULSE_ONLY.has(id) || BOARD_EXTRA.has(id)
+      : depth === "board" ? PULSE_ONLY.has(id) || BOARD_EXTRA.has(id) || HUMAN_WAVE.includes(id)
       : PULSE_ONLY.has(id);
     return { roster: AGENTS.filter((a) => inDepth(a.id)), mandatory: MANDATORY };
   }, [mode, depth]);
 
   const isOn = (id: string) => enabled.length === 0 || enabled.includes(id) || mandatory.has(id);
   const toggle = (id: string) => {
-    if (mandatory.has(id)) { setBriefFor(briefFor === id ? null : id); return; }
+    if (mandatory.has(id)) return;
     const current = enabled.length === 0 ? roster.map((a) => a.id) : [...enabled];
     const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
     onChange(next.length >= roster.length ? [] : next);
-    setBriefFor(id);
   };
 
   // ── flow layout (same geometry as the live pipeline tree) ────────────────
@@ -97,7 +111,7 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">
         <span>{onCount}/{roster.length} convened{briefedCount ? ` · ${briefedCount} briefed` : ""}</span>
-        <span className="text-slate-600">click a node to bench/convene · click again to brief it</span>
+        <span className="text-slate-600">click a node → its capability card, brief box & bench/convene</span>
         {enabled.length > 0 && (
           <button onClick={() => onChange([])} className="ml-auto text-slate-500 hover:text-cyan">↺ everyone back on</button>
         )}
@@ -133,8 +147,8 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
             const locked = mandatory.has(a.id);
             const briefed = Boolean(agentContext[a.id]?.trim());
             return (
-              <g key={a.id} onClick={() => toggle(a.id)} className="cursor-pointer">
-                <title>{locked ? `${a.name} — core, always runs (click to brief)` : `${a.name} — ${a.blurb}`}</title>
+              <g key={a.id} onClick={() => setBriefFor(briefFor === a.id ? null : a.id)} className="cursor-pointer">
+                <title>{locked ? `${a.name} — core, always runs (click for its card)` : `${a.name} — ${a.blurb}`}</title>
                 {on && (
                   <circle cx={p.x} cy={p.y} r={16} fill={a.accent} opacity="0.14"
                     className="transition-all duration-300" />
@@ -162,14 +176,61 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
         </svg>
       </div>
 
-      {/* per-agent brief */}
-      {briefAgent && isOn(briefAgent.id) && (
+      {/* the selected agent: capability card + direct brief */}
+      {briefAgent && (() => {
+        const caps = capsFor(briefAgent.id);
+        const io = STAGE_IO[briefAgent.id];
+        const on = isOn(briefAgent.id);
+        const locked = mandatory.has(briefAgent.id);
+        return (
         <div className="mt-2 rounded-lg border p-3" style={{ borderColor: `${briefAgent.accent}55`, background: `${briefAgent.accent}0a` }}>
-          <div className="mb-1.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider">
-            <span className="text-sm">{briefAgent.icon}</span>
-            <span style={{ color: briefAgent.accent }}>brief {briefAgent.name} directly</span>
-            <span className="text-slate-600">it reads this verbatim before analysing</span>
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider">
+            <span className="text-base">{briefAgent.icon}</span>
+            <span className="text-sm normal-case font-sans font-semibold tracking-normal" style={{ color: briefAgent.accent }}>
+              {briefAgent.name}
+            </span>
+            <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[8px] text-slate-500">{briefAgent.layer} · {briefAgent.cluster}</span>
+            {locked ? (
+              <span className="rounded border border-line px-2 py-0.5 text-[9px] text-slate-500">core · always runs</span>
+            ) : (
+              <button onClick={() => toggle(briefAgent.id)}
+                className={`rounded border px-2 py-0.5 text-[9px] transition ${
+                  on ? "border-err/50 text-err hover:bg-err/10" : "border-ok/50 text-ok hover:bg-ok/10"}`}>
+                {on ? "bench this agent" : "convene this agent"}
+              </button>
+            )}
             <button onClick={() => setBriefFor(null)} className="ml-auto text-slate-500 hover:text-white">✕</button>
+          </div>
+
+          <div className="mb-2 grid gap-2 text-[11px] leading-relaxed md:grid-cols-3">
+            <div>
+              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">what it does</div>
+              <p className="text-slate-300">{briefAgent.blurb}.</p>
+              {io && (
+                <div className="mt-1 space-y-0.5 font-mono text-[10px]">
+                  <div className="text-slate-500">⇥ in: <span className="text-slate-400">{io.in}</span></div>
+                  <div className="text-slate-500">⇤ out: <span className="text-slate-400">{io.out}</span></div>
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">talks to</div>
+              <ul className="space-y-0.5 text-slate-400">
+                {caps.talks_to.slice(0, 4).map((t, i) => <li key={i}>↔ {t}</li>)}
+              </ul>
+            </div>
+            <div>
+              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">sub-agents</div>
+              {caps.subagents.length ? (
+                <ul className="space-y-0.5 text-slate-400">
+                  {caps.subagents.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              ) : <p className="text-slate-600">works solo on the shared board</p>}
+            </div>
+          </div>
+
+          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest" style={{ color: briefAgent.accent }}>
+            brief it directly — it reads this verbatim before analysing
           </div>
           <textarea
             value={agentContext[briefAgent.id] ?? ""}
@@ -178,7 +239,8 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
             placeholder={`e.g. "focus on Karnataka regulations only" · "assume we already have FSSAI licence"`}
             className="w-full resize-none rounded-md border border-line bg-ink/70 p-2 text-xs outline-none focus:border-cyan/60" />
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

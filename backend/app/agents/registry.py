@@ -67,6 +67,14 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("intl_markets", "International Markets", "L2", "world", "t2", "Cross-border expansion and exposure", True),
     AgentMeta("trends", "Trends & Weak Signals", "L2", "world", "t2", "What is emerging before it is obvious", True),
     AgentMeta("esg_impact", "ESG & Impact", "L2", "world", "t2", "Sustainability, ethics, impact economics", True),
+    # L2 — Human layer (blueprint: behaviour, needs, consumer, production, philosophy, money-happiness, philanthropy)
+    AgentMeta("human_behaviour", "Human Behaviour", "L2", "human", "t2", "How real people will actually behave toward this", True),
+    AgentMeta("human_needs", "Human Needs", "L2", "human", "t2", "Does this serve a real, durable need (Maslow)", True),
+    AgentMeta("consumer_analysis", "Consumer Analysis", "L2", "human", "t2", "Segments, willingness to pay, purchase journey", True),
+    AgentMeta("production_ops", "Production & Ops", "L2", "human", "t2", "Making the thing: inputs, capacity, fragility", True),
+    AgentMeta("philosophy_ethics", "Philosophy & Ethics", "L2", "human", "t3", "The examined view — stakeholders, second-order effects", True),
+    AgentMeta("money_happiness", "Money & Happiness", "L2", "human", "t2", "Will this actually buy a better life", True),
+    AgentMeta("philanthropy_impact", "Philanthropy & Impact", "L2", "human", "t2", "Where doing good compounds the mission", True),
     # L3 — Crucible
     AgentMeta("red_team", "Red Team", "L3", "crucible", "t3", "Attacks the thesis with evidence", True),
     AgentMeta("devils_advocate", "Devil's Advocate", "L3", "crucible", "t3", "Steel-mans the NO case", True),

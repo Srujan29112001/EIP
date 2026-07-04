@@ -109,5 +109,16 @@ Original EIP blueprint recovered → MASTER_PLAN Part 11 added (gap audit + Phas
 - [x] 3D Decision Graph: agent nodes now carry ⇥ IN / ⇤ OUT in their detail panel and each agent's output orbits as its own node
 - Verified: pulse run → 7 charts + 1,351-char report + per-agent brief acknowledged; picker rewires 43→38 wires on bench; tsc clean
 
+## Round 4 — engine fix + human layer + results v4 (built 2026-07-04)
+User feedback: agents falling back ("LLM unavailable"), results too thin for a 50-agent board.
+- [x] **Gateway v3 (the fallback fix):** tier-split models per provider (t1/t2 ride fast siblings — groq llama-3.1-8b-instant has ~5× the daily quota of 70b), provider rotation for analysis tiers, 429 cooldown registry (a rate-limited key is skipped, not hammered), per-provider call pacer (1.3s drip stays inside free-tier TPM), last-resort cooldown wait. Root cause documented: one free Groq key cannot narrate 30+ agents — add a second free key (Gemini) to double throughput.
+- [x] **Human layer (7 new agents, ALL modes):** Human Behaviour, Human Needs, Consumer Analysis, Production & Ops, Philosophy & Ethics, Money & Happiness, Philanthropy & Impact → new HumanFit / Psychology / LifeFit radar dimensions (weights renormalize; client mirror in weightsFor())
+- [x] **Agent catalog:** 30 blackboard-only lens agents convocable in ANY mode; trader/wealth get the depth selector (18/26/34 and 14/22/29 specialists); founder war room = 37; **55 agents implemented**
+- [x] **Research sub-agents:** every domain specialist fires its own targeted live web query at Board/War-Room depth (verified: 12 sub-agents in one run), results cited in its prompt + evidence board
+- [x] **Richer agent outputs:** key_insights + what_would_change in every analysis schema
+- [x] **Results v4 (Helix/Clinical density):** quality banner, 6 KPI tiles, Key Findings grid (strongest/weakest dimension, biggest believer/skeptic, top risk, sensitivity), auto-detected Key Insights bullets, sortable per-agent statistics table, Domain Screens (cluster progress bars), Smart Insight cards with cluster tags + assumptions chips + "flips my score"
+- [x] **Studio:** richer intake per mode (founder: target customer/competitors/revenue model · trader: thesis/existing position · wealth: dependents/debt/SIP); board-picker capability cards (what it does, IN/OUT, talks-to, sub-agents, bench/convene button); rail shows only the convened board
+- Verified: board run → 7/7 human agents done, HumanFit 6.1 on radar, 12 research sub-agents, 7 charts, tier-split routes live; picker card + results v4 confirmed in browser
+
 ## Next
 Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).

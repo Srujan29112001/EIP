@@ -14,13 +14,17 @@ const DOT: Record<StageStatus, string> = {
 
 export function PipelineRail() {
   const status = useRun((s) => s.agentStatus);
+  const scope = useRun((s) => s.scope);
   const layers = ["L0", "L1", "L2", "L3", "L4", "L5"] as const;
+  // only the convened board belongs in the rail — the full registry is 55+
+  const convened = new Set(["intake_parser", "context_profiler", "scope_planner", ...scope]);
 
   return (
     <aside className="scroll-thin sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl border border-line bg-panel p-4">
       <h3 className="mb-3 font-mono text-[11px] uppercase tracking-widest text-muted">Intelligence layers</h3>
       {layers.map((layer) => {
-        const agents = AGENTS.filter((a) => a.layer === layer);
+        const agents = AGENTS.filter((a) => a.layer === layer &&
+          (scope.length === 0 || convened.has(a.id) || status[a.id]));
         if (!agents.length) return null;
         return (
           <div key={layer} className="mb-4">
