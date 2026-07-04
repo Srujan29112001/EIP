@@ -54,6 +54,7 @@ export function EnginePanel({ engine, onChange, status }: {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         provider: engine.provider, model: engine.model, api_keys: engine.api_keys,
+        api_keys_multi: engine.api_keys_multi,
         agent_routes: engine.agent_routes, temperature: engine.temperature,
         max_tokens_cap: engine.max_tokens_cap, mode,
       }));
@@ -62,15 +63,32 @@ export function EnginePanel({ engine, onChange, status }: {
 
   const set = <K extends keyof EngineSelection>(k: K, v: EngineSelection[K]) =>
     onChange({ ...engine, [k]: v });
-  const setKey = (p: string, key: string) =>
-    set("api_keys", { ...engine.api_keys, [p]: key });
   const setRoute = (agentId: string, route: string) => {
     const next = { ...engine.agent_routes };
     if (route) next[agentId] = route; else delete next[agentId];
     set("agent_routes", next);
   };
 
-  const keyedProviders = PROVIDERS.filter((p) => engine.api_keys[p.id]?.trim());
+  // 5 key slots per provider; the first non-blank also mirrors to api_keys so
+  // the badge/available-provider logic keeps working unchanged
+  const keysOf = (p: string): string[] => {
+    const arr = engine.api_keys_multi?.[p] ?? [];
+    return Array.from({ length: 5 }, (_, i) => arr[i] ?? "");
+  };
+  const setKeyAt = (p: string, i: number, key: string) => {
+    const arr = keysOf(p);
+    arr[i] = key;
+    const trimmed = arr.map((k) => k.trim());
+    const primary = trimmed.find((k) => k) ?? "";
+    onChange({
+      ...engine,
+      api_keys_multi: { ...engine.api_keys_multi, [p]: arr },
+      api_keys: { ...engine.api_keys, [p]: primary },
+    });
+  };
+  const hasAnyKey = (p: string) => keysOf(p).some((k) => k.trim());
+
+  const keyedProviders = PROVIDERS.filter((p) => hasAnyKey(p.id));
   const serverProviders = status?.cloud ?? [];
   const temp = engine.temperature ?? 0.4;
 
@@ -116,7 +134,8 @@ export function EnginePanel({ engine, onChange, status }: {
         </div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {PROVIDERS.map((p) => {
-            const hasKey = Boolean(engine.api_keys[p.id]?.trim());
+            const nKeys = keysOf(p.id).filter((k) => k.trim()).length;
+            const hasKey = nKeys > 0;
             const onServer = serverProviders.includes(p.id);
             const open = openProvider === p.id;
             return (
@@ -129,7 +148,7 @@ export function EnginePanel({ engine, onChange, status }: {
                   {(hasKey || onServer) && <span className="font-mono text-[9px] text-ok">✓</span>}
                 </div>
                 <div className="mt-0.5 truncate font-mono text-[9px] text-slate-600">
-                  {engine.api_keys[p.id]?.trim() ? "your key" : onServer ? "server key" : p.models[0]}
+                  {hasKey ? `${nKeys} key${nKeys > 1 ? "s" : ""} · rotating` : onServer ? "server key" : p.models[0]}
                 </div>
               </button>
             );
@@ -138,25 +157,35 @@ export function EnginePanel({ engine, onChange, status }: {
 
         {openProvider && (() => {
           const p = PROVIDERS.find((x) => x.id === openProvider)!;
+          const slots = keysOf(p.id);
+          const filled = slots.filter((k) => k.trim()).length;
           return (
-            <div className="mt-2 grid gap-3 rounded-lg border border-cyan/30 bg-panel-2 p-3 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-slate-500">
-                  {p.label} · API key (never stored server-side)
+            <div className="mt-2 rounded-lg border border-cyan/30 bg-panel-2 p-3">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                  {p.label} · up to 5 keys — rotates automatically when one is exhausted
                 </span>
-                <span className="relative block">
-                  <input type={showKey[p.id] ? "text" : "password"}
-                    value={engine.api_keys[p.id] ?? ""}
-                    onChange={(e) => setKey(p.id, e.target.value)}
-                    placeholder="paste key"
-                    className="w-full rounded-md border border-line bg-ink/70 px-3 py-2 pr-9 text-sm outline-none focus:border-cyan/60" />
-                  <button type="button" onClick={() => setShowKey((s) => ({ ...s, [p.id]: !s[p.id] }))}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                    {showKey[p.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
+                <span className={`font-mono text-[9px] ${filled >= 3 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
+                  {filled}/5 keys{filled < 3 ? " · 3+ recommended for a full ~50-agent run" : " ✓"}
                 </span>
-              </label>
-              <label className="block">
+              </div>
+              <div className="space-y-1.5">
+                {slots.map((val, i) => (
+                  <span key={i} className="relative flex items-center gap-1.5">
+                    <span className="w-4 shrink-0 text-center font-mono text-[10px] text-slate-600">{i + 1}</span>
+                    <input type={showKey[`${p.id}:${i}`] ? "text" : "password"}
+                      value={val}
+                      onChange={(e) => setKeyAt(p.id, i, e.target.value)}
+                      placeholder={i === 0 ? "paste key (primary)" : `key ${i + 1} (rotation backup)`}
+                      className="w-full rounded-md border border-line bg-ink/70 px-3 py-1.5 pr-9 text-sm outline-none focus:border-cyan/60" />
+                    <button type="button" onClick={() => setShowKey((s) => ({ ...s, [`${p.id}:${i}`]: !s[`${p.id}:${i}`] }))}
+                      className="absolute right-2 text-slate-500 hover:text-slate-300">
+                      {showKey[`${p.id}:${i}`] ? <EyeOff size={13} /> : <Eye size={13} />}
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <label className="mt-2 block">
                 <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-slate-500">
                   default model (type any id)
                 </span>
@@ -169,6 +198,10 @@ export function EnginePanel({ engine, onChange, status }: {
                   {p.models.map((m) => <option key={m} value={m} />)}
                 </datalist>
               </label>
+              <p className="mt-2 font-mono text-[9px] leading-relaxed text-slate-600">
+                Keys are sent per-run and never stored server-side. Add 3-5 free keys of the same provider
+                (e.g. Groq/Gemini free tiers) so a long analysis keeps running as each key hits its limit.
+              </p>
             </div>
           );
         })()}

@@ -10,6 +10,8 @@ export interface EngineSelection {
   model: string;
   /** provider id → API key (multi-BYOK; never persisted server-side) */
   api_keys: Record<string, string>;
+  /** provider id → up to 5 keys, rotated when one is exhausted mid-run */
+  api_keys_multi: Record<string, string[]>;
   /** agent id → "provider:model" per-agent override */
   agent_routes: Record<string, string>;
   temperature: number | null;

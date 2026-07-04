@@ -53,6 +53,15 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                              {"label": "weight emphasis", "min": 0.5, "max": 1.5, "step": 0.05}))
         _ = weights_map
 
+    # column — the verdict's dimensions, exact values beside the radar
+    if dims:
+        charts.append(_chart("col_dims", "column", "Every dimension, scored",
+                             "The radar shows the shape; this shows the exact number each dimension "
+                             "earned. Below 4.5 (red) is what drags the verdict down.",
+                             "weighing_engine",
+                             {"labels": list(dims.keys()), "values": [round(v, 1) for v in dims.values()],
+                              "max": 10}))
+
     # bar — every scoring agent ranked (the board, compared)
     scored = [(aid, _num(out.get("score"), -1), _num(out.get("confidence"), 0.5))
               for aid, out in o.items()

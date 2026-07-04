@@ -120,5 +120,14 @@ User feedback: agents falling back ("LLM unavailable"), results too thin for a 5
 - [x] **Studio:** richer intake per mode (founder: target customer/competitors/revenue model · trader: thesis/existing position · wealth: dependents/debt/SIP); board-picker capability cards (what it does, IN/OUT, talks-to, sub-agents, bench/convene button); rail shows only the convened board
 - Verified: board run → 7/7 human agents done, HumanFit 6.1 on radar, 12 research sub-agents, 7 charts, tier-split routes live; picker card + results v4 confirmed in browser
 
+## Round 5 — multi-key rotation + results layout fix (built 2026-07-04)
+User feedback: single key exhausts mid-analysis (agents fall back); results has a big black empty area at the bottom.
+- [x] **Multi-key rotation (THE fix):** EngineConfig.api_keys_multi (provider → up to 5 keys). Gateway complete() now rotates through every key a provider has — a 429'd key is cooled (per-key sha1 cooldown registry) and the next key takes over, so a run keeps going as long as one fresh key remains anywhere. Verified: a run with 3 all-bad keys still completes gracefully (rotates, cools each, falls to deterministic).
+- [x] **Engine panel:** 5 key slots per provider (add/remove, eye-toggle, "N keys · rotating" badge, "3+ recommended for a full ~50-agent run" note); localStorage-persisted; first non-blank mirrors to api_keys for badge compat
+- [x] **Results black-space fix:** DecisionRoom was a nested `max-h-[74vh] overflow-y-auto` box trapping dead space below the 3D graph → now natural page flow (verified: 16px trailing gap, was a full-screen black box)
+- [x] **Removed the raw-JSON AgentAccordion** (dumped `{"dimensions":...}` — ugly); SmartInsights + AgentTable are the polished replacements
+- [x] Visualizer: added a labelled "Every dimension, scored" column chart beside the radar (labelling-accuracy ask)
+- Verified: 7 chart types render, layout natural-scroll, 5-key UI in browser, tsc clean
+
 ## Next
 Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).

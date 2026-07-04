@@ -11,6 +11,7 @@ falls back to its deterministic core). The app must never blank on a missing key
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -32,6 +33,10 @@ class EngineConfig:
     model: str = ""                  # explicit model override
     routes: dict[str, str] = field(default_factory=dict)  # tier → "provider:model"
     api_keys: dict[str, str] = field(default_factory=dict)     # provider → key (multi-BYOK)
+    # provider → up to 5 keys, rotated when one exhausts mid-run (the "never
+    # dies half-way" feature). Keys are tried in order; an exhausted key is
+    # cooled and the next takes over automatically.
+    api_keys_multi: dict[str, list[str]] = field(default_factory=dict)
     agent_routes: dict[str, str] = field(default_factory=dict)  # agent_id → "provider:model"
     temperature: float | None = None  # global override (per-call default when None)
     max_tokens_cap: int = 0           # 0 = no cap; else clamp every call
@@ -48,12 +53,50 @@ class LLMResult:
         return bool(self.text.strip())
 
 
-def _key_for(provider: str, cfg: EngineConfig) -> str:
+def _all_keys(provider: str, cfg: EngineConfig) -> list[str]:
+    """Every key the user gave for this provider, in rotation order:
+    the multi-key list first, then the single BYOK field, then the server env
+    key — deduped, blanks dropped."""
+    keys: list[str] = []
+    keys.extend(k.strip() for k in (cfg.api_keys_multi.get(provider) or []))
     if cfg.api_keys.get(provider):
-        return cfg.api_keys[provider]
+        keys.append(cfg.api_keys[provider].strip())
     if cfg.provider == provider and cfg.api_key:
-        return cfg.api_key
-    return getattr(settings, f"{provider}_api_key", "")
+        keys.append(cfg.api_key.strip())
+    env = getattr(settings, f"{provider}_api_key", "")
+    if env:
+        keys.append(env.strip())
+    seen: set[str] = set()
+    out: list[str] = []
+    for k in keys:
+        if k and k not in seen:
+            seen.add(k)
+            out.append(k)
+    return out
+
+
+def _key_for(provider: str, cfg: EngineConfig) -> str:
+    ks = _all_keys(provider, cfg)
+    return ks[0] if ks else ""
+
+
+# per-key cooldowns: an exhausted key is parked while its siblings keep working.
+# keyed by "provider:sha1(key)[:8]" so raw keys never sit in a dict.
+_KEY_COOLDOWN: dict[str, float] = {}
+
+
+def _key_tag(provider: str, key: str) -> str:
+    return f"{provider}:{hashlib.sha1(key.encode()).hexdigest()[:8]}"
+
+
+def _key_cooling(provider: str, key: str) -> bool:
+    return _KEY_COOLDOWN.get(_key_tag(provider, key), 0.0) > asyncio.get_event_loop().time()
+
+
+def _cool_key(provider: str, key: str, seconds: float) -> None:
+    now = asyncio.get_event_loop().time()
+    tag = _key_tag(provider, key)
+    _KEY_COOLDOWN[tag] = max(_KEY_COOLDOWN.get(tag, 0.0), now + seconds)
 
 
 def _available_cloud(cfg: EngineConfig) -> list[str]:
@@ -214,17 +257,18 @@ _OPENAI_COMPAT_BASES = {
 
 
 async def _dispatch(provider: str, model: str, cfg: EngineConfig, system: str, user: str,
-                    max_tokens: int, temperature: float) -> LLMResult:
+                    max_tokens: int, temperature: float, key: str | None = None) -> LLMResult:
+    k = key if key is not None else _key_for(provider, cfg)
     if provider == "ollama":
         return await _call_openai_compat(f"{settings.ollama_url}/v1", "", model, system, user, max_tokens, temperature)
     if provider == "lmstudio":
         return await _call_openai_compat(f"{settings.lmstudio_url}/v1", "", model, system, user, max_tokens, temperature)
     if provider == "anthropic":
-        return await _call_anthropic(_key_for(provider, cfg), model, system, user, max_tokens, temperature)
+        return await _call_anthropic(k, model, system, user, max_tokens, temperature)
     if provider == "google":
-        return await _call_google(_key_for(provider, cfg), model, system, user, max_tokens, temperature)
+        return await _call_google(k, model, system, user, max_tokens, temperature)
     if provider in _OPENAI_COMPAT_BASES:
-        return await _call_openai_compat(_OPENAI_COMPAT_BASES[provider], _key_for(provider, cfg),
+        return await _call_openai_compat(_OPENAI_COMPAT_BASES[provider], k,
                                          model, system, user, max_tokens, temperature)
     raise ValueError(f"unknown provider: {provider}")
 
@@ -293,43 +337,62 @@ class Gateway:
         if self.cfg.max_tokens_cap:
             max_tokens = min(max_tokens, self.cfg.max_tokens_cap)
         plan = _route_plan(tier, self.cfg, await self._local_ok(), agent)
-        skipped_cooling: list[tuple[str, str]] = []
+        all_cooling: list[tuple[str, str, str]] = []  # (provider, model, key) parked for last resort
         for provider, model in plan:
-            if _cooling(provider) and provider not in ("ollama", "lmstudio"):
-                skipped_cooling.append((provider, model))
-                continue
-            for attempt in (0, 1, 2):
+            if provider in ("ollama", "lmstudio"):
                 try:
-                    if provider in ("ollama", "lmstudio"):
-                        res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
-                    else:
-                        # gate cloud concurrency — a parallel 8-agent wave on a
-                        # free-tier key otherwise 429s half the board
-                        async with _CLOUD_SEM:
-                            await _pace(provider)
-                            res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
                     if res.ok:
                         res.route = f"{provider}:{model}"
                         return res
-                    break
-                except httpx.HTTPStatusError as e:
-                    # rate limit: brief backoff, then cool this provider down and move on
-                    if e.response.status_code == 429:
-                        if attempt < 2:
-                            await asyncio.sleep(4.0 * (attempt + 1))
-                            continue
-                        _cool(provider, 15.0)
-                    break
                 except Exception:
-                    break
-        # everyone else failed — as a last resort, wait out the shortest cooldown once
-        if skipped_cooling:
-            provider, model = skipped_cooling[0]
-            wait = max(0.5, min(20.0, _COOLDOWN.get(provider, 0.0) - asyncio.get_event_loop().time()))
+                    pass
+                continue
+
+            # rotate through EVERY key this provider has — when one is exhausted
+            # (429) it's parked and the next takes over, so a run never dies
+            # half-way as long as one fresh key remains anywhere.
+            keys = _all_keys(provider, self.cfg)
+            if not keys:
+                continue
+            fresh = [k for k in keys if not _key_cooling(provider, k)]
+            if not fresh:
+                all_cooling.append((provider, model, keys[0]))
+                continue
+            for key in fresh:
+                got_429 = False
+                for attempt in (0, 1):
+                    try:
+                        async with _CLOUD_SEM:
+                            await _pace(provider)
+                            res = await _dispatch(provider, model, self.cfg, system, user,
+                                                  max_tokens, temperature, key=key)
+                        if res.ok:
+                            res.route = f"{provider}:{model}"
+                            return res
+                        break
+                    except httpx.HTTPStatusError as e:
+                        if e.response.status_code == 429:
+                            if attempt == 0:
+                                await asyncio.sleep(2.0)
+                                continue
+                            _cool_key(provider, key, 30.0)   # park this key, try the next
+                            got_429 = True
+                        break
+                    except Exception:
+                        break
+                if not got_429:
+                    break  # a non-rate-limit failure won't be cured by another key
+
+        # every provider/key was rate-limited — wait out the soonest and try once
+        if all_cooling:
+            provider, model, key = all_cooling[0]
+            tag = _key_tag(provider, key)
+            wait = max(0.5, min(20.0, _KEY_COOLDOWN.get(tag, 0.0) - asyncio.get_event_loop().time()))
             await asyncio.sleep(wait)
             try:
                 async with _CLOUD_SEM:
-                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature, key=key)
                 if res.ok:
                     res.route = f"{provider}:{model}"
                     return res

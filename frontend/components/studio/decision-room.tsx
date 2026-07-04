@@ -6,7 +6,6 @@ import { agentById } from "@/lib/agents";
 import { buildMarkdown, download } from "@/lib/export";
 import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
-import { AgentAccordion } from "./agent-accordion";
 import { AskBoard } from "./ask-board";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
 import { AgentTable, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
@@ -41,7 +40,7 @@ export function DecisionRoom() {
   const sourced = board.filter((b) => b.kind === "claim" && b.source?.url).length;
 
   return (
-    <div className="scroll-thin max-h-[74vh] space-y-4 overflow-y-auto pr-1">
+    <div className="space-y-4 pb-4">
       <QualityBanner />
       <KpiTiles />
       {/* verdict card */}
@@ -160,8 +159,6 @@ export function DecisionRoom() {
 
       {/* the Reporter's full document */}
       <ReportSection />
-
-      <AgentAccordion />
 
       {/* the decision graph — this run as a living neural map */}
       <section className="rounded-xl border border-line bg-panel p-4">
