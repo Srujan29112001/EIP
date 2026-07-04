@@ -151,14 +151,27 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         return []
     if cfg.compute == "local":
         return plan + ([local] if ollama_up else [])
-    # a user model override applies ONLY to the provider it was chosen for —
-    # sending e.g. an Anthropic model name to Groq guarantees 404s on fallback.
-    # t1/t2 ride each provider's fast sibling (bigger free-tier quotas), t3
-    # gets the flagship — this is what keeps a 30-agent board narrated.
-    def model_for(p: str) -> str:
+    # preferred(p): the model to TRY FIRST for provider p. An explicit user
+    # model choice ALWAYS wins for its provider, at every tier — no silent
+    # downgrade. Otherwise t1/t2 ride the fast sibling, t3 the flagship.
+    def preferred(p: str) -> str:
         if cfg.model and p == cfg.provider:
             return cfg.model
         return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
+
+    # cheap(p): the fast sibling — the resilient fallback if `preferred` is
+    # rate-limited (e.g. user picked 70b but its small daily quota is spent →
+    # keep the board narrated on 8b rather than failing).
+    def cheap(p: str) -> str:
+        return FAST_MODELS.get(p, DEFAULT_MODELS[p])
+
+    def entries(ps: list[str]) -> list[tuple[str, str]]:
+        out: list[tuple[str, str]] = []
+        for p in ps:
+            out.append((p, preferred(p)))
+            if cheap(p) != preferred(p):
+                out.append((p, cheap(p)))
+        return out
 
     # rotate which keyed provider leads for t1/t2 so one free key's rate
     # limits don't starve every agent (t3 keeps the user's preferred order)
@@ -168,15 +181,15 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         clouds = clouds[_ROTATE % len(clouds):] + clouds[:_ROTATE % len(clouds)]
 
     if cfg.compute == "cloud":
-        return plan + [(p, model_for(p)) for p in clouds]
+        return plan + entries(clouds)
 
     # auto / hybrid: t1,t2 prefer local; t3 prefers cloud
     if tier in ("t1", "t2"):
         if ollama_up:
             plan.append(local)
-        plan += [(p, model_for(p)) for p in clouds]
+        plan += entries(clouds)
     else:
-        plan += [(p, model_for(p)) for p in clouds]
+        plan += entries(clouds)
         if ollama_up:
             plan.append(local)
     return plan

@@ -14,6 +14,7 @@ from ..agents import catalog
 from ..agents import markets as m
 from ..agents import studio
 from ..agents import venture as v
+from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -108,6 +109,9 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
         await asyncio.gather(*(f(ctx) for a, f in
                                (("red_team", v.red_team), ("fact_checker", v.fact_checker),
                                 ("bias_auditor", v.bias_auditor)) if a in on))
+
+        # gap-detector: retry reduced-depth agents after a cooldown
+        await replay_degraded(ctx)
 
         # L4 — synthesis
         await m.weighing_trader(ctx)

@@ -14,6 +14,9 @@ export interface EngineSelection {
   api_keys_multi: Record<string, string[]>;
   /** agent id → "provider:model" per-agent override */
   agent_routes: Record<string, string>;
+  /** tier → "provider:model" — set when the user picks an explicit model so
+   * it's honored at every tier (highest routing precedence on the backend) */
+  routes: Record<string, string>;
   temperature: number | null;
   max_tokens_cap: number;
 }

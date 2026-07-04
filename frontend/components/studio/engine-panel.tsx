@@ -54,7 +54,7 @@ export function EnginePanel({ engine, onChange, status }: {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         provider: engine.provider, model: engine.model, api_keys: engine.api_keys,
-        api_keys_multi: engine.api_keys_multi,
+        api_keys_multi: engine.api_keys_multi, routes: engine.routes,
         agent_routes: engine.agent_routes, temperature: engine.temperature,
         max_tokens_cap: engine.max_tokens_cap, mode,
       }));
@@ -191,9 +191,18 @@ export function EnginePanel({ engine, onChange, status }: {
                 </span>
                 <input list={`models-${p.id}`}
                   value={engine.provider === p.id ? engine.model : ""}
-                  onChange={(e) => onChange({ ...engine, provider: p.id, model: e.target.value })}
+                  onChange={(e) => {
+                    const m = e.target.value.trim();
+                    const route = m ? `${p.id}:${m}` : "";
+                    // pin the choice to every tier so it can't be silently downgraded
+                    onChange({ ...engine, provider: p.id, model: m,
+                      routes: route ? { t1: route, t2: route, t3: route } : {} });
+                  }}
                   placeholder={p.models[0]}
                   className="w-full rounded-md border border-line bg-ink/70 px-3 py-2 text-sm outline-none focus:border-cyan/60" />
+                <p className="mt-1 font-mono text-[9px] text-slate-600">
+                  this exact model is used for every agent (with the fast sibling as a rate-limit fallback)
+                </p>
                 <datalist id={`models-${p.id}`}>
                   {p.models.map((m) => <option key={m} value={m} />)}
                 </datalist>

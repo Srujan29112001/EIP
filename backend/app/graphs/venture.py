@@ -10,6 +10,7 @@ import asyncio
 import traceback
 
 from ..agents import board, catalog, studio, venture as v
+from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -61,7 +62,11 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         if (payload.get("depth") or "").lower() == "war_room":
             await board.debate_rounds(ctx)
 
-        # L4 — synthesis
+        # gap-detector: rescue any agent that only reached its deterministic
+        # core, by retrying after the rate-limit window refreshes
+        await replay_degraded(ctx)
+
+        # L4 — synthesis (reflects the rescued board)
         if "connecting_dots" in scoped:
             await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)

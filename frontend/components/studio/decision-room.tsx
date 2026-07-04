@@ -1,9 +1,9 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, Download, FileJson, GraduationCap, Lightbulb, Network, Scale } from "lucide-react";
+import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Network, Scale } from "lucide-react";
 import { NeuralMap } from "@/components/graph/neural-map";
 import { agentById } from "@/lib/agents";
-import { buildMarkdown, download } from "@/lib/export";
+import { buildMarkdown, download, printPdf } from "@/lib/export";
 import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AskBoard } from "./ask-board";
@@ -28,6 +28,7 @@ export function DecisionRoom() {
   const exportJson = () =>
     download("eip-decision.json",
       JSON.stringify({ brief, verdict, board, agentOutputs }, null, 2), "application/json");
+  const exportPdf = () => printPdf({ brief, verdict, board, agentOutputs, tokens, routes });
 
   if (!verdict) {
     return (
@@ -71,6 +72,10 @@ export function DecisionRoom() {
             <button onClick={exportJson}
               className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
               <FileJson size={11} /> JSON
+            </button>
+            <button onClick={exportPdf}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <FileText size={11} /> PDF
             </button>
           </span>
         </div>

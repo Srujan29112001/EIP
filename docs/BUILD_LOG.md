@@ -140,5 +140,17 @@ User feedback: agents show green tick even when LLM-unavailable (should be hones
 - [x] Lowered results-panel thresholds so Smart Insights / Agent Table / Domain Screens render at Pulse depth too
 - Verified in browser: per-agent chart + what-if, degraded notice, natural-scroll boardroom, tsc clean
 
+## Round 7 — model-honoring fix + gap-detector replay + PDF export (built 2026-07-05)
+User feedback: picked groq:llama-3.3-70b-versatile but 8b-instant was used; agents still failing on one key; finish remaining phases.
+- [x] **Model bug fixed:** an explicit user model now wins at EVERY tier for its provider (was silently downgraded to the fast 8b sibling for t1/t2). The fast sibling is now only a *fallback* when the chosen model is rate-limited. Frontend also pins the choice into per-tier `routes` (highest precedence) — belt-and-suspenders. Verified: t2 plan for a 70b choice = [70b, 8b-fallback].
+- [x] **Gap-detector replay (Phase 9 + the real reliability fix):** after the board runs, agents that only reached their deterministic core are retried after a 22s cooldown (per-minute quota refresh). On one free key this rescues most reduced-depth agents. `agents/replay.py` (37 rerunnable agents); wired into all 3 graphs before synthesis; synthesis reflects the rescued board. Early-exit when a pass rescues nobody (dead keys). Verified firing + rescuing.
+- [x] **PDF export (Phase 9):** printPdf() renders a clean decision document → browser print/Save-as-PDF (no dependency). PDF button beside Markdown/JSON.
+- Verified: gap-detector fires ("retrying N reduced-depth agents"), model routing honors 70b, tsc + backend imports clean
+
+## Remaining phases (status)
+- Phase 8.2 (image/scan OCR): deferred — needs heavy vision deps (tesseract/paddle ~200MB+) that don't fit the HF free CPU Space well; digital PDF/TXT/CSV already work. Revisit if a hosted GPU tier is added.
+- Phase 9 remainder: outcome tracking + compliance alerts — next.
+- Phase 10 (auth + persistent Postgres + tiers): needs the user's free Neon/Supabase signup (manual) before wiring.
+
 ## Next
 Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).

@@ -10,6 +10,7 @@ from ..agents import catalog
 from ..agents import studio
 from ..agents import wealth as wl
 from ..agents import venture as v
+from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -93,6 +94,9 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
 
         # L3 — crucible (red team attacks the plan; bias auditor reads the framing)
         await asyncio.gather(*wave((("red_team", v.red_team), ("bias_auditor", v.bias_auditor))))
+
+        # gap-detector: retry reduced-depth agents after a cooldown
+        await replay_degraded(ctx)
 
         # L4 — synthesis
         await wl.weighing_wealth(ctx)
