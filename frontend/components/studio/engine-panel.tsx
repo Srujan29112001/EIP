@@ -94,7 +94,17 @@ export function EnginePanel({ engine, onChange, status }: {
         ))}
       </div>
 
+      {/* local/demo compute needs no cloud keys — hide the provider grid entirely */}
+      {["local", "demo"].includes(engine.compute) && (
+        <p className="rounded-lg border border-line bg-panel-2 p-3 font-mono text-[10px] leading-relaxed text-slate-500">
+          {engine.compute === "local"
+            ? "Local GPU mode: everything runs on your machine via Ollama — no API keys, nothing leaves your computer."
+            : "Demo mode: deterministic cores only — zero keys, zero network calls to AI providers."}
+        </p>
+      )}
+
       {/* provider grid — 8 providers, each with its own key + model */}
+      {!["local", "demo"].includes(engine.compute) && (
       <div>
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">providers · bring any key</span>
@@ -163,6 +173,7 @@ export function EnginePanel({ engine, onChange, status }: {
           );
         })()}
       </div>
+      )}
 
       {/* temperature + max tokens (Helix sliders) */}
       <div className="grid gap-3 md:grid-cols-2">

@@ -8,6 +8,7 @@ import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AgentAccordion } from "./agent-accordion";
 import { AskBoard } from "./ask-board";
+import { ChartGallery, ReportSection, SmartInsights } from "./insights";
 import { Disagreements } from "./disagreements";
 import { Radar } from "./radar";
 import { MarketSim, RunwaySim, ScoreSim } from "./sim-charts";
@@ -139,10 +140,17 @@ export function DecisionRoom() {
       <Disagreements />
       <TradeDesk />
 
+      {/* results v3 — the Visualizer's gallery + every specialist's finding */}
+      <ChartGallery />
+      <SmartInsights />
+
       {/* the simulation layer — bend every insight and watch the math move */}
       <RunwaySim />
       <MarketSim />
       <ScoreSim />
+
+      {/* the Reporter's full document */}
+      <ReportSection />
 
       <AgentAccordion />
 

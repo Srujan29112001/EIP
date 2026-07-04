@@ -98,5 +98,16 @@ Original EIP blueprint recovered → MASTER_PLAN Part 11 added (gap audit + Phas
 - [x] Wizard "ground it" drop zone (founder mode): extract → chips → run payload
 - Verified: uploaded P&L → doc_analyst extracted "Revenue Rs 1.8 Crore", "EBITDA Rs 18 Lakh", vendor dispute as cited claims via Groq; run completed grounded
 
+## Results v3 + Studio v3 (built 2026-07-04, feedback round 3)
+- [x] **Visualizer agent (L4):** picks the best-fit chart per insight from real run data — gauge, waterfall, bar, column, donut, scatter (conviction map), heatmap (risk heat), candlestick (trader OHLC), area (FIRE growth curve), bullet (savings vs benchmark) — plus LLM extra charts strictly from evidence-board figures; streamed as `charts` partial
+- [x] **Reporter agent (L4):** full sectioned decision report (exec summary / evidence / per-agent findings / risks & dissent / 30-60-90 plan) with deterministic fallback; streamed as `report` partial
+- [x] **Chart kit (frontend):** zero-dep interactive SVG renderer for all spec types, native tooltips, per-chart what-if multiplier sliders; Smart Insights grid (one icon card per specialist: verdict line, score chip, confidence bar, expandable analysis); collapsible full-report section with markdown renderer
+- [x] **Board picker v2:** the org-chart as a living flow — icon nodes in layer columns, wires that re-route to connect only the agents YOU convene (verified: benching removes wires live), core stages locked, **per-agent briefs** ("brief Market Analyst directly…") wired into prompts (`agent_context`, acknowledged in agent logs)
+- [x] **Picker for all modes:** founder (depth-aware), trader (16-agent desk), wealth (14-agent desk) — with per-mode mandatory cores; benching produces skipped stages in all three graphs
+- [x] **Unified pipeline:** flow tree + stage cards merged into one tab — active agents and their wires glow, click a node to jump to its full input/log/exact-prompt/output card; per-agent icons everywhere
+- [x] Local GPU / Demo compute hides the provider grid (privacy note instead)
+- [x] 3D Decision Graph: agent nodes now carry ⇥ IN / ⇤ OUT in their detail panel and each agent's output orbits as its own node
+- Verified: pulse run → 7 charts + 1,351-char report + per-agent brief acknowledged; picker rewires 43→38 wires on bench; tsc clean
+
 ## Next
 Phase 8 part 2 (image/scan OCR), Phase 9 (global advisor chat, outcome tracking, gap-replay, compliance alerts, PDF export), Phase 10 (hosted scale: auth+tiers, Postgres/Redis, mobile PWA). Phase 6 deploy has the first manual user steps (Vercel + HF accounts).

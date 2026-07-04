@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
+from ..agents import studio
 from ..agents import wealth as wl
 from ..agents import venture as v
 from ..agents.base import Ctx, RunState
@@ -17,7 +18,9 @@ WEALTH_SCOPE = ["news_intel", "macro_data",
                 "salary_budget", "portfolio_allocator", "fire_planner",
                 "debt_banking", "real_estate", "location_scout",
                 "red_team", "bias_auditor",
-                "weighing_engine", "verdict_composer"]
+                "weighing_engine", "verdict_composer", "visualizer", "reporter"]
+
+WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "visualizer", "reporter"}
 
 
 async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -41,29 +44,48 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
             "risk_capacity": payload.get("risk_appetite", "moderate"),
             "geography": payload.get("geography", "India"),
         }
+        # honor the board picker (money math core + synthesis always run)
+        enabled = set(payload.get("agents_enabled") or [])
+        scope = ([a for a in WEALTH_SCOPE if a in enabled or a in WEALTH_MANDATORY]
+                 if enabled else WEALTH_SCOPE)
+        benched = [a for a in WEALTH_SCOPE if a not in scope]
+
         await emitter.stage("intake_parser", "done", "L0")
         await emitter.stage("context_profiler", "done", "L0")
-        await emitter.log("scope_planner", f"wealth desk: {len(WEALTH_SCOPE)} specialists · {city}", "info")
-        ctx.state.scope = WEALTH_SCOPE
-        for s in WEALTH_SCOPE:
+        await emitter.log("scope_planner", f"wealth desk: {len(scope)} specialists · {city}", "info")
+        if benched:
+            await emitter.log("scope_planner", f"benched by you: {', '.join(benched)}", "muted")
+            for b in benched:
+                await emitter.stage(b, "skipped", "")
+        ctx.state.scope = scope
+        for s in scope:
             await emitter.stage(s, "queued", "")
         await emitter.partial("brief", ctx.state.brief)
-        await emitter.partial("scope", WEALTH_SCOPE)
+        await emitter.partial("scope", scope)
         await emitter.stage("scope_planner", "done", "L0")
+        on = set(scope)
+
+        def wave(pairs):
+            return [f(ctx) for a, f in pairs if a in on]
 
         # L1 — grounding (macro matters for allocation; news for schemes/rates)
-        await asyncio.gather(v.news_intel(ctx), v.macro_data(ctx))
+        await asyncio.gather(*wave((("news_intel", v.news_intel), ("macro_data", v.macro_data))))
 
         # L2 — money math in parallel, narrative agents too (shared blackboard)
-        await asyncio.gather(wl.salary_budget(ctx), wl.portfolio_allocator(ctx), wl.fire_planner(ctx))
-        await asyncio.gather(wl.debt_banking(ctx), wl.real_estate(ctx), wl.location_scout(ctx))
+        await asyncio.gather(*wave((("salary_budget", wl.salary_budget),
+                                    ("portfolio_allocator", wl.portfolio_allocator),
+                                    ("fire_planner", wl.fire_planner))))
+        await asyncio.gather(*wave((("debt_banking", wl.debt_banking),
+                                    ("real_estate", wl.real_estate),
+                                    ("location_scout", wl.location_scout))))
 
         # L3 — crucible (red team attacks the plan; bias auditor reads the framing)
-        await asyncio.gather(v.red_team(ctx), v.bias_auditor(ctx))
+        await asyncio.gather(*wave((("red_team", v.red_team), ("bias_auditor", v.bias_auditor))))
 
         # L4 — synthesis
         await wl.weighing_wealth(ctx)
         await wl.verdict_wealth(ctx)
+        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
 
         await save_run(ctx.state)
         await emitter.done(run_id)

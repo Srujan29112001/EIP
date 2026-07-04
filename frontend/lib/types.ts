@@ -43,6 +43,8 @@ export interface IntakeForm {
   goals: string;
   /** document intelligence — extracted via POST /api/extract */
   documents: { name: string; text: string }[];
+  /** per-agent user briefs from the board picker */
+  agent_context: Record<string, string>;
   engine: EngineSelection;
 }
 

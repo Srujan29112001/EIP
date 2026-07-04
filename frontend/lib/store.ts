@@ -22,6 +22,8 @@ interface RunStore {
   agentOutputs: Record<string, AgentOutput>;
   financeCore: FinanceCore | null;
   prompts: Record<string, { system: string; user: string }>;
+  charts: Record<string, unknown>[];
+  report: string | null;
   tokens: number;
   routes: Set<string>;
   fatal: string | null;
@@ -42,6 +44,8 @@ const EMPTY = {
   agentOutputs: {},
   financeCore: null,
   prompts: {},
+  charts: [] as Record<string, unknown>[],
+  report: null as string | null,
   tokens: 0,
   routes: new Set<string>(),
   fatal: null,
@@ -84,6 +88,8 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "brief") return { brief: e.data as Record<string, unknown> };
           if (e.section === "scope") return { scope: e.data as string[] };
           if (e.section === "finance_core") return { financeCore: e.data as FinanceCore };
+          if (e.section === "charts") return { charts: e.data as Record<string, unknown>[] };
+          if (e.section === "report") return { report: e.data as string };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };
             return { agentOutputs: { ...s.agentOutputs, [d.agent]: d.output } };

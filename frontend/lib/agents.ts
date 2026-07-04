@@ -14,6 +14,7 @@ export interface AgentInfo {
   cluster: string;
   blurb: string;
   accent: string;
+  icon?: string;
 }
 
 export const LAYER_LABELS: Record<Layer, string> = {
@@ -82,8 +83,83 @@ export const AGENTS: AgentInfo[] = [
   // L4 — Synthesis (gold family)
   { id: "connecting_dots", name: "Connecting Dots", layer: "L4", cluster: "synthesis", blurb: "Cross-domain patterns and weak signals", accent: "#fde047" },
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
+  { id: "visualizer", name: "Visualizer", layer: "L4", cluster: "synthesis", blurb: "Best-fit interactive charts for every insight", accent: "#fcd34d" },
+  { id: "reporter", name: "Reporter", layer: "L4", cluster: "synthesis", blurb: "The full written decision report", accent: "#fde68a" },
   { id: "verdict_composer", name: "Verdict Composer", layer: "L4", cluster: "synthesis", blurb: "The decision document, with sensitivities", accent: "#facc15" },
 ];
+
+/** per-agent icons (emoji render crisply inside SVG nodes too) */
+const ICONS: Record<string, string> = {
+  intake_parser: "📥", context_profiler: "🪪", scope_planner: "🗺️",
+  web_researcher: "🔎", news_intel: "📰", market_data: "📈", macro_data: "🌐", doc_analyst: "📄",
+  market_analyst: "🧭", finance_modeler: "🧮", competitor_intel: "♟️", gtm_distribution: "🚚",
+  legal: "⚖️", tax: "🧾", policy_compliance: "📋", industry_expert: "🏭",
+  business_model: "🧩", marketing_strategy: "📣", subsidies_schemes: "🎁", hr_talent: "🧑‍🤝‍🧑",
+  optimization_predictor: "🕳️", regulator: "🏛️",
+  macroeconomist: "🏦", geopolitics: "🗺️", intl_markets: "✈️", trends: "📡", esg_impact: "🌱",
+  technical_analyst: "📊", stock_analyst: "🏢", backtest_engineer: "🧪", quant_signals: "🎯",
+  risk_manager: "🛡️", fund_analyst: "🧺", options_desk: "🎛️", microstructure: "⚡",
+  salary_budget: "💵", portfolio_allocator: "🥧", fire_planner: "🔥", debt_banking: "🏧",
+  real_estate: "🏠", location_scout: "📍",
+  red_team: "⚔️", devils_advocate: "😈", bias_auditor: "🪞", fact_checker: "✅",
+  connecting_dots: "🕸️", weighing_engine: "⚖️", verdict_composer: "📜",
+  visualizer: "🎨", reporter: "🖋️",
+};
+for (const a of AGENTS) a.icon = ICONS[a.id] ?? "🤖";
+
+/** what goes in / what comes out, per agent (drives stage cards + graph nodes) */
+export const STAGE_IO: Record<string, { in: string; out: string }> = {
+  intake_parser: { in: "Your raw description", out: "Structured brief" },
+  context_profiler: { in: "Brief", out: "Who is asking — capital, risk, stage" },
+  scope_planner: { in: "Brief + depth + your toggles", out: "The convened board" },
+  web_researcher: { in: "Brief keywords", out: "Sourced web evidence" },
+  news_intel: { in: "Industry + geography", out: "Live headlines on the board" },
+  market_data: { in: "Geography / symbol", out: "Live prices & history (yfinance)" },
+  macro_data: { in: "Geography", out: "GDP · inflation · rates (World Bank)" },
+  doc_analyst: { in: "Your uploaded documents", out: "Cited chunks + key facts" },
+  market_analyst: { in: "Brief + evidence board", out: "Market score + analysis" },
+  finance_modeler: { in: "Budget + team", out: "Runway math + economics score" },
+  competitor_intel: { in: "Evidence board", out: "Positioning, moats, whitespace" },
+  gtm_distribution: { in: "Brief + team + stage", out: "Channels + execution score" },
+  legal: { in: "Brief", out: "Structure + legal exposure" },
+  tax: { in: "Brief + geography", out: "GST posture + optimization" },
+  policy_compliance: { in: "Evidence board", out: "Acts, licences, compliance" },
+  industry_expert: { in: "Brief + evidence", out: "Insider benchmarks" },
+  business_model: { in: "Brief + evidence", out: "Canvas + model recommendation" },
+  marketing_strategy: { in: "Brief + evidence", out: "Positioning + growth loop" },
+  subsidies_schemes: { in: "Brief + geography", out: "Schemes you qualify for" },
+  hr_talent: { in: "Team + stage", out: "Hiring order + salary bands" },
+  optimization_predictor: { in: "Brief + evidence", out: "Legit optimizations + risks" },
+  regulator: { in: "Evidence board", out: "Regulator posture + scrutiny map" },
+  macroeconomist: { in: "Macro series on the board", out: "Cycle read for this decision" },
+  geopolitics: { in: "Evidence board", out: "Exposures + one hedge" },
+  intl_markets: { in: "Brief", out: "First foreign market + friction" },
+  trends: { in: "News + evidence", out: "Emerging trends + weak signal" },
+  esg_impact: { in: "Brief + evidence", out: "ESG posture + impact moat" },
+  technical_analyst: { in: "2y OHLCV", out: "Indicator reads + levels" },
+  stock_analyst: { in: "Fundamentals + news", out: "Quality + valuation read" },
+  backtest_engineer: { in: "2y OHLCV", out: "Strategy proof-of-work table" },
+  quant_signals: { in: "Technicals + backtests", out: "Setup quality + votes" },
+  risk_manager: { in: "Capital + risk% + ATR", out: "Position size + stop + max loss" },
+  fund_analyst: { in: "Symbol + sector", out: "Fund-route education" },
+  options_desk: { in: "Technical view + IV", out: "Defined-risk structure education" },
+  microstructure: { in: "Symbol + size", out: "Execution reality check" },
+  salary_budget: { in: "Income + expenses", out: "Savings rate + 50/30/20" },
+  portfolio_allocator: { in: "Age + risk appetite", out: "Glide-path allocation" },
+  fire_planner: { in: "Expenses + savings + surplus", out: "FIRE number + years" },
+  debt_banking: { in: "Profile", out: "Debt payoff order" },
+  real_estate: { in: "City + profile", out: "Rent-vs-buy read" },
+  location_scout: { in: "City + profile", out: "Local schemes + opportunities" },
+  red_team: { in: "All analyst outputs", out: "Evidence-backed attacks" },
+  devils_advocate: { in: "All outputs", out: "The steel-manned NO case" },
+  bias_auditor: { in: "Your own framing", out: "Named biases with quotes" },
+  fact_checker: { in: "Claims vs evidence board", out: "supported / unsupported verdicts" },
+  connecting_dots: { in: "Every domain verdict", out: "Cross-domain patterns" },
+  weighing_engine: { in: "Scores × penalties × evidence", out: "Deterministic weighted verdict" },
+  verdict_composer: { in: "The weighed number", out: "The decision document" },
+  visualizer: { in: "Every output + evidence figure", out: "Interactive chart gallery" },
+  reporter: { in: "Everything the board produced", out: "The full written report" },
+};
 
 const BY_ID = new Map(AGENTS.map((a) => [a.id, a]));
 

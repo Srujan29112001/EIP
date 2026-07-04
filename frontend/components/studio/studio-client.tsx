@@ -11,7 +11,7 @@ import { IntakeWizard } from "./intake-wizard";
 import { PipelineRail } from "./pipeline-rail";
 import { StageCards } from "./stage-cards";
 
-type Tab = "pipeline" | "flow" | "boardroom" | "results";
+type Tab = "pipeline" | "boardroom" | "results";
 
 export function StudioClient() {
   const { phase, begin, apply, reset, fatal, verdict } = useRun();
@@ -62,7 +62,7 @@ export function StudioClient() {
         <PipelineRail />
         <main>
           <div className="mb-3 flex items-center gap-1 rounded-lg border border-line bg-panel p-1">
-            {(["pipeline", "flow", "boardroom", "results"] as const).map((t) => (
+            {(["pipeline", "boardroom", "results"] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
                 className={`rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition sm:px-4 ${
                   tab === t ? "bg-panel-2 text-cyan" : "text-slate-500 hover:text-slate-300"}`}>
@@ -77,8 +77,14 @@ export function StudioClient() {
           {fatal && (
             <div className="mb-3 rounded-lg border border-err/40 bg-err/10 p-3 text-sm text-err">{fatal}</div>
           )}
-          {tab === "pipeline" && <StageCards />}
-          {tab === "flow" && <FlowMap />}
+          {tab === "pipeline" && (
+            <div className="space-y-3">
+              {/* the living workflow tree — click any agent to jump to its full card */}
+              <FlowMap onFocus={(id) =>
+                document.getElementById(`stage-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <StageCards />
+            </div>
+          )}
           {tab === "boardroom" && <Boardroom />}
           {tab === "results" && <DecisionRoom />}
         </main>

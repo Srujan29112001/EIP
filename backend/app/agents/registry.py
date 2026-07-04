@@ -76,6 +76,8 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects", True),
     AgentMeta("weighing_engine", "Weighing Engine", "L4", "synthesis", "t0", "Deterministic scoring — disagreement preserved", True),
     AgentMeta("verdict_composer", "Verdict Composer", "L4", "synthesis", "t3", "The decision document, with sensitivities", True),
+    AgentMeta("visualizer", "Visualizer", "L4", "synthesis", "t2", "Best-fit interactive charts for every insight", True),
+    AgentMeta("reporter", "Reporter", "L4", "synthesis", "t3", "The full written decision report", True),
     # L5 — Memory
     AgentMeta("decision_graph", "Decision Graph", "L5", "memory", "t0", "Every run becomes memory you can see"),
 ]

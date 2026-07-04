@@ -98,7 +98,7 @@ async def scope_planner(ctx: Ctx) -> None:
     spine = ["web_researcher", "news_intel", "market_data", "macro_data",
              "market_analyst", "finance_modeler",
              "red_team", "fact_checker", "bias_auditor",
-             "weighing_engine", "verdict_composer"]
+             "weighing_engine", "verdict_composer", "visualizer", "reporter"]
     board_wave = ["competitor_intel", "gtm_distribution", "legal", "tax",
                   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
     world_wave = ["business_model", "marketing_strategy", "subsidies_schemes", "hr_talent",
@@ -115,7 +115,7 @@ async def scope_planner(ctx: Ctx) -> None:
     # synthesis layer is never optional — someone has to sign the verdict
     enabled = set(ctx.state.raw.get("agents_enabled") or [])
     if enabled:
-        mandatory = {"weighing_engine", "verdict_composer"}
+        mandatory = {"weighing_engine", "verdict_composer", "visualizer", "reporter"}
         dropped = [a for a in scope if a not in enabled and a not in mandatory]
         scope = [a for a in scope if a in enabled or a in mandatory]
         if dropped:
@@ -289,8 +289,12 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
                            fallback: dict[str, Any]) -> dict[str, Any]:
     system_full = (system + " Cite evidence-board items when possible; any uninvented figure "
                    "must be tagged ESTIMATE. Be specific, never generic.")
+    user_ctx = (ctx.state.raw.get("agent_context") or {}).get(aid, "")
     user_full = (f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
-                 f"EVIDENCE BOARD:\n{ctx.state.evidence_digest()}\n\nTASK: {ask}")
+                 + (f"USER'S DIRECT BRIEF TO YOU: {str(user_ctx)[:500]}\n" if user_ctx else "")
+                 + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest()}\n\nTASK: {ask}")
+    if user_ctx:
+        await ctx.emit.log(aid, f"user brief → me: {str(user_ctx)[:90]}", "muted")
     await ctx.emit.prompt(aid, system_full, user_full)   # glass box: show the exact prompt
     data, res = await ctx.llm.structured(
         "t2", system_full, user_full, _ANALYSIS_SCHEMA, max_tokens=900, agent=aid,

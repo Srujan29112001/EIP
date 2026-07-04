@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
-from ..agents import board, venture as v
+from ..agents import board, studio, venture as v
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
@@ -68,6 +68,7 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)
         await v.verdict_composer(ctx)
+        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
 
         await save_run(ctx.state)
         await emitter.done(run_id)

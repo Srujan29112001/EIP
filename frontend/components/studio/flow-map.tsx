@@ -12,7 +12,7 @@ import type { AgentOutput } from "@/lib/types";
 
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 
-export function FlowMap() {
+export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
   const { agentStatus, scope, agentOutputs } = useRun();
   const [sel, setSel] = useState<string | null>(null);
 
@@ -85,31 +85,47 @@ export function FlowMap() {
             );
           })}
 
-          {/* nodes */}
+          {/* nodes — icon chips that glow while working */}
           {active.map((a) => {
             const p = pos.get(a.id);
             if (!p) return null;
             const st = status(a.id);
-            const fill = st === "queued" ? "#1e293b" : a.accent;
             return (
-              <g key={a.id} onClick={() => setSel(sel === a.id ? null : a.id)} className="cursor-pointer">
+              <g key={a.id} onClick={() => { setSel(sel === a.id ? null : a.id); onFocus?.(a.id); }}
+                className="cursor-pointer">
+                <title>{`${a.name} · ${st} — click for inputs/outputs`}</title>
                 {st === "active" && (
-                  <circle cx={p.x} cy={p.y} r={13} fill="none" stroke={a.accent} strokeOpacity={0.5}>
-                    <animate attributeName="r" values="10;16;10" dur="1.4s" repeatCount="indefinite" />
+                  <circle cx={p.x} cy={p.y} r={16} fill="none" stroke={a.accent} strokeOpacity={0.5}>
+                    <animate attributeName="r" values="13;20;13" dur="1.4s" repeatCount="indefinite" />
                     <animate attributeName="stroke-opacity" values="0.6;0;0.6" dur="1.4s" repeatCount="indefinite" />
                   </circle>
                 )}
-                <circle cx={p.x} cy={p.y} r={sel === a.id ? 10 : 8} fill={fill}
-                  fillOpacity={st === "queued" ? 0.5 : 1}
-                  stroke={sel === a.id ? "#fff" : st === "done" ? `${a.accent}` : "transparent"}
-                  strokeOpacity={0.7} strokeWidth={1.5} />
+                <circle cx={p.x} cy={p.y} r={sel === a.id ? 14 : 12}
+                  fill="#0d1428"
+                  stroke={st === "queued" ? "#334155" : a.accent}
+                  strokeWidth={st === "active" ? 2 : 1.4}
+                  strokeDasharray={st === "skipped" ? "3 2" : undefined}
+                  style={st === "active" || st === "done"
+                    ? { filter: `drop-shadow(0 0 ${st === "active" ? 9 : 4}px ${a.accent}${st === "active" ? "cc" : "55"})` }
+                    : undefined}
+                  className="transition-all duration-300" />
+                <text x={p.x} y={p.y + 4} textAnchor="middle"
+                  style={{ font: "11px sans-serif", opacity: st === "queued" || st === "skipped" ? 0.35 : 1 }}>
+                  {a.icon}
+                </text>
                 {st === "done" && (
-                  <text x={p.x} y={p.y + 3} textAnchor="middle" style={{ font: "700 8px sans-serif", fill: "#04060f" }}>✓</text>
+                  <g>
+                    <circle cx={p.x + 10} cy={p.y - 9} r="4.5" fill="#9ae64a" />
+                    <text x={p.x + 10} y={p.y - 6.5} textAnchor="middle" style={{ font: "700 6.5px sans-serif", fill: "#04060f" }}>✓</text>
+                  </g>
                 )}
                 {st === "error" && (
-                  <text x={p.x} y={p.y + 3.5} textAnchor="middle" style={{ font: "700 9px sans-serif", fill: "#04060f" }}>!</text>
+                  <g>
+                    <circle cx={p.x + 10} cy={p.y - 9} r="4.5" fill="#fb7185" />
+                    <text x={p.x + 10} y={p.y - 6} textAnchor="middle" style={{ font: "700 7px sans-serif", fill: "#04060f" }}>!</text>
+                  </g>
                 )}
-                <text x={p.x} y={p.y + 22} textAnchor="middle"
+                <text x={p.x} y={p.y + 26} textAnchor="middle"
                   style={{ font: "9px var(--font-jetbrains)", fill: st === "queued" ? "#475569" : "#cbd5e1" }}>
                   {a.name.length > 18 ? a.name.slice(0, 17) + "…" : a.name}
                 </text>

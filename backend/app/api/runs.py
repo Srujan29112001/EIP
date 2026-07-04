@@ -48,6 +48,8 @@ class RunRequest(BaseModel):
     goals: str = ""
     # document intelligence (Phase 8): extracted client-side via POST /api/extract
     documents: list[dict[str, Any]] = Field(default_factory=list)
+    # per-agent user briefs from the board picker ("here's what I want YOU to focus on")
+    agent_context: dict[str, str] = Field(default_factory=dict)
     engine: dict[str, Any] = Field(default_factory=dict)
 
 

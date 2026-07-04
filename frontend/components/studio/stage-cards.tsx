@@ -8,39 +8,13 @@
 
 import { useState } from "react";
 import { Check, ChevronDown, Eye, Loader2, X } from "lucide-react";
-import { AGENTS, agentById } from "@/lib/agents";
+import { AGENTS, STAGE_IO, agentById } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput, LogKind, StageStatus } from "@/lib/types";
 
 const KIND_CLS: Record<LogKind, string> = {
   info: "text-slate-300", code: "text-cyan/90", ok: "text-ok",
   err: "text-err", warn: "text-warn", muted: "text-slate-500",
-};
-
-/** what goes in / what comes out, per agent (Helix STAGE_IO idiom) */
-const STAGE_IO: Record<string, { in: string; out: string }> = {
-  intake_parser: { in: "Your raw description", out: "Structured brief" },
-  context_profiler: { in: "Brief", out: "Who is asking — capital, risk, stage" },
-  scope_planner: { in: "Brief + depth + your toggles", out: "The convened board" },
-  web_researcher: { in: "Brief keywords", out: "Sourced web evidence" },
-  news_intel: { in: "Industry + geography", out: "Live headlines on the board" },
-  market_data: { in: "Geography + sector", out: "Index & sector pulse (yfinance)" },
-  macro_data: { in: "Geography", out: "GDP · inflation · rates (World Bank)" },
-  market_analyst: { in: "Brief + evidence board", out: "Market score + analysis" },
-  finance_modeler: { in: "Budget + team", out: "Runway math + economics score" },
-  competitor_intel: { in: "Evidence board", out: "Positioning, moats, whitespace" },
-  gtm_distribution: { in: "Brief + team + stage", out: "Channels + execution score" },
-  legal: { in: "Brief", out: "Structure + legal exposure" },
-  tax: { in: "Brief + geography", out: "GST posture + optimization" },
-  policy_compliance: { in: "Evidence board", out: "Acts, licences, compliance" },
-  industry_expert: { in: "Brief + evidence", out: "Insider benchmarks" },
-  red_team: { in: "All analyst outputs", out: "Evidence-backed attacks" },
-  fact_checker: { in: "Claims vs evidence board", out: "supported / unsupported verdicts" },
-  bias_auditor: { in: "Your own framing", out: "Named biases with quotes" },
-  devils_advocate: { in: "All outputs", out: "The steel-manned NO case" },
-  connecting_dots: { in: "Every domain verdict", out: "Cross-domain patterns" },
-  weighing_engine: { in: "Scores × penalties × evidence", out: "Deterministic weighted verdict" },
-  verdict_composer: { in: "The weighed number", out: "The decision document" },
 };
 
 function StatusBadge({ status, accent }: { status: StageStatus; accent: string }) {
@@ -103,7 +77,7 @@ export function StageCards() {
         const prompt = prompts[id];
         const done = st === "done";
         return (
-          <div key={id} className="relative pl-12">
+          <div key={id} id={`stage-${id}`} className="relative scroll-mt-4 pl-12">
             {/* connector line that fills as the stage completes */}
             {idx < cards.length - 1 && (
               <div className="absolute bottom-[-12px] left-[19px] top-12 w-px bg-white/10">

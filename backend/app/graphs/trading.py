@@ -11,6 +11,7 @@ import asyncio
 import traceback
 
 from ..agents import markets as m
+from ..agents import studio
 from ..agents import venture as v
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
@@ -22,7 +23,11 @@ TRADER_SCOPE = ["news_intel", "market_data", "macro_data",
                 "quant_signals", "risk_manager",
                 "fund_analyst", "options_desk", "microstructure",
                 "red_team", "fact_checker", "bias_auditor",
-                "weighing_engine", "verdict_composer"]
+                "weighing_engine", "verdict_composer", "visualizer", "reporter"]
+
+# the desk can be hand-picked, but the data spine + synthesis cannot be benched
+TRADER_MANDATORY = {"market_data", "technical_analyst", "weighing_engine",
+                    "verdict_composer", "visualizer", "reporter"}
 
 
 async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -43,38 +48,59 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
         ctx.state.profile = {"persona": f"{style} trader", "capital_band": payload.get("capital", ""),
                              "risk_capacity": f"{payload.get('risk_pct', 1)}% per trade",
                              "geography": payload.get("geography", "India")}
+        # honor the board picker (mandatory data spine + synthesis always run)
+        enabled = set(payload.get("agents_enabled") or [])
+        scope = ([a for a in TRADER_SCOPE if a in enabled or a in TRADER_MANDATORY]
+                 if enabled else TRADER_SCOPE)
+        benched = [a for a in TRADER_SCOPE if a not in scope]
+
         await emitter.stage("intake_parser", "done", "L0")
         await emitter.stage("context_profiler", "done", "L0")
         await emitter.log("scope_planner", f"trader desk: {symbol} · {style} · "
-                          f"{len(TRADER_SCOPE)} specialists", "info")
-        ctx.state.scope = TRADER_SCOPE
-        for s in TRADER_SCOPE:
+                          f"{len(scope)} specialists", "info")
+        if benched:
+            await emitter.log("scope_planner", f"benched by you: {', '.join(benched)}", "muted")
+            for b in benched:
+                await emitter.stage(b, "skipped", "")
+        ctx.state.scope = scope
+        for s in scope:
             await emitter.stage(s, "queued", "")
         await emitter.partial("brief", ctx.state.brief)
-        await emitter.partial("scope", TRADER_SCOPE)
+        await emitter.partial("scope", scope)
         await emitter.stage("scope_planner", "done", "L0")
+        on = set(scope)
 
         # L1 — the trader's evidence base (history must land before L2)
         await m.market_history(ctx)
         if "market_data" not in ctx.state.outputs:
             await emitter.error("symbol unresolved — try RELIANCE.NS / AAPL / ^NSEI")
             return
-        await asyncio.gather(v.news_intel(ctx), v.macro_data(ctx))
+        await asyncio.gather(*(f(ctx) for a, f in
+                               (("news_intel", v.news_intel), ("macro_data", v.macro_data)) if a in on))
 
         # L2 — deterministic chain first (each feeds the next), narrative in parallel
         await m.technical_analyst(ctx)
-        await asyncio.gather(m.backtest_engineer(ctx), m.stock_analyst(ctx))
-        await m.quant_signals(ctx)
-        await m.risk_manager(ctx)
+        await asyncio.gather(*(f(ctx) for a, f in
+                               (("backtest_engineer", m.backtest_engineer),
+                                ("stock_analyst", m.stock_analyst)) if a in on))
+        if "quant_signals" in on:
+            await m.quant_signals(ctx)
+        if "risk_manager" in on:
+            await m.risk_manager(ctx)
         # education lenses ride the same blackboard (funds / options / plumbing)
-        await asyncio.gather(m.fund_analyst(ctx), m.options_desk(ctx), m.microstructure(ctx))
+        await asyncio.gather(*(f(ctx) for a, f in
+                               (("fund_analyst", m.fund_analyst), ("options_desk", m.options_desk),
+                                ("microstructure", m.microstructure)) if a in on))
 
         # L3 — crucible
-        await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx), v.bias_auditor(ctx))
+        await asyncio.gather(*(f(ctx) for a, f in
+                               (("red_team", v.red_team), ("fact_checker", v.fact_checker),
+                                ("bias_auditor", v.bias_auditor)) if a in on))
 
         # L4 — synthesis
         await m.weighing_trader(ctx)
         await m.verdict_trader(ctx)
+        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
 
         await save_run(ctx.state)
         await emitter.done(run_id)

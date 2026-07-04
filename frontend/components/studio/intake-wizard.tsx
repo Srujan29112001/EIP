@@ -29,6 +29,7 @@ const DEFAULTS: IntakeForm = {
   city: "",
   goals: "",
   documents: [],
+  agent_context: {},
   engine: {
     compute: "auto", provider: "", api_key: "", model: "",
     api_keys: {}, agent_routes: {}, temperature: null, max_tokens_cap: 0,
@@ -280,19 +281,21 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </section>
       )}
 
-      {/* step 3 — your board (hand-pick the employees) */}
-      {founder && (
+      {/* your board — hand-pick and brief the employees (every mode) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
-        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">03 · Pick your board</h2>
-        <BoardPicker depth={f.depth} enabled={f.agents_enabled}
-          onChange={(ids) => set("agents_enabled", ids)} />
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
+          {founder ? "03" : "02"} · Pick your board
+        </h2>
+        <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
+          onChange={(ids) => set("agents_enabled", ids)}
+          agentContext={f.agent_context}
+          onContext={(ctx) => set("agent_context", ctx)} />
       </section>
-      )}
 
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
-          {founder ? "04" : "02"} · Choose the engine
+          {founder ? "04" : "03"} · Choose the engine
         </h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">

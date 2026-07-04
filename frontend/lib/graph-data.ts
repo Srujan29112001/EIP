@@ -3,7 +3,7 @@
  * SRUJAN.K KnowledgeGraph3D port in components/graph/neural-map.tsx.
  */
 
-import { AGENTS, LAYER_LABELS, agentById, type Layer } from "./agents";
+import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, type Layer } from "./agents";
 import type { AgentOutput, BoardItem, Verdict } from "./types";
 
 export interface GNode {
@@ -58,20 +58,41 @@ export function buildGraph(input: GraphInput): { nodes: GNode[]; edges: GEdge[] 
     edges.push({ source: "center", target: `hub_${layer}` });
   }
 
-  // agents, wired to their layer hub
+  // agents, wired to their layer hub — detail shows their exact IN → OUT
   for (const a of ranAgents) {
     const out = input.agentOutputs[a.id];
     const score = typeof out.score === "number" ? `${out.score}/10` : undefined;
+    const io = STAGE_IO[a.id];
+    const description = [
+      io ? `⇥ IN: ${io.in}` : null,
+      out.verdict_line ? `⇤ OUT: ${out.verdict_line}` : io ? `⇤ OUT: ${io.out}` : null,
+      out.analysis ? `\n${out.analysis}` : null,
+    ].filter(Boolean).join("\n") || a.blurb;
     nodes.push({
-      id: a.id, label: a.name, type: "agent", color: a.accent, size: 7,
+      id: a.id, label: `${a.icon ?? ""} ${a.name}`.trim(), type: "agent", color: a.accent, size: 7,
       detail: {
         title: a.name, kind: `${a.layer} · ${a.cluster}`,
-        description: [out.verdict_line, out.analysis].filter(Boolean).join("\n\n") || a.blurb,
+        description,
         tech: out.route ? [String(out.route)] : [],
         metric: score,
       },
     });
     edges.push({ source: `hub_${a.layer}`, target: a.id });
+
+    // the agent's OUTPUT as its own orbiting node (the work product, visible)
+    if (out.verdict_line) {
+      const oid = `out_${a.id}`;
+      nodes.push({
+        id: oid, label: `→ ${String(out.verdict_line).slice(0, 40)}`,
+        type: "claim", color: a.accent, size: 4,
+        detail: {
+          title: `${a.name} — output`, kind: "agent output",
+          description: [out.verdict_line, out.analysis].filter(Boolean).join("\n\n"),
+          metric: score,
+        },
+      });
+      edges.push({ source: a.id, target: oid });
+    }
   }
 
   // claims → their author agent (cap for legibility & sim cost)
