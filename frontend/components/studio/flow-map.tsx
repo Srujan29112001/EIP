@@ -6,14 +6,14 @@
  */
 
 import { useMemo, useState } from "react";
-import { AGENTS, LAYER_LABELS, agentById, type Layer } from "@/lib/agents";
+import { AGENTS, LAYER_LABELS, PEERS, agentById, type Layer } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput } from "@/lib/types";
 
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 
 export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
-  const { agentStatus, scope, agentOutputs } = useRun();
+  const { agentStatus, scope, agentOutputs, collabs } = useRun();
   const [sel, setSel] = useState<string | null>(null);
 
   const active = useMemo(() => {
@@ -41,6 +41,26 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
   const edges: { from: string; to: string }[] = [];
   for (let i = 0; i < LAYERS.length - 1; i++) {
     for (const a of cols[i]) for (const b of cols[i + 1]) edges.push({ from: a.id, to: b.id });
+  }
+
+  // A2A mesh: expert ↔ expert links (venture.PEERS), so specialists visibly
+  // build on EACH OTHER — not just funnel into the common grounding/crucible
+  // agents. `live` = the collab actually fired this run (bright gold); else the
+  // wiring is latent (faint gold). Deduped, undirected.
+  const activeIds = new Set(active.map((a) => a.id));
+  const peerSeen = new Set<string>();
+  const peerEdges: { from: string; to: string; live: boolean }[] = [];
+  for (const a of active) {
+    const declared = PEERS[a.id] ?? [];
+    const livePeers = collabs[a.id] ?? [];
+    for (const p of new Set([...declared, ...livePeers])) {
+      if (!activeIds.has(p) || p === a.id) continue;
+      const key = a.id < p ? `${a.id}|${p}` : `${p}|${a.id}`;
+      if (peerSeen.has(key)) continue;
+      peerSeen.add(key);
+      const live = livePeers.includes(p) || (collabs[p] ?? []).includes(a.id);
+      peerEdges.push({ from: p, to: a.id, live });
+    }
   }
 
   const status = (id: string) => agentStatus[id] ?? "queued";
@@ -77,10 +97,35 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
               <path key={i}
                 d={`M${p1.x + 12},${p1.y} C${mx},${p1.y} ${mx},${p2.y} ${p2.x - 12},${p2.y}`}
                 fill="none"
-                stroke={toActive ? "#22d3ee" : fromDone ? "rgba(34,211,238,0.28)" : "rgba(148,163,184,0.08)"}
-                strokeWidth={toActive ? 1.6 : 1}
+                stroke={toActive ? "#22d3ee" : fromDone ? "rgba(34,211,238,0.13)" : "rgba(148,163,184,0.06)"}
+                strokeWidth={toActive ? 1.6 : 0.8}
                 strokeDasharray={toActive ? "6 8" : undefined}
                 style={toActive ? { animation: "flowdash 0.7s linear infinite" } : undefined}
+              />
+            );
+          })}
+
+          {/* A2A mesh — expert ↔ expert arcs (gold), bowed out of the column so
+              you can SEE specialists building on each other, not just the
+              common agents. Bright = it fired this run; faint = latent wiring. */}
+          {peerEdges.map(({ from, to, live }, i) => {
+            const p1 = pos.get(from), p2 = pos.get(to);
+            if (!p1 || !p2) return null;
+            const dy = Math.abs(p2.y - p1.y);
+            const bulge = Math.min(150, 34 + dy * 0.5);
+            // same column → bow left of the column; cross-column → bow left of the midpoint
+            const cx = (p1.x === p2.x ? p1.x : (p1.x + p2.x) / 2) - bulge;
+            const cy = (p1.y + p2.y) / 2;
+            return (
+              <path key={`peer${i}`}
+                d={`M${p1.x - 11},${p1.y} Q${cx},${cy} ${p2.x - 11},${p2.y}`}
+                fill="none"
+                stroke="#fbbf24"
+                strokeOpacity={live ? 0.9 : 0.2}
+                strokeWidth={live ? 1.9 : 1}
+                strokeLinecap="round"
+                strokeDasharray={live ? "5 6" : undefined}
+                style={live ? { animation: "flowdash 0.9s linear infinite" } : undefined}
               />
             );
           })}
@@ -159,9 +204,17 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
           )}
         </div>
       )}
-      <p className="font-mono text-[10px] text-slate-600">
-        Every agent reads and writes one shared evidence board — edges show the layer-to-layer flow of that context. Pulsing = receiving now.
-      </p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-slate-600">
+        <span className="flex items-center gap-1.5">
+          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#22d3ee" strokeOpacity="0.5" strokeWidth="1.4" /></svg>
+          layer-to-layer flow
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#fbbf24" strokeOpacity="0.85" strokeWidth="1.6" strokeDasharray="4 3" /></svg>
+          agent ↔ agent (experts building on each other{peerEdges.some((e) => e.live) ? " — live" : ""})
+        </span>
+        <span>Pulsing = communicating now.</span>
+      </div>
     </div>
   );
 }
