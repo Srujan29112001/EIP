@@ -46,11 +46,14 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             "market_data": v.market_data, "macro_data": v.macro_data,
         }), v.doc_analyst(ctx))
 
-        # L2 — domain analysis in parallel (spine + every convened lens agent)
-        await asyncio.gather(*wave({
-            "market_analyst": v.market_analyst, "finance_modeler": v.finance_modeler,
-            **catalog.LENS_AGENTS,
-        }))
+        # L2 — two waves so experts talk to EACH OTHER (A2A): foundational
+        # analysts first, then integrative agents that read their findings
+        l2_all = {"market_analyst": v.market_analyst, "finance_modeler": v.finance_modeler,
+                  **catalog.LENS_AGENTS}
+        wave1 = {a: f for a, f in l2_all.items() if a in catalog.L2_FOUNDATIONAL}
+        wave2 = {a: f for a, f in l2_all.items() if a not in catalog.L2_FOUNDATIONAL}
+        await asyncio.gather(*wave(wave1))
+        await asyncio.gather(*wave(wave2))
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
         await asyncio.gather(*wave({
@@ -71,7 +74,12 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)
         await v.verdict_composer(ctx)
-        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
+        # storytelling frames the pitch from the verdict; visualizer builds charts.
+        # reporter runs LAST and ALONE so the biggest single call gets the whole
+        # key pool to itself, then self-heals via its own retry ladder — no outer
+        # rescue needed (the ladder spans a full minute of quota refreshes).
+        await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
+        await studio.reporter(ctx)
 
         await save_run(ctx.state)
         await emitter.done(run_id)

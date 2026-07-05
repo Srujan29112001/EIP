@@ -26,18 +26,27 @@ HUMAN_WAVE = list(human.HUMAN_AGENTS.keys())
 WORLD_WAVE = list(board.WORLD_WAVE.keys())
 VENTURE_WAVE = [k for k in board.BOARD_AGENTS if k not in ("devils_advocate", "connecting_dots")]
 
+# A2A ordering: foundational analysts run first (primary sources), then the
+# integrative agents that read them (venture.PEERS). Anything not foundational
+# is integrative and runs in the second L2 wave.
+L2_FOUNDATIONAL = {
+    "market_analyst", "market_research", "finance_modeler", "competitor_intel",
+    "industry_expert", "consumer_analysis", "human_behaviour", "tax", "legal",
+    "policy_compliance", "macroeconomist",
+}
+
 # extra lens agents convened per depth, per mode (beyond each mode's core desk)
 TRADER_EXTRA = {
     "board": ["macroeconomist", "geopolitics", "trends", "regulator", "industry_expert",
-              "human_behaviour", "money_happiness", "philosophy_ethics"],
+              "market_research", "human_behaviour", "money_happiness", "philosophy_ethics"],
     "war_room": ["macroeconomist", "geopolitics", "trends", "regulator", "industry_expert",
-                 "intl_markets", "esg_impact", "policy_compliance", "optimization_predictor",
-                 *HUMAN_WAVE],
+                 "market_research", "banking", "intl_markets", "esg_impact", "policy_compliance",
+                 "optimization_predictor", *HUMAN_WAVE],
 }
 WEALTH_EXTRA = {
-    "board": ["macroeconomist", "trends", "regulator", "fund_analyst",
+    "board": ["macroeconomist", "trends", "regulator", "fund_analyst", "market_research", "banking",
               "money_happiness", "human_needs", "philosophy_ethics", "philanthropy_impact"],
-    "war_room": ["macroeconomist", "trends", "regulator", "fund_analyst", "geopolitics",
-                 "intl_markets", "esg_impact", "optimization_predictor", "subsidies_schemes",
-                 *HUMAN_WAVE],
+    "war_room": ["macroeconomist", "trends", "regulator", "fund_analyst", "market_research", "banking",
+                 "geopolitics", "intl_markets", "esg_impact", "optimization_predictor",
+                 "subsidies_schemes", *HUMAN_WAVE],
 }

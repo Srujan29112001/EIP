@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, FinanceCore, LogKind, RadarData, RunEvent, StageStatus, Verdict,
+  AgentOutput, BoardItem, FinanceCore, LogKind, RadarData, RunEvent, StageStatus, Story, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -22,6 +22,9 @@ interface RunStore {
   agentOutputs: Record<string, AgentOutput>;
   financeCore: FinanceCore | null;
   prompts: Record<string, { system: string; user: string }>;
+  /** agent id → the colleagues it built on (A2A collab events) */
+  collabs: Record<string, string[]>;
+  story: Story | null;
   charts: Record<string, unknown>[];
   report: string | null;
   tokens: number;
@@ -44,6 +47,8 @@ const EMPTY = {
   agentOutputs: {},
   financeCore: null,
   prompts: {},
+  collabs: {} as Record<string, string[]>,
+  story: null as Story | null,
   charts: [] as Record<string, unknown>[],
   report: null as string | null,
   tokens: 0,
@@ -67,6 +72,8 @@ export const useRun = create<RunStore>((set) => ({
           return { logs: [...s.logs, { agent: e.agent, kind: e.kind, text: e.text }] };
         case "prompt":
           return { prompts: { ...s.prompts, [e.agent]: { system: e.system, user: e.user } } };
+        case "collab":
+          return { collabs: { ...s.collabs, [e.agent]: e.peers } };
         case "claim":
           return {
             board: [...s.board, {
@@ -89,6 +96,7 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "scope") return { scope: e.data as string[] };
           if (e.section === "finance_core") return { financeCore: e.data as FinanceCore };
           if (e.section === "charts") return { charts: e.data as Record<string, unknown>[] };
+          if (e.section === "story") return { story: e.data as Story };
           if (e.section === "report") return { report: e.data as string };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };

@@ -338,10 +338,66 @@ async def esg_impact(ctx: Ctx) -> None:
         "ESG read needs a model", 5.5)
 
 
+async def market_research(ctx: Ctx) -> None:
+    await _lens(ctx, "market_research",
+        "You are a market-research lead: TAM/SAM/SOM sizing, customer segmentation, primary + "
+        "secondary research synthesis, demand signals. Use figures from the evidence board; tag "
+        "anything not sourced as ESTIMATE.",
+        "Size the opportunity: TAM / SAM / SOM (sourced or ESTIMATE), the 2-3 real customer segments "
+        "with rough size, and the single strongest demand signal. Score 0-10 for opportunity size.",
+        "Market sizing needs a model — evidence-board figures only", 5.5)
+
+
+async def banking(ctx: Ctx) -> None:
+    await _lens(ctx, "banking",
+        "You are a business-banking and investment-banking advisor (India-first): working-capital "
+        "and term loans, credit lines, banking schemes (Mudra, CGTMSE, Stand-Up India, PMEGP), "
+        "capital structure, and how a banker / investment banker would fund or structure this. "
+        "Legitimate structures only; flag what a lender will scrutinise.",
+        "Lay out the banking & capital plan: the most fitting credit facility or banking scheme, one "
+        "capital-structure move (debt vs equity mix), and the one thing a banker will demand before "
+        "lending. Score 0-10 for financeability.",
+        "Banking read needs a model", 5.5)
+
+
+async def storytelling(ctx: Ctx) -> None:
+    """L4 communication agent — turns the board's analysis into a pitch story.
+    Runs after the verdict so it can frame the honest narrative."""
+    aid, layer = "storytelling", "L4"
+    await ctx.start(aid, layer)
+    lines = {k: v.get("verdict_line") for k, v in ctx.state.outputs.items()
+             if isinstance(v, dict) and v.get("verdict_line")}
+    schema = ('{"hook": str (one-sentence pitch hook), "narrative": str (a ~120-word founder/pitch '
+              'story grounded in the findings, no hype), "one_liner": str (the elevator line), '
+              '"three_beats": [str x3 — problem, insight, why-now]}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are a master business storyteller. Turn the board's analysis into a compelling but "
+        "HONEST pitch narrative — the story a founder tells an investor. Grounded in the findings, "
+        "no exaggeration; if the verdict is weak, tell the turnaround story instead.",
+        f"BRIEF: {ctx.state.brief}\nVERDICT: {ctx.state.verdict.get('score')}/10 "
+        f"{ctx.state.verdict.get('recommendation')}\nBOARD FINDINGS: {lines}",
+        schema, max_tokens=800, agent=aid)
+    if data and data.get("narrative"):
+        await ctx.emit.usage(aid, res.tokens, res.route)
+        await ctx.emit.partial("story", data)
+        await ctx.emit.log(aid, f"hook: {str(data.get('hook',''))[:90]}", "ok")
+        out = {"verdict_line": data.get("one_liner") or str(data.get("hook", ""))[:90],
+               "degraded": False, **data}
+    else:
+        out = {"verdict_line": "Pitch narrative needs a model",
+               "hook": str(ctx.state.brief.get("summary", ""))[:90], "narrative": "",
+               "three_beats": [], "degraded": True}
+        await ctx.emit.log(aid, "LLM unavailable — no narrative", "warn")
+    await ctx.finish(aid, layer, out)
+
+
 WORLD_WAVE = {
     "business_model": business_model,
     "marketing_strategy": marketing_strategy,
+    "market_research": market_research,
     "subsidies_schemes": subsidies_schemes,
+    "banking": banking,
     "hr_talent": hr_talent,
     "optimization_predictor": optimization_predictor,
     "regulator": regulator,

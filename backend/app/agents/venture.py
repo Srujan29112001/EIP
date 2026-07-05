@@ -103,14 +103,14 @@ async def scope_planner(ctx: Ctx) -> None:
     spine = ["web_researcher", "news_intel", "market_data", "macro_data",
              "market_analyst", "finance_modeler",
              "red_team", "fact_checker", "bias_auditor",
-             "weighing_engine", "verdict_composer", "visualizer", "reporter"]
-    board_wave = ["competitor_intel", "gtm_distribution", "legal", "tax",
+             "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]
+    board_wave = ["competitor_intel", "market_research", "banking", "gtm_distribution", "legal", "tax",
                   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
     human_wave = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
                   "philosophy_ethics", "money_happiness", "philanthropy_impact"]
-    world_wave = ["business_model", "marketing_strategy", "subsidies_schemes", "hr_talent",
-                  "optimization_predictor", "regulator", "macroeconomist", "geopolitics",
-                  "intl_markets", "trends", "esg_impact"]
+    world_wave = ["business_model", "marketing_strategy",
+                  "subsidies_schemes", "hr_talent", "optimization_predictor", "regulator",
+                  "macroeconomist", "geopolitics", "intl_markets", "trends", "esg_impact"]
     scope = (spine if depth == "pulse"
              else spine + board_wave + human_wave if depth == "board"
              else spine + board_wave + human_wave + world_wave)
@@ -122,7 +122,7 @@ async def scope_planner(ctx: Ctx) -> None:
     # synthesis layer is never optional — someone has to sign the verdict
     enabled = set(ctx.state.raw.get("agents_enabled") or [])
     if enabled:
-        mandatory = {"weighing_engine", "verdict_composer", "visualizer", "reporter"}
+        mandatory = {"weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"}
         dropped = [a for a in scope if a not in enabled and a not in mandatory]
         scope = [a for a in scope if a in enabled or a in mandatory]
         if dropped:
@@ -326,6 +326,47 @@ class _SafeDict(dict):
         return ""
 
 
+# ── the agent-to-agent affinity map (A2A) ──────────────────────────────────────
+# Which colleagues' findings each agent should read and build on. The graph runs
+# "foundational" analysts first, then "integrative" ones, so these peers already
+# have outputs on the board when an integrative agent reads them. This is what
+# makes experts talk to EACH OTHER, not just to the common crucible/synthesis.
+PEERS: dict[str, list[str]] = {
+    # foundational cross-talk (light)
+    "competitor_intel": ["market_analyst", "market_research"],
+    "industry_expert": ["market_analyst", "macroeconomist"],
+    "consumer_analysis": ["human_behaviour", "market_research"],
+    "market_research": ["market_analyst", "competitor_intel"],
+    # integrative agents synthesize the foundational ones
+    "business_model": ["market_analyst", "market_research", "finance_modeler", "competitor_intel", "consumer_analysis"],
+    "marketing_strategy": ["consumer_analysis", "competitor_intel", "market_research", "human_behaviour"],
+    "gtm_distribution": ["market_analyst", "consumer_analysis", "competitor_intel", "marketing_strategy"],
+    "hr_talent": ["finance_modeler", "industry_expert", "business_model"],
+    "production_ops": ["industry_expert", "finance_modeler", "business_model"],
+    "subsidies_schemes": ["finance_modeler", "policy_compliance", "banking"],
+    "banking": ["finance_modeler", "subsidies_schemes", "tax", "business_model"],
+    "optimization_predictor": ["tax", "legal", "policy_compliance", "banking"],
+    "regulator": ["policy_compliance", "legal"],
+    "trends": ["market_research", "macroeconomist", "consumer_analysis"],
+    "geopolitics": ["macroeconomist", "intl_markets", "production_ops"],
+    "intl_markets": ["market_analyst", "competitor_intel", "industry_expert"],
+    "esg_impact": ["production_ops", "philosophy_ethics", "consumer_analysis"],
+    "human_needs": ["consumer_analysis", "human_behaviour"],
+    "money_happiness": ["finance_modeler", "human_needs"],
+    "philosophy_ethics": ["human_behaviour", "consumer_analysis", "esg_impact"],
+    "philanthropy_impact": ["esg_impact", "philosophy_ethics"],
+    # markets cluster
+    "stock_analyst": ["technical_analyst", "macroeconomist"],
+    "fund_analyst": ["stock_analyst", "risk_manager"],
+    "options_desk": ["technical_analyst", "risk_manager"],
+    # wealth cluster
+    "fire_planner": ["salary_budget", "portfolio_allocator"],
+    "real_estate": ["salary_budget", "debt_banking", "banking"],
+    "debt_banking": ["salary_budget", "banking"],
+    "location_scout": ["subsidies_schemes"],
+}
+
+
 def _num(value: Any, default: float) -> float:
     """LLM output is untrusted — coerce to float or fall back, never raise."""
     try:
@@ -362,9 +403,30 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
                               + "\n".join(f"- {h['title']}: {h['snippet'][:140]}" for h in hits) + "\n")
             await ctx.emit.log(aid, f"└ sub-agent returned {len(hits)} sources", "muted")
 
+    # ── A2A: pull in colleagues' findings this agent should build on ──────
+    peer_block = ""
+    peer_ids = PEERS.get(aid, [])
+    if peer_ids:
+        got = []
+        peer_lines = []
+        for pid in peer_ids:
+            po = ctx.state.outputs.get(pid)
+            if isinstance(po, dict) and po.get("verdict_line"):
+                got.append(pid)
+                extra = ""
+                ki = po.get("key_insights")
+                if isinstance(ki, list) and ki:
+                    extra = f" · {ki[0]}"
+                peer_lines.append(f"- {pid} found: {po['verdict_line']}{extra}")
+        if peer_lines:
+            peer_block = ("YOUR COLLEAGUES ON THE BOARD ALREADY REPORTED (build on, reconcile or "
+                          "push back on these — do not just repeat them):\n" + "\n".join(peer_lines) + "\n")
+            await ctx.emit.log(aid, f"└ building on colleagues: {', '.join(got)}", "muted")
+            await ctx.emit.collab(aid, got)
+
     user_full = (f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
                  + (f"USER'S DIRECT BRIEF TO YOU: {str(user_ctx)[:500]}\n" if user_ctx else "")
-                 + research_block
+                 + peer_block + research_block
                  + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(14)}\n\nTASK: {ask}")
     if user_ctx:
         await ctx.emit.log(aid, f"user brief → me: {str(user_ctx)[:90]}", "muted")
@@ -676,9 +738,9 @@ async def weighing_engine(ctx: Ctx) -> None:
         return sum(vals) / len(vals) if vals else None
 
     dims = {
-        "Market": avg(["market_analyst", "competitor_intel", "industry_expert", "trends",
-                       "consumer_analysis"]) or 5.0,
-        "Economics": avg(["finance_modeler", "tax", "subsidies_schemes"]) or 5.0,
+        "Market": avg(["market_analyst", "market_research", "competitor_intel", "industry_expert",
+                       "trends", "consumer_analysis"]) or 5.0,
+        "Economics": avg(["finance_modeler", "tax", "subsidies_schemes", "banking"]) or 5.0,
         "Evidence": evidence_dim,
         "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy",
                           "hr_talent", "production_ops"]) or 5.0,

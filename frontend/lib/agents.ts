@@ -40,6 +40,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "doc_analyst", name: "Document Analyst", layer: "L1", cluster: "grounding", blurb: "Your uploads, on the evidence board", accent: "#0ea5e9" },
   // L2 — Domain analysis (violet family for venture cluster)
   { id: "market_analyst", name: "Market Analyst", layer: "L2", cluster: "venture", blurb: "Market size, growth, competition — sourced", accent: "#8b5cf6" },
+  { id: "market_research", name: "Market Research", layer: "L2", cluster: "venture", blurb: "TAM/SAM/SOM, segments, real demand signals", accent: "#9d7bf5" },
   { id: "finance_modeler", name: "Finance Modeler", layer: "L2", cluster: "venture", blurb: "Unit economics, runway, breakeven — real math", accent: "#a78bfa" },
   { id: "competitor_intel", name: "Competitor Intelligence", layer: "L2", cluster: "venture", blurb: "Positioning map, moats, whitespace", accent: "#7c3aed" },
   { id: "gtm_distribution", name: "GTM & Distribution", layer: "L2", cluster: "venture", blurb: "Channels, launch sequence, CAC reality", accent: "#9333ea" },
@@ -51,6 +52,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "business_model", name: "Business Model", layer: "L2", cluster: "venture", blurb: "Canvas analysis + model recommendation", accent: "#8b5cf6" },
   { id: "marketing_strategy", name: "Marketing Strategist", layer: "L2", cluster: "venture", blurb: "Positioning, CAC/LTV, growth loops", accent: "#a855f7" },
   { id: "subsidies_schemes", name: "Subsidies & Schemes", layer: "L2", cluster: "venture", blurb: "Government money you're leaving on the table", accent: "#c084fc" },
+  { id: "banking", name: "Banker & Capital", layer: "L2", cluster: "venture", blurb: "Loans, working capital, schemes, the capital stack", accent: "#b794f6" },
   { id: "hr_talent", name: "HR & Talent", layer: "L2", cluster: "venture", blurb: "Hiring order, salary bands, team risk", accent: "#9333ea" },
   { id: "optimization_predictor", name: "Loophole Predictor", layer: "L2", cluster: "venture", blurb: "Legit optimizations + their grey-zone risk", accent: "#7c3aed" },
   { id: "regulator", name: "Regulator Watch", layer: "L2", cluster: "venture", blurb: "SEBI/RBI/CCI/FSSAI posture & scrutiny", accent: "#6d28d9" },
@@ -90,6 +92,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "devils_advocate", name: "Devil's Advocate", layer: "L3", cluster: "crucible", blurb: "Steel-mans the NO case", accent: "#f43f5e" },
   // L4 — Synthesis (gold family)
   { id: "connecting_dots", name: "Connecting Dots", layer: "L4", cluster: "synthesis", blurb: "Cross-domain patterns and weak signals", accent: "#fde047" },
+  { id: "storytelling", name: "Storyteller", layer: "L4", cluster: "synthesis", blurb: "The pitch — hook, narrative, one-liner, three beats", accent: "#fca5a5" },
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
   { id: "visualizer", name: "Visualizer", layer: "L4", cluster: "synthesis", blurb: "Best-fit interactive charts for every insight", accent: "#fcd34d" },
   { id: "reporter", name: "Reporter", layer: "L4", cluster: "synthesis", blurb: "The full written decision report", accent: "#fde68a" },
@@ -100,9 +103,9 @@ export const AGENTS: AgentInfo[] = [
 const ICONS: Record<string, string> = {
   intake_parser: "📥", context_profiler: "🪪", scope_planner: "🗺️",
   web_researcher: "🔎", news_intel: "📰", market_data: "📈", macro_data: "🌐", doc_analyst: "📄",
-  market_analyst: "🧭", finance_modeler: "🧮", competitor_intel: "♟️", gtm_distribution: "🚚",
+  market_analyst: "🧭", market_research: "🔬", finance_modeler: "🧮", competitor_intel: "♟️", gtm_distribution: "🚚",
   legal: "⚖️", tax: "🧾", policy_compliance: "📋", industry_expert: "🏭",
-  business_model: "🧩", marketing_strategy: "📣", subsidies_schemes: "🎁", hr_talent: "🧑‍🤝‍🧑",
+  business_model: "🧩", marketing_strategy: "📣", subsidies_schemes: "🎁", banking: "🏦", hr_talent: "🧑‍🤝‍🧑",
   optimization_predictor: "🕳️", regulator: "🏛️",
   macroeconomist: "🏦", geopolitics: "🗺️", intl_markets: "✈️", trends: "📡", esg_impact: "🌱",
   technical_analyst: "📊", stock_analyst: "🏢", backtest_engineer: "🧪", quant_signals: "🎯",
@@ -113,7 +116,7 @@ const ICONS: Record<string, string> = {
   philosophy_ethics: "🦉", money_happiness: "😊", philanthropy_impact: "🤲",
   red_team: "⚔️", devils_advocate: "😈", bias_auditor: "🪞", fact_checker: "✅",
   connecting_dots: "🕸️", weighing_engine: "⚖️", verdict_composer: "📜",
-  visualizer: "🎨", reporter: "🖋️",
+  storytelling: "🎙️", visualizer: "🎨", reporter: "🖋️",
 };
 for (const a of AGENTS) a.icon = ICONS[a.id] ?? "🤖";
 
@@ -128,6 +131,7 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   macro_data: { in: "Geography", out: "GDP · inflation · rates (World Bank)" },
   doc_analyst: { in: "Your uploaded documents", out: "Cited chunks + key facts" },
   market_analyst: { in: "Brief + evidence board", out: "Market score + analysis" },
+  market_research: { in: "Market analyst + competitor reads", out: "TAM/SAM/SOM + segments + demand signal" },
   finance_modeler: { in: "Budget + team", out: "Runway math + economics score" },
   competitor_intel: { in: "Evidence board", out: "Positioning, moats, whitespace" },
   gtm_distribution: { in: "Brief + team + stage", out: "Channels + execution score" },
@@ -138,6 +142,7 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   business_model: { in: "Brief + evidence", out: "Canvas + model recommendation" },
   marketing_strategy: { in: "Brief + evidence", out: "Positioning + growth loop" },
   subsidies_schemes: { in: "Brief + geography", out: "Schemes you qualify for" },
+  banking: { in: "Finance model + schemes + tax", out: "Credit facility + capital-stack move" },
   hr_talent: { in: "Team + stage", out: "Hiring order + salary bands" },
   optimization_predictor: { in: "Brief + evidence", out: "Legit optimizations + risks" },
   regulator: { in: "Evidence board", out: "Regulator posture + scrutiny map" },
@@ -174,6 +179,7 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   connecting_dots: { in: "Every domain verdict", out: "Cross-domain patterns" },
   weighing_engine: { in: "Scores × penalties × evidence", out: "Deterministic weighted verdict" },
   verdict_composer: { in: "The weighed number", out: "The decision document" },
+  storytelling: { in: "Verdict + every board finding", out: "Hook · narrative · one-liner · 3 beats" },
   visualizer: { in: "Every output + evidence figure", out: "Interactive chart gallery" },
   reporter: { in: "Everything the board produced", out: "The full written report" },
 };
@@ -195,7 +201,40 @@ const NO_RESEARCH = new Set(["intake_parser", "context_profiler", "scope_planner
   "news_intel", "market_data", "macro_data", "doc_analyst", "finance_modeler", "technical_analyst",
   "backtest_engineer", "quant_signals", "risk_manager", "portfolio_allocator", "fire_planner",
   "salary_budget", "red_team", "fact_checker", "bias_auditor", "devils_advocate", "connecting_dots",
-  "weighing_engine", "verdict_composer", "visualizer", "reporter", "options_desk", "microstructure"]);
+  "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter", "options_desk", "microstructure"]);
+
+/** A2A affinity — mirror of backend venture.PEERS. Each agent builds on the
+ * colleagues it reads off the shared evidence board (drives graph A2A edges). */
+export const PEERS: Record<string, string[]> = {
+  competitor_intel: ["market_analyst", "market_research"],
+  industry_expert: ["market_analyst", "macroeconomist"],
+  consumer_analysis: ["human_behaviour", "market_research"],
+  market_research: ["market_analyst", "competitor_intel"],
+  business_model: ["market_analyst", "market_research", "finance_modeler", "competitor_intel", "consumer_analysis"],
+  marketing_strategy: ["consumer_analysis", "competitor_intel", "market_research", "human_behaviour"],
+  gtm_distribution: ["market_analyst", "consumer_analysis", "competitor_intel", "marketing_strategy"],
+  hr_talent: ["finance_modeler", "industry_expert", "business_model"],
+  production_ops: ["industry_expert", "finance_modeler", "business_model"],
+  subsidies_schemes: ["finance_modeler", "policy_compliance", "banking"],
+  banking: ["finance_modeler", "subsidies_schemes", "tax", "business_model"],
+  optimization_predictor: ["tax", "legal", "policy_compliance", "banking"],
+  regulator: ["policy_compliance", "legal"],
+  trends: ["market_research", "macroeconomist", "consumer_analysis"],
+  geopolitics: ["macroeconomist", "intl_markets", "production_ops"],
+  intl_markets: ["market_analyst", "competitor_intel", "industry_expert"],
+  esg_impact: ["production_ops", "philosophy_ethics", "consumer_analysis"],
+  human_needs: ["consumer_analysis", "human_behaviour"],
+  money_happiness: ["finance_modeler", "human_needs"],
+  philosophy_ethics: ["human_behaviour", "consumer_analysis", "esg_impact"],
+  philanthropy_impact: ["esg_impact", "philosophy_ethics"],
+  stock_analyst: ["technical_analyst", "macroeconomist"],
+  fund_analyst: ["stock_analyst", "risk_manager"],
+  options_desk: ["technical_analyst", "risk_manager"],
+  fire_planner: ["salary_budget", "portfolio_allocator"],
+  real_estate: ["salary_budget", "debt_banking", "banking"],
+  debt_banking: ["salary_budget", "banking"],
+  location_scout: ["subsidies_schemes"],
+};
 
 /** who reads whose output — the A2A communication map, humanized */
 const TALKS: Record<string, string[]> = {
@@ -214,7 +253,10 @@ const TALKS: Record<string, string[]> = {
   devils_advocate: ["verdict composer (the NO case is preserved)"],
   connecting_dots: ["verdict composer (cross-domain patterns)"],
   weighing_engine: ["verdict composer (it may not change the number)"],
-  verdict_composer: ["visualizer", "reporter"],
+  verdict_composer: ["storyteller", "visualizer", "reporter"],
+  market_research: ["market analyst", "competitor intel", "business model", "marketing strategist", "trends"],
+  banking: ["finance modeler", "subsidies & schemes", "tax", "business model", "optimization predictor"],
+  storytelling: ["you — the pitch narrative", "reporter (frames the written report)"],
   visualizer: ["you — every insight becomes an interactive chart"],
   reporter: ["you — the full written decision report"],
 };

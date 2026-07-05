@@ -11,6 +11,7 @@ from every agent's output, with a deterministic assembly fallback.
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from .base import Ctx
@@ -239,25 +240,36 @@ async def reporter(ctx: Ctx) -> None:
         md += ["", "_Deterministic assembly — add a model/key for the narrated report._"]
         return "\n".join(md)
 
-    data, res = await ctx.llm.structured(
-        "t3",
-        "You are the board's reporter. Write the decision report a paying client would expect: "
-        "specific, sourced from the agent findings given, honest about dissent. Never invent numbers; "
-        "cite agents by name. Markdown only.",
-        f"BRIEF: {ctx.state.brief}\nVERDICT: { {k: verdict.get(k) for k in ('score', 'recommendation', 'reasoning', 'sensitivities')} }\n"
-        f"AGENT FINDINGS: {lines}\n"
-        f"RISKS: {[r.get('text') for r in (verdict.get('risks') or [])[:6]]}\n"
-        f"TOP EVIDENCE:\n{ctx.state.evidence_digest(12)}",
-        _REPORT_SCHEMA, max_tokens=1800, agent=aid)
-    report = (data or {}).get("report_markdown")
-    degraded = False
-    if report and len(str(report)) > 300:
-        await ctx.emit.usage(aid, res.tokens, res.route)
-        await ctx.emit.log(aid, f"report written · {len(str(report)):,} chars", "ok")
-    else:
+    system = ("You are the board's reporter. Write the decision report a paying client would expect: "
+              "specific, sourced from the agent findings given, honest about dissent. Never invent "
+              "numbers; cite agents by name. Markdown only.")
+    user = (f"BRIEF: {ctx.state.brief}\nVERDICT: { {k: verdict.get(k) for k in ('score', 'recommendation', 'reasoning', 'sensitivities')} }\n"
+            f"AGENT FINDINGS: {lines}\n"
+            f"RISKS: {[r.get('text') for r in (verdict.get('risks') or [])[:6]]}\n"
+            f"TOP EVIDENCE:\n{ctx.state.evidence_digest(12)}")
+
+    # The report is the single biggest LLM call and runs dead-last, when every
+    # per-minute key quota is most likely spent — the #1 reason it starved.
+    # A retry ladder rescues it: escalating cooldowns (Groq/Gemini refresh per
+    # minute) and a drop to the faster tier so we still get NARRATION, never
+    # just deterministic assembly, whenever any key has a shred of quota left.
+    ladder = [("t3", 1800, 0.0), ("t3", 1600, 12.0), ("t2", 1400, 14.0), ("t2", 1100, 16.0)]
+    report = None
+    for tier, cap, wait in ladder:
+        if wait:
+            await ctx.emit.log(aid, f"report starved — cooling {wait:.0f}s for quota, retrying on {tier}", "warn")
+            await asyncio.sleep(wait)
+        data, res = await ctx.llm.structured(tier, system, user, _REPORT_SCHEMA, max_tokens=cap, agent=aid)
+        candidate = (data or {}).get("report_markdown")
+        if candidate and len(str(candidate)) > 300:
+            report = str(candidate)
+            await ctx.emit.usage(aid, res.tokens, res.route)
+            await ctx.emit.log(aid, f"report written · {len(report):,} chars via {res.route}", "ok")
+            break
+    degraded = report is None
+    if degraded:
         report = fallback_report()
-        degraded = True
-        await ctx.emit.log(aid, "LLM unavailable — deterministic report assembly", "warn")
+        await ctx.emit.log(aid, "LLM unavailable after full retry ladder — deterministic report assembly", "warn")
     await ctx.emit.partial("report", str(report))
     await ctx.finish(aid, layer, {"verdict_line": "full decision report ready",
                                   "chars": len(str(report)), "degraded": degraded})

@@ -43,6 +43,11 @@ class Emitter:
     async def conflict(self, a: str, b: str, topic: str) -> None:
         await self.queue.put({"type": "conflict", "a": a, "b": b, "topic": topic})
 
+    async def collab(self, agent: str, peers: list[str]) -> None:
+        """Agent-to-agent: `agent` built its analysis on these peers' findings.
+        Drives the A2A edges in the flow map + decision graph."""
+        await self.queue.put({"type": "collab", "agent": agent, "peers": peers})
+
     async def prompt(self, agent: str, system: str, user: str) -> None:
         """Radical transparency: the exact prompt an agent sends to its model."""
         await self.queue.put({"type": "prompt", "agent": agent,

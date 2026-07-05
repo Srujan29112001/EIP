@@ -108,6 +108,14 @@ export type AgentOutput = {
   degraded_reason?: string;
 } & Record<string, unknown>;
 
+/** The Storyteller's pitch narrative (partial:story). */
+export interface Story {
+  hook?: string;
+  narrative?: string;
+  one_liner?: string;
+  three_beats?: string[];
+}
+
 export interface Verdict {
   score: number;
   band: string;
@@ -126,6 +134,7 @@ export type RunEvent =
   | { type: "stage"; agent: string; status: StageStatus; layer: string }
   | { type: "log"; agent: string; kind: LogKind; text: string }
   | { type: "prompt"; agent: string; system: string; user: string }
+  | { type: "collab"; agent: string; peers: string[] }
   | { type: "claim"; agent: string; claim: { text: string; source?: Source | null; confidence: number } }
   | { type: "conflict"; a: string; b: string; topic: string }
   | { type: "debate"; agent: string; round: number; stance: "attack" | "rebuttal" | "concession"; text: string }

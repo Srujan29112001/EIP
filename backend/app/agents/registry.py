@@ -32,7 +32,9 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("doc_analyst", "Document Analyst", "L1", "grounding", "t2", "Reads your pitch deck, plan, contracts", True),
     # L2 — Venture
     AgentMeta("market_analyst", "Market Analyst", "L2", "venture", "t2", "Market size, growth, competition — sourced", True),
+    AgentMeta("market_research", "Market Research", "L2", "venture", "t2", "Primary demand signals — surveys, search, cohort pull", True),
     AgentMeta("finance_modeler", "Finance Modeler", "L2", "venture", "t2", "Unit economics, runway, breakeven — real math", True),
+    AgentMeta("banking", "Banker & Capital", "L2", "venture", "t2", "Loans, working capital, schemes, investor-grade capital stack", True),
     AgentMeta("competitor_intel", "Competitor Intelligence", "L2", "venture", "t2", "Positioning map and moat analysis", True),
     AgentMeta("business_model", "Business Model", "L2", "venture", "t2", "Canvas analysis + model recommendation", True),
     AgentMeta("gtm_distribution", "GTM & Distribution", "L2", "venture", "t2", "Channels, launch sequence, CAC reality", True),
@@ -82,6 +84,7 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("fact_checker", "Fact Checker", "L3", "crucible", "t2", "Spot-checks claims against the evidence board", True),
     # L4 — Synthesis
     AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects", True),
+    AgentMeta("storytelling", "Storyteller", "L4", "synthesis", "t3", "Turns the verdict into a pitch — hook, narrative, one-liner", True),
     AgentMeta("weighing_engine", "Weighing Engine", "L4", "synthesis", "t0", "Deterministic scoring — disagreement preserved", True),
     AgentMeta("verdict_composer", "Verdict Composer", "L4", "synthesis", "t3", "The decision document, with sensitivities", True),
     AgentMeta("visualizer", "Visualizer", "L4", "synthesis", "t2", "Best-fit interactive charts for every insight", True),

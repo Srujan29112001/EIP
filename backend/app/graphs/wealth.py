@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
+from ..agents import board
 from ..agents import catalog
 from ..agents import studio
 from ..agents import wealth as wl
@@ -20,9 +21,10 @@ WEALTH_SCOPE = ["news_intel", "macro_data",
                 "salary_budget", "portfolio_allocator", "fire_planner",
                 "debt_banking", "real_estate", "location_scout",
                 "red_team", "bias_auditor",
-                "weighing_engine", "verdict_composer", "visualizer", "reporter"]
+                "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]
 
-WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "visualizer", "reporter"}
+WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "storytelling",
+                    "visualizer", "reporter"}
 
 
 async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -101,7 +103,9 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         # L4 — synthesis
         await wl.weighing_wealth(ctx)
         await wl.verdict_wealth(ctx)
-        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
+        # reporter runs last & alone (biggest call → whole key pool), self-heals
+        await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
+        await studio.reporter(ctx)
 
         await save_run(ctx.state)
         await emitter.done(run_id)

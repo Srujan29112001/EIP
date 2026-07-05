@@ -3,7 +3,7 @@
  * SRUJAN.K KnowledgeGraph3D port in components/graph/neural-map.tsx.
  */
 
-import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, type Layer } from "./agents";
+import { AGENTS, LAYER_LABELS, PEERS, STAGE_IO, agentById, type Layer } from "./agents";
 import type { AgentOutput, BoardItem, Verdict } from "./types";
 
 export interface GNode {
@@ -22,13 +22,15 @@ export interface GNode {
   };
 }
 
-export interface GEdge { source: string; target: string }
+export interface GEdge { source: string; target: string; kind?: "a2a" | "conflict" }
 
 export interface GraphInput {
   brief: Record<string, unknown> | null;
   board: BoardItem[];
   agentOutputs: Record<string, AgentOutput>;
   verdict: Verdict | null;
+  /** agent id → colleagues it built on this run (live A2A); falls back to PEERS */
+  collabs?: Record<string, string[]>;
 }
 
 const LAYER_COLORS: Record<Layer, string> = {
@@ -124,10 +126,25 @@ export function buildGraph(input: GraphInput): { nodes: GNode[]; edges: GEdge[] 
     edges.push({ source: input.agentOutputs[r.source_agent] ? r.source_agent : "center", target: id });
   });
 
+  // A2A collaboration — each agent wired to the colleagues it built on, so the
+  // board's cross-talk is visible in the map (live collab events, else PEERS map)
+  const ran = new Set(ranAgents.map((a) => a.id));
+  const seen = new Set<string>();
+  for (const a of ranAgents) {
+    const peers = input.collabs?.[a.id] ?? PEERS[a.id] ?? [];
+    for (const p of peers) {
+      if (!ran.has(p) || p === a.id) continue;
+      const key = a.id < p ? `${a.id}|${p}` : `${p}|${a.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      edges.push({ source: p, target: a.id, kind: "a2a" });
+    }
+  }
+
   // conflicts become agent↔agent edges (the argument, made visible)
   for (const c of input.board.filter((b) => b.kind === "conflict")) {
     if (input.agentOutputs[c.agent] && c.vs && input.agentOutputs[c.vs]) {
-      edges.push({ source: c.agent, target: c.vs });
+      edges.push({ source: c.agent, target: c.vs, kind: "conflict" });
     }
   }
 

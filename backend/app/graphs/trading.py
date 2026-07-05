@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
+from ..agents import board
 from ..agents import catalog
 from ..agents import markets as m
 from ..agents import studio
@@ -25,11 +26,11 @@ TRADER_SCOPE = ["news_intel", "market_data", "macro_data",
                 "quant_signals", "risk_manager",
                 "fund_analyst", "options_desk", "microstructure",
                 "red_team", "fact_checker", "bias_auditor",
-                "weighing_engine", "verdict_composer", "visualizer", "reporter"]
+                "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]
 
 # the desk can be hand-picked, but the data spine + synthesis cannot be benched
 TRADER_MANDATORY = {"market_data", "technical_analyst", "weighing_engine",
-                    "verdict_composer", "visualizer", "reporter"}
+                    "verdict_composer", "storytelling", "visualizer", "reporter"}
 
 
 async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -116,7 +117,9 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
         # L4 — synthesis
         await m.weighing_trader(ctx)
         await m.verdict_trader(ctx)
-        await asyncio.gather(studio.visualizer(ctx), studio.reporter(ctx))
+        # reporter runs last & alone (biggest call → whole key pool), self-heals
+        await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
+        await studio.reporter(ctx)
 
         await save_run(ctx.state)
         await emitter.done(run_id)

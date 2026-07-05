@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Network, Scale } from "lucide-react";
+import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Mic, Network, Scale } from "lucide-react";
 import { NeuralMap } from "@/components/graph/neural-map";
 import { agentById } from "@/lib/agents";
 import { buildMarkdown, download, printPdf } from "@/lib/export";
@@ -21,7 +21,7 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story } = useRun();
 
   const exportMd = () =>
     download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
@@ -80,6 +80,36 @@ export function DecisionRoom() {
           </span>
         </div>
       </section>
+
+      {/* the Storyteller's pitch — the honest narrative for this decision */}
+      {story && (story.narrative || story.one_liner) && (
+        <section className="rounded-xl border border-line bg-gradient-to-br from-panel to-[#1a1330] p-5">
+          <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+            <Mic size={13} className="text-[#fca5a5]" /> The pitch — as the Storyteller would tell it
+          </h3>
+          {story.one_liner && (
+            <p className="font-display text-lg font-semibold leading-snug text-slate-100">“{story.one_liner}”</p>
+          )}
+          {story.hook && story.hook !== story.one_liner && (
+            <p className="mt-1 text-sm italic text-[#fca5a5]">{story.hook}</p>
+          )}
+          {story.narrative && (
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">{story.narrative}</p>
+          )}
+          {Array.isArray(story.three_beats) && story.three_beats.length > 0 && (
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {story.three_beats.slice(0, 3).map((b, i) => (
+                <div key={i} className="rounded-lg border border-line bg-panel-2 p-3">
+                  <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-[#fca5a5]">
+                    {["Problem", "Insight", "Why now"][i] ?? `Beat ${i + 1}`}
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-300">{b}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* radar + sensitivities */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -171,7 +201,7 @@ export function DecisionRoom() {
         <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
           <Network size={13} /> The Decision Graph — everything the board produced
         </h3>
-        <NeuralMap {...buildGraph({ brief, board, agentOutputs, verdict })} height={460} />
+        <NeuralMap {...buildGraph({ brief, board, agentOutputs, verdict, collabs })} height={460} />
       </section>
 
       <AskBoard />
