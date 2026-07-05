@@ -43,25 +43,26 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
     for (const a of cols[i]) for (const b of cols[i + 1]) edges.push({ from: a.id, to: b.id });
   }
 
-  // A2A mesh: expert ↔ expert links (venture.PEERS), so specialists visibly
-  // build on EACH OTHER — not just funnel into the common grounding/crucible
-  // agents. `live` = the collab actually fired this run (bright gold); else the
-  // wiring is latent (faint gold). Deduped, undirected.
-  const activeIds = new Set(active.map((a) => a.id));
-  const peerSeen = new Set<string>();
+  // A2A mesh: WITHIN each layer, every agent is wired to every OTHER agent — a
+  // fully-connected layer, like a neural net. They all read & write the one
+  // shared evidence board, so the domain layer genuinely is a complete graph;
+  // no specialist is an island. A pair glows bright + pulses when it actually
+  // built on the other this run (collab event, or the curated PEERS affinity);
+  // every other same-layer pair stays a visible-but-quiet gold thread.
+  const isLive = (x: string, y: string) =>
+    (collabs[x] ?? []).includes(y) || (collabs[y] ?? []).includes(x) ||
+    (PEERS[x] ?? []).includes(y) || (PEERS[y] ?? []).includes(x);
   const peerEdges: { from: string; to: string; live: boolean }[] = [];
-  for (const a of active) {
-    const declared = PEERS[a.id] ?? [];
-    const livePeers = collabs[a.id] ?? [];
-    for (const p of new Set([...declared, ...livePeers])) {
-      if (!activeIds.has(p) || p === a.id) continue;
-      const key = a.id < p ? `${a.id}|${p}` : `${p}|${a.id}`;
-      if (peerSeen.has(key)) continue;
-      peerSeen.add(key);
-      const live = livePeers.includes(p) || (collabs[p] ?? []).includes(a.id);
-      peerEdges.push({ from: p, to: a.id, live });
+  cols.forEach((col, ci) => {
+    if (ci === 0 || col.length < 2) return;   // L0 gateway is a sequence, not a mesh
+    for (let a = 0; a < col.length; a++) {
+      for (let b = a + 1; b < col.length; b++) {
+        peerEdges.push({ from: col[a].id, to: col[b].id, live: isLive(col[a].id, col[b].id) });
+      }
     }
-  }
+  });
+  // paint the quiet threads first, the live/pulsing links last (on top)
+  peerEdges.sort((x, y) => Number(x.live) - Number(y.live));
 
   const status = (id: string) => agentStatus[id] ?? "queued";
   const selAgent = sel ? agentById(sel) : null;
@@ -105,24 +106,28 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
             );
           })}
 
-          {/* A2A mesh — expert ↔ expert arcs (gold), bowed out of the column so
-              you can SEE specialists building on each other, not just the
-              common agents. Bright = it fired this run; faint = latent wiring. */}
+          {/* A2A mesh — every agent in a layer wired to every OTHER agent in it
+              (a complete graph, like a neural-net layer). Arcs bow out of the
+              column, alternating sides for a balanced web. Bright + pulsing =
+              the pair actively built on each other this run; quiet gold thread =
+              connected via the shared board. */}
           {peerEdges.map(({ from, to, live }, i) => {
             const p1 = pos.get(from), p2 = pos.get(to);
             if (!p1 || !p2) return null;
             const dy = Math.abs(p2.y - p1.y);
-            const bulge = Math.min(150, 34 + dy * 0.5);
-            // same column → bow left of the column; cross-column → bow left of the midpoint
-            const cx = (p1.x === p2.x ? p1.x : (p1.x + p2.x) / 2) - bulge;
+            const bulge = Math.min(135, 26 + dy * 0.5);
+            const baseX = p1.x === p2.x ? p1.x : (p1.x + p2.x) / 2;
+            const side = i % 2 === 0 ? -1 : 1;             // alternate left/right of the column
+            const edgeX = side < 0 ? -11 : 11;
+            const cx = baseX + side * bulge;
             const cy = (p1.y + p2.y) / 2;
             return (
               <path key={`peer${i}`}
-                d={`M${p1.x - 11},${p1.y} Q${cx},${cy} ${p2.x - 11},${p2.y}`}
+                d={`M${p1.x + edgeX},${p1.y} Q${cx},${cy} ${p2.x + edgeX},${p2.y}`}
                 fill="none"
                 stroke="#fbbf24"
-                strokeOpacity={live ? 0.9 : 0.2}
-                strokeWidth={live ? 1.9 : 1}
+                strokeOpacity={live ? 0.92 : 0.26}
+                strokeWidth={live ? 2 : 0.7}
                 strokeLinecap="round"
                 strokeDasharray={live ? "5 6" : undefined}
                 style={live ? { animation: "flowdash 0.9s linear infinite" } : undefined}
@@ -210,10 +215,9 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
           layer-to-layer flow
         </span>
         <span className="flex items-center gap-1.5">
-          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#fbbf24" strokeOpacity="0.85" strokeWidth="1.6" strokeDasharray="4 3" /></svg>
-          agent ↔ agent (experts building on each other{peerEdges.some((e) => e.live) ? " — live" : ""})
+          <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#fbbf24" strokeOpacity="0.92" strokeWidth="2" strokeDasharray="4 3" /></svg>
+          agent ↔ agent — every specialist in a layer wired to every other (neural mesh); pulsing = building on each other now
         </span>
-        <span>Pulsing = communicating now.</span>
       </div>
     </div>
   );
