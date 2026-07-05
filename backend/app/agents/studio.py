@@ -109,6 +109,18 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                                         "value": round(_num(r.get("severity"), 0.5), 2),
                                         "group": str(r.get("source_agent", "board"))} for r in risks]}))
 
+    # donut — how the specialists connect (cross-pollination synergies vs tensions)
+    conns = (o.get("cross_pollinate", {}) or {}).get("connections") or []
+    if conns:
+        syn = sum(1 for c in conns if isinstance(c, dict) and c.get("type") == "synergy")
+        ten = len(conns) - syn
+        charts.append(_chart("donut_crosslinks", "donut", "How the specialists connect",
+                             f"{len(conns)} cross-links between specialists — synergy reinforces the case, "
+                             "tension is where the board disagrees.",
+                             "cross_pollinate",
+                             {"slices": [{"label": "synergy", "value": syn, "color": "#9ae64a"},
+                                         {"label": "tension", "value": ten, "color": "#fbbf24"}]}))
+
     # mode-specific
     md = o.get("market_data", {})
     if md.get("ohlcv"):  # trader: candlestick + backtest columns

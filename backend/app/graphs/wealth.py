@@ -100,7 +100,9 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         # gap-detector: retry reduced-depth agents after a cooldown
         await replay_degraded(ctx)
 
-        # L4 — synthesis
+        # L4 — synthesis (cross-pollinate lights the mesh + surfaces synergies/tensions)
+        await board.cross_pollinate(ctx)
+        await board.compliance_scan(ctx)
         await wl.weighing_wealth(ctx)
         await wl.verdict_wealth(ctx)
         # reporter runs last & alone (biggest call → whole key pool), self-heals

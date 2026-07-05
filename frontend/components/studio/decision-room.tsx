@@ -21,7 +21,7 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance } = useRun();
 
   const exportMd = () =>
     download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
@@ -44,6 +44,34 @@ export function DecisionRoom() {
     <div className="space-y-4 pb-4">
       <QualityBanner />
       <DegradedNotice />
+
+      {/* compliance alerts — the regulatory red-flags, elevated so nothing is missed */}
+      {compliance && compliance.alerts.length > 0 && (
+        <section className={`rounded-xl border p-4 ${compliance.high > 0 ? "border-err/40 bg-err/10" : "border-warn/40 bg-warn/10"}`}>
+          <h3 className={`mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest ${compliance.high > 0 ? "text-err" : "text-warn"}`}>
+            <AlertTriangle size={13} /> Compliance sentinel — {compliance.alerts.length} flag{compliance.alerts.length > 1 ? "s" : ""}
+            {compliance.high > 0 && <span className="rounded bg-err/20 px-1.5 py-0.5 text-[9px]">{compliance.high} HIGH</span>}
+          </h3>
+          <ul className="space-y-1.5">
+            {compliance.alerts.map((a, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 rounded px-1.5 py-0.5 font-mono text-[8px] uppercase ${
+                  a.severity === "high" ? "bg-err/25 text-err" : a.severity === "medium" ? "bg-warn/25 text-warn" : "bg-panel-2 text-slate-400"}`}>
+                  {a.severity}
+                </span>
+                <span className="text-slate-200">
+                  {a.text}
+                  <span className="ml-1.5 font-mono text-[9px] text-slate-500">— {agentById(a.agent).name}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 font-mono text-[9px] text-slate-500">
+            Deterministic scan — education, not legal advice. Verify each against the current official source.
+          </p>
+        </section>
+      )}
+
       <KpiTiles />
       {/* verdict card */}
       <section className={`rounded-xl border p-5 ${band.cls}`}>
@@ -174,6 +202,48 @@ export function DecisionRoom() {
           </ul>
         </section>
       </div>
+
+      {/* cross-pollination — how the specialists' findings connect (A2A synthesis) */}
+      {crossInsights && ((crossInsights.connections?.length ?? 0) > 0 || (crossInsights.emergent?.length ?? 0) > 0) && (
+        <section className="rounded-xl border border-line bg-panel p-4">
+          <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+            <Network size={13} className="text-[#fbbf24]" /> Cross-pollination — how the specialists connect
+          </h3>
+          <p className="mb-3 text-[11px] text-slate-500">
+            Every specialist read against every other — where their findings reinforce (synergy) or collide (tension).
+          </p>
+          {(crossInsights.connections?.length ?? 0) > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {crossInsights.connections!.map((c, i) => {
+                const syn = c.type === "synergy";
+                return (
+                  <div key={i} className={`rounded-lg border p-2.5 text-xs ${syn ? "border-ok/30 bg-ok/5" : "border-warn/30 bg-warn/5"}`}>
+                    <div className="mb-1 flex flex-wrap items-center gap-1 font-mono text-[10px]">
+                      <span style={{ color: agentById(c.a).accent }}>{agentById(c.a).icon} {agentById(c.a).name}</span>
+                      <span className={syn ? "text-ok" : "text-warn"}>{syn ? "⇄" : "⚡"}</span>
+                      <span style={{ color: agentById(c.b).accent }}>{agentById(c.b).icon} {agentById(c.b).name}</span>
+                      <span className={`ml-auto rounded px-1.5 py-0.5 text-[8px] uppercase ${syn ? "bg-ok/15 text-ok" : "bg-warn/15 text-warn"}`}>{c.type}</span>
+                    </div>
+                    <p className="leading-relaxed text-slate-300">{c.insight}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {(crossInsights.emergent?.length ?? 0) > 0 && (
+            <div className="mt-3">
+              <div className="mb-1.5 font-mono text-[9px] uppercase tracking-widest text-[#fbbf24]">Emergent — only visible across the whole board</div>
+              <ul className="space-y-1.5">
+                {crossInsights.emergent!.map((e, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-slate-300">
+                    <Lightbulb size={12} className="mt-0.5 shrink-0 text-[#fbbf24]" /> {e}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* results v4 — the density layer */}
       <KeyFindings />

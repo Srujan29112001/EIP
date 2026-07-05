@@ -1,8 +1,28 @@
 /** Backend client — health probe + the SSE run consumer (Helix consumeSSE pattern). */
 
 import type { IntakeForm, RunEvent } from "./types";
+import { userHeaders } from "./user";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+export interface Me {
+  user_id: string | null;
+  email?: string;
+  tier: string;
+  tier_info: { label: string; max_depth: string; daily_runs: number; note: string };
+  runs?: number;
+}
+
+export async function getMe(): Promise<Me | null> {
+  try {
+    const r = await fetch(`${API_BASE}/api/me`, {
+      headers: userHeaders(), signal: AbortSignal.timeout(5000),
+    });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface EngineStatus {
   local: boolean;
@@ -21,6 +41,12 @@ export async function backendHealth(): Promise<{ ok: boolean; engine?: EngineSta
   }
 }
 
+export interface RunOutcome {
+  decision: string;   // proceeded | declined | modified | pending
+  status: string;     // good | mixed | bad | too_early
+  note?: string;
+}
+
 export interface RunSummary {
   id: string;
   created_at: string;
@@ -28,14 +54,48 @@ export interface RunSummary {
   situation: string;
   score: number;
   band: string;
+  outcome?: RunOutcome | null;
 }
 
 export async function listRuns(): Promise<RunSummary[]> {
   try {
-    const r = await fetch(`${API_BASE}/api/runs`, { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(`${API_BASE}/api/runs`, {
+      headers: userHeaders(), signal: AbortSignal.timeout(6000),
+    });
     return r.ok ? await r.json() : [];
   } catch {
     return [];
+  }
+}
+
+export interface TrackRecord {
+  graded: number;
+  tracked: number;
+  by_status: Record<string, number>;
+  go_hit_rate: number | null;
+  go_count: number;
+}
+
+export async function getTrackRecord(): Promise<TrackRecord | null> {
+  try {
+    const r = await fetch(`${API_BASE}/api/track-record`, { signal: AbortSignal.timeout(6000) });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function recordOutcome(runId: string, outcome: RunOutcome): Promise<boolean> {
+  try {
+    const r = await fetch(`${API_BASE}/api/runs/${runId}/outcome`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(outcome),
+      signal: AbortSignal.timeout(6000),
+    });
+    return r.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -71,7 +131,7 @@ export async function consumeRun(
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/api/run`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...userHeaders() },
     body: JSON.stringify(form),
     signal,
   });

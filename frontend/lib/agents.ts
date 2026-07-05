@@ -92,6 +92,8 @@ export const AGENTS: AgentInfo[] = [
   { id: "devils_advocate", name: "Devil's Advocate", layer: "L3", cluster: "crucible", blurb: "Steel-mans the NO case", accent: "#f43f5e" },
   // L4 — Synthesis (gold family)
   { id: "connecting_dots", name: "Connecting Dots", layer: "L4", cluster: "synthesis", blurb: "Cross-domain patterns and weak signals", accent: "#fde047" },
+  { id: "cross_pollinate", name: "Cross-Pollinator", layer: "L4", cluster: "synthesis", blurb: "Every specialist read against every other — synergies & tensions", accent: "#fbbf24" },
+  { id: "compliance_scan", name: "Compliance Sentinel", layer: "L4", cluster: "synthesis", blurb: "Deterministic regulatory red-flag scan — nothing missed", accent: "#f87171" },
   { id: "storytelling", name: "Storyteller", layer: "L4", cluster: "synthesis", blurb: "The pitch — hook, narrative, one-liner, three beats", accent: "#fca5a5" },
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
   { id: "visualizer", name: "Visualizer", layer: "L4", cluster: "synthesis", blurb: "Best-fit interactive charts for every insight", accent: "#fcd34d" },
@@ -115,7 +117,7 @@ const ICONS: Record<string, string> = {
   human_behaviour: "🧠", human_needs: "🪷", consumer_analysis: "🛒", production_ops: "🏗️",
   philosophy_ethics: "🦉", money_happiness: "😊", philanthropy_impact: "🤲",
   red_team: "⚔️", devils_advocate: "😈", bias_auditor: "🪞", fact_checker: "✅",
-  connecting_dots: "🕸️", weighing_engine: "⚖️", verdict_composer: "📜",
+  connecting_dots: "🕸️", cross_pollinate: "🐝", compliance_scan: "🚨", weighing_engine: "⚖️", verdict_composer: "📜",
   storytelling: "🎙️", visualizer: "🎨", reporter: "🖋️",
 };
 for (const a of AGENTS) a.icon = ICONS[a.id] ?? "🤖";
@@ -177,6 +179,8 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   bias_auditor: { in: "Your own framing", out: "Named biases with quotes" },
   fact_checker: { in: "Claims vs evidence board", out: "supported / unsupported verdicts" },
   connecting_dots: { in: "Every domain verdict", out: "Cross-domain patterns" },
+  cross_pollinate: { in: "Every specialist's headline", out: "Synergies, tensions & emergent insights" },
+  compliance_scan: { in: "Regulatory/legal/tax outputs + evidence", out: "Ranked compliance red-flags" },
   weighing_engine: { in: "Scores × penalties × evidence", out: "Deterministic weighted verdict" },
   verdict_composer: { in: "The weighed number", out: "The decision document" },
   storytelling: { in: "Verdict + every board finding", out: "Hook · narrative · one-liner · 3 beats" },

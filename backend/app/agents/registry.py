@@ -84,6 +84,8 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("fact_checker", "Fact Checker", "L3", "crucible", "t2", "Spot-checks claims against the evidence board", True),
     # L4 — Synthesis
     AgentMeta("connecting_dots", "Connecting Dots", "L4", "synthesis", "t3", "Cross-domain patterns and second-order effects", True),
+    AgentMeta("cross_pollinate", "Cross-Pollinator", "L4", "synthesis", "t3", "Every specialist read against every other — synergies & tensions", True),
+    AgentMeta("compliance_scan", "Compliance Sentinel", "L4", "synthesis", "t0", "Deterministic regulatory red-flag scan — nothing missed", True),
     AgentMeta("storytelling", "Storyteller", "L4", "synthesis", "t3", "Turns the verdict into a pitch — hook, narrative, one-liner", True),
     AgentMeta("weighing_engine", "Weighing Engine", "L4", "synthesis", "t0", "Deterministic scoring — disagreement preserved", True),
     AgentMeta("verdict_composer", "Verdict Composer", "L4", "synthesis", "t3", "The decision document, with sensitivities", True),

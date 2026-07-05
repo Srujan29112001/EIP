@@ -70,6 +70,10 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         await replay_degraded(ctx)
 
         # L4 — synthesis (reflects the rescued board)
+        # cross-pollinate FIRST: every specialist read against every other, so
+        # the mesh goes live and synergies/tensions surface before we weigh
+        await board.cross_pollinate(ctx)
+        await board.compliance_scan(ctx)
         if "connecting_dots" in scoped:
             await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)

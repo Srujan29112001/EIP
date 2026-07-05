@@ -11,6 +11,7 @@ import re
 from typing import Any
 
 from .base import Ctx
+from .registry import BY_ID
 from .venture import _scored_analysis
 
 # ── L2: competitor intelligence ───────────────────────────────────────────────
@@ -225,6 +226,152 @@ async def connecting_dots(ctx: Ctx) -> None:
     else:
         await ctx.emit.log(aid, "LLM unavailable — cross-domain synthesis needs a model (skipped honestly)", "warn")
     await ctx.finish(aid, layer, {"insights": insights, "weak_signal": (data or {}).get("weak_signal", "")})
+
+
+# ── L4: cross-pollination — every L2 specialist read against every other ──────
+
+async def cross_pollinate(ctx: Ctx) -> None:
+    """The second synthesis pass the A2A mesh promises: every domain specialist's
+    headline is put in front of every other, so the board's findings reinforce
+    or collide in the OPEN. Lights the whole intra-L2 mesh live (collab events)
+    and surfaces the synergies/tensions/emergent insights no single agent saw."""
+    aid, layer = "cross_pollinate", "L4"
+    await ctx.start(aid, layer)
+    o = ctx.state.outputs
+    l2 = [k for k, v in o.items()
+          if isinstance(v, dict) and v.get("verdict_line")
+          and (BY_ID[k].layer if k in BY_ID else "") == "L2"]
+    if len(l2) < 2:
+        await ctx.emit.log(aid, "not enough specialists produced to cross-pollinate", "muted")
+        await ctx.finish(aid, layer, {"verdict_line": "cross-pollination skipped — too few specialists",
+                                      "connections": [], "emergent": [], "degraded": True})
+        return
+
+    # every specialist now formally reads every other → light the full mesh live
+    for a in l2:
+        await ctx.emit.collab(a, [p for p in l2 if p != a])
+    await ctx.emit.log(aid, f"cross-reading {len(l2)} specialists — "
+                            f"{len(l2) * (len(l2) - 1) // 2} pairs on the board", "muted")
+
+    headlines = {k: str(o[k].get("verdict_line"))[:140] for k in l2}
+    scores = {k: o[k].get("score") for k in l2 if isinstance(o[k].get("score"), (int, float))}
+    schema = ('{"connections": [{"a": agent_id, "b": agent_id, "type": "synergy"|"tension", '
+              '"insight": str (<=28 words — the combined so-what)}], '
+              '"emergent": [str (<=24 words) — 2-3 board-level insights visible only across the whole board]}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are the board's cross-pollinator. You are handed EVERY specialist's headline finding. "
+        "Find the pairs where two specialists' findings REINFORCE each other (synergy) or COLLIDE "
+        "(tension), and state the combined insight the decision-maker should act on. Use the EXACT "
+        "agent ids given. Then name 2-3 emergent insights that appear only when the whole board is "
+        "read together. Be specific; never just restate one agent.",
+        f"BRIEF: {ctx.state.brief}\nSPECIALIST HEADLINES (id -> finding):\n"
+        + "\n".join(f"- {k}: {v}" for k, v in headlines.items()),
+        schema, max_tokens=850, agent=aid)
+
+    ids = set(l2)
+    conns: list[dict[str, Any]] = []
+    seen_pairs: set[frozenset[str]] = set()
+    for c in ((data or {}).get("connections") or []):
+        if not isinstance(c, dict):
+            continue
+        a, b = c.get("a"), c.get("b")
+        if a in ids and b in ids and a != b and frozenset((a, b)) not in seen_pairs:
+            seen_pairs.add(frozenset((a, b)))
+            typ = "tension" if str(c.get("type", "")).lower().startswith("t") else "synergy"
+            conns.append({"a": a, "b": b, "type": typ, "insight": str(c.get("insight", ""))[:200]})
+    conns = conns[:7]
+    emergent = [str(e)[:200] for e in ((data or {}).get("emergent") or []) if e][:3]
+
+    degraded = False
+    if conns or emergent:
+        await ctx.emit.usage(aid, res.tokens, res.route)
+        for c in conns:
+            if c["type"] == "tension":
+                await ctx.emit.conflict(c["a"], c["b"], c["insight"])
+            await ctx.emit.claim(aid, f"{c['a']} & {c['b']} — {c['insight']}", confidence=0.5)
+        await ctx.emit.log(aid, f"{len(conns)} cross-links · {len(emergent)} emergent insights", "ok")
+    else:
+        # deterministic fallback: pair by score extremes so there is always a read
+        degraded = True
+        if len(scores) >= 2:
+            ranked = sorted(scores, key=lambda k: scores[k], reverse=True)
+            if ranked[0] != ranked[1]:
+                conns.append({"a": ranked[0], "b": ranked[1], "type": "synergy",
+                              "insight": "The two strongest reads on the board — the core of the case rests here."})
+            if ranked[0] != ranked[-1]:
+                conns.append({"a": ranked[0], "b": ranked[-1], "type": "tension",
+                              "insight": "The widest disagreement on the board — resolve this before committing."})
+        await ctx.emit.log(aid, "LLM unavailable — deterministic score-based cross-links only", "warn")
+
+    result = {"verdict_line": f"{len(conns)} cross-links across {len(l2)} specialists",
+              "connections": conns, "emergent": emergent, "degraded": degraded}
+    await ctx.emit.partial("cross_insights", result)
+    await ctx.finish(aid, layer, result)
+
+
+# ── L4: compliance alerts — deterministic regulatory red-flag scan ────────────
+
+_COMPLIANCE_AGENTS = ("policy_compliance", "regulator", "legal", "tax", "subsidies_schemes",
+                      "debt_banking", "banking", "options_desk")
+_RED_FLAG = re.compile(
+    r"licen[cs]|permit|prohibit|\bban\b|mandatory|penal|non[- ]?complian|breach|SEBI|RBI|"
+    r"FSSAI|AYUSH|CCI|GST|DPIIT|KYC|AML|FEMA|infring|liabilit|lawsuit|tighten|crackdown",
+    re.I)
+
+
+async def compliance_scan(ctx: Ctx) -> None:
+    """Deterministic scan of the regulatory/legal/tax specialists + evidence for
+    red flags a founder must not miss. No LLM — it reads what the board already
+    produced and elevates the compliance-critical items into their own channel."""
+    aid, layer = "compliance_scan", "L4"
+    await ctx.start(aid, layer)
+    o = ctx.state.outputs
+    alerts: list[dict[str, Any]] = []
+    for agent_id in _COMPLIANCE_AGENTS:
+        out = o.get(agent_id)
+        if not isinstance(out, dict):
+            continue
+        line = str(out.get("verdict_line") or "")
+        score = out.get("score")
+        hit = bool(_RED_FLAG.search(line)) or bool(_RED_FLAG.search(str(out.get("analysis") or "")))
+        low = isinstance(score, (int, float)) and score < 5.5
+        if hit or low:
+            sev = ("high" if (isinstance(score, (int, float)) and score < 4.0)
+                   else "medium" if (low or hit) else "low")
+            alerts.append({
+                "agent": agent_id, "severity": sev,
+                "text": line or f"{agent_id} flagged a compliance concern",
+                "action": (out.get("assumptions") or [""])[0] if isinstance(out.get("assumptions"), list) else "",
+                "score": score if isinstance(score, (int, float)) else None,
+            })
+    # regulatory tightening signals straight off the evidence board
+    for e in ctx.state.evidence:
+        txt = str(e.get("text") or "")
+        if re.search(r"tighten|crackdown|new rule|amendment|ban\b|prohibit|penalt", txt, re.I):
+            alerts.append({"agent": str(e.get("agent") or "news_intel"), "severity": "medium",
+                           "text": txt[:200], "action": "verify against the latest official circular",
+                           "score": None})
+    # de-dup + rank (high → medium), cap
+    order = {"high": 0, "medium": 1, "low": 2}
+    seen: set[str] = set()
+    ranked = []
+    for a in sorted(alerts, key=lambda x: order.get(x["severity"], 3)):
+        key = a["text"][:60].lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        ranked.append(a)
+    ranked = ranked[:8]
+
+    highs = sum(1 for a in ranked if a["severity"] == "high")
+    await ctx.emit.partial("compliance_alerts", {"alerts": ranked, "high": highs})
+    if ranked:
+        await ctx.emit.log(aid, f"{len(ranked)} compliance alert(s) · {highs} high-severity", "warn" if highs else "info")
+    else:
+        await ctx.emit.log(aid, "no regulatory red flags detected in the board's output", "ok")
+    await ctx.finish(aid, layer, {"verdict_line": f"{len(ranked)} compliance alert(s), {highs} high",
+                                  "alerts": ranked})
 
 
 # ── Phase-7 venture extras + world cluster ────────────────────────────────────

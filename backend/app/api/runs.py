@@ -9,7 +9,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from fastapi import HTTPException, UploadFile
+from fastapi import Header, HTTPException, UploadFile
 
 from ..agents.registry import ROSTER
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
@@ -67,12 +67,16 @@ _TASKS: set[asyncio.Task] = set()
 
 
 @router.post("/run")
-async def run(req: RunRequest) -> StreamingResponse:
+async def run(req: RunRequest, x_eip_user: str | None = Header(default=None)) -> StreamingResponse:
     run_id = uuid.uuid4().hex[:12]
     emitter = Emitter()
     pipeline = (run_trading if req.mode == "trader"
                 else run_wealth if req.mode == "wealth" else run_venture)
-    task = asyncio.create_task(pipeline(run_id, req.model_dump(), emitter))
+    payload = req.model_dump()
+    if x_eip_user:
+        payload["user_id"] = x_eip_user.strip()[:64]
+        await store.get_or_create_user(payload["user_id"])
+    task = asyncio.create_task(pipeline(run_id, payload, emitter))
     _TASKS.add(task)
     task.add_done_callback(_TASKS.discard)
 
@@ -177,8 +181,19 @@ async def ask_the_board(req: AskRequest) -> dict[str, Any]:
 
 
 @router.get("/runs")
-async def runs_history(limit: int = 50) -> list[dict[str, Any]]:
-    return await store.list_runs(min(limit, 200))
+async def runs_history(limit: int = 50, x_eip_user: str | None = Header(default=None)) -> list[dict[str, Any]]:
+    return await store.list_runs(min(limit, 200), (x_eip_user or "").strip() or None)
+
+
+@router.get("/me")
+async def me(x_eip_user: str | None = Header(default=None),
+             x_eip_email: str | None = Header(default=None)) -> dict[str, Any]:
+    """Anonymous-first identity: the client sends a stable id, we return the
+    account + tier. No password — managed auth is the documented upgrade."""
+    uid = (x_eip_user or "").strip()[:64]
+    if not uid:
+        return {"user_id": None, "tier": "free", "tier_info": store.TIERS["free"], "runs": 0}
+    return await store.get_or_create_user(uid, (x_eip_email or "").strip()[:120] or None)
 
 
 @router.get("/runs/{run_id}")
@@ -186,4 +201,29 @@ async def run_detail(run_id: str) -> dict[str, Any]:
     rec = await store.get_run(run_id)
     if rec is None:
         raise HTTPException(404, "run not found")
+    rec["outcome"] = await store.get_outcome(run_id)
     return rec
+
+
+# ── Phase 9: outcome tracking ─────────────────────────────────────────────────
+
+class OutcomeRequest(BaseModel):
+    decision: str = "pending"   # proceeded | declined | modified | pending
+    status: str = "too_early"   # good | mixed | bad | too_early
+    note: str = ""
+
+
+@router.post("/runs/{run_id}/outcome")
+async def record_outcome(run_id: str, req: OutcomeRequest) -> dict[str, Any]:
+    if await store.get_run(run_id) is None:
+        raise HTTPException(404, "run not found")
+    ok = await store.save_outcome(run_id, req.decision, req.status, req.note)
+    if not ok:
+        raise HTTPException(500, "could not record outcome")
+    return {"ok": True, "outcome": await store.get_outcome(run_id)}
+
+
+@router.get("/track-record")
+async def track_record() -> dict[str, Any]:
+    """The platform's own calibration — how the board's verdicts aged."""
+    return await store.track_record()

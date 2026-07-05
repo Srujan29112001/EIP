@@ -108,6 +108,26 @@ export type AgentOutput = {
   degraded_reason?: string;
 } & Record<string, unknown>;
 
+/** The Compliance Sentinel's ranked red-flags (partial:compliance_alerts). */
+export interface ComplianceAlert {
+  agent: string;
+  severity: "high" | "medium" | "low";
+  text: string;
+  action?: string;
+  score?: number | null;
+}
+export interface ComplianceAlerts {
+  alerts: ComplianceAlert[];
+  high: number;
+}
+
+/** The Cross-Pollinator's inter-agent map (partial:cross_insights). */
+export interface CrossInsights {
+  connections?: { a: string; b: string; type: "synergy" | "tension"; insight: string }[];
+  emergent?: string[];
+  degraded?: boolean;
+}
+
 /** The Storyteller's pitch narrative (partial:story). */
 export interface Story {
   hook?: string;

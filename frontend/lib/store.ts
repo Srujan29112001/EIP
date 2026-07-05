@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, FinanceCore, LogKind, RadarData, RunEvent, StageStatus, Story, Verdict,
+  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, LogKind, RadarData, RunEvent, StageStatus, Story, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -24,6 +24,8 @@ interface RunStore {
   prompts: Record<string, { system: string; user: string }>;
   /** agent id → the colleagues it built on (A2A collab events) */
   collabs: Record<string, string[]>;
+  crossInsights: CrossInsights | null;
+  compliance: ComplianceAlerts | null;
   story: Story | null;
   charts: Record<string, unknown>[];
   report: string | null;
@@ -48,6 +50,8 @@ const EMPTY = {
   financeCore: null,
   prompts: {},
   collabs: {} as Record<string, string[]>,
+  crossInsights: null as CrossInsights | null,
+  compliance: null as ComplianceAlerts | null,
   story: null as Story | null,
   charts: [] as Record<string, unknown>[],
   report: null as string | null,
@@ -97,6 +101,8 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "finance_core") return { financeCore: e.data as FinanceCore };
           if (e.section === "charts") return { charts: e.data as Record<string, unknown>[] };
           if (e.section === "story") return { story: e.data as Story };
+          if (e.section === "cross_insights") return { crossInsights: e.data as CrossInsights };
+          if (e.section === "compliance_alerts") return { compliance: e.data as ComplianceAlerts };
           if (e.section === "report") return { report: e.data as string };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };
