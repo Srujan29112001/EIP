@@ -11,39 +11,43 @@ import { useMemo, useState } from "react";
 import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, capsFor, type Layer } from "@/lib/agents";
 
 const MANDATORY = new Set(["intake_parser", "context_profiler", "scope_planner",
-  "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]);
+  "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
+  "storytelling", "visualizer", "reporter"]);
 
 const PULSE_ONLY = new Set(["web_researcher", "news_intel", "market_data", "macro_data", "doc_analyst",
   "market_analyst", "finance_modeler", "red_team", "fact_checker", "bias_auditor",
   ...MANDATORY]);
 const BOARD_EXTRA = new Set(["competitor_intel", "market_research", "banking", "gtm_distribution",
-  "legal", "tax", "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]);
+  "legal", "tax", "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots",
+  "pricing_strategist", "cohort_retention", "sentiment_analyst"]);
 
 const HUMAN_WAVE = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
   "philosophy_ethics", "money_happiness", "philanthropy_impact"];
 
+const SYNTH = ["weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
+  "storytelling", "visualizer", "reporter"];
 const TRADER_CORE = ["news_intel", "market_data", "macro_data", "technical_analyst",
   "stock_analyst", "backtest_engineer", "quant_signals", "risk_manager",
   "fund_analyst", "options_desk", "microstructure", "red_team", "fact_checker",
-  "bias_auditor", "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"];
+  "bias_auditor", ...SYNTH];
 const TRADER_BOARD = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends", "regulator",
-  "industry_expert", "market_research", "human_behaviour", "money_happiness", "philosophy_ethics"];
+  "industry_expert", "market_research", "sentiment_analyst", "human_behaviour", "money_happiness",
+  "philosophy_ethics"];
 const TRADER_WAR = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends", "regulator",
-  "industry_expert", "market_research", "banking", "intl_markets", "esg_impact", "policy_compliance",
-  "optimization_predictor", ...HUMAN_WAVE];
-const TRADER_MANDATORY = new Set(["market_data", "technical_analyst", "weighing_engine",
-  "verdict_composer", "storytelling", "visualizer", "reporter"]);
+  "industry_expert", "market_research", "sentiment_analyst", "banking", "intl_markets", "esg_impact",
+  "policy_compliance", "optimization_predictor", "supply_chain", ...HUMAN_WAVE];
+const TRADER_MANDATORY = new Set(["market_data", "technical_analyst", ...SYNTH]);
 
 const WEALTH_CORE = ["news_intel", "macro_data", "salary_budget", "portfolio_allocator",
   "fire_planner", "debt_banking", "real_estate", "location_scout", "red_team",
-  "bias_auditor", "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"];
+  "bias_auditor", ...SYNTH];
 const WEALTH_BOARD = [...WEALTH_CORE, "macroeconomist", "trends", "regulator", "fund_analyst",
-  "market_research", "banking", "money_happiness", "human_needs", "philosophy_ethics", "philanthropy_impact"];
+  "market_research", "banking", "insurance_risk", "money_happiness", "human_needs",
+  "philosophy_ethics", "philanthropy_impact"];
 const WEALTH_WAR = [...WEALTH_CORE, "macroeconomist", "trends", "regulator", "fund_analyst",
-  "market_research", "banking", "geopolitics", "intl_markets", "esg_impact", "optimization_predictor",
-  "subsidies_schemes", ...HUMAN_WAVE];
-const WEALTH_MANDATORY = new Set(["salary_budget", "weighing_engine", "verdict_composer",
-  "storytelling", "visualizer", "reporter"]);
+  "market_research", "banking", "insurance_risk", "sentiment_analyst", "geopolitics", "intl_markets",
+  "esg_impact", "optimization_predictor", "subsidies_schemes", ...HUMAN_WAVE];
+const WEALTH_MANDATORY = new Set(["salary_budget", ...SYNTH]);
 
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 

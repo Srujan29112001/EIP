@@ -8,8 +8,9 @@ import traceback
 
 from ..agents import board
 from ..agents import catalog
+from ..agents import scenario
 from ..agents import studio
-from ..agents.deliberate import deliberation_round
+from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents import wealth as wl
 from ..agents import venture as v
 from ..agents.replay import replay_degraded
@@ -22,10 +23,11 @@ WEALTH_SCOPE = ["news_intel", "macro_data",
                 "salary_budget", "portfolio_allocator", "fire_planner",
                 "debt_banking", "real_estate", "location_scout",
                 "red_team", "bias_auditor",
-                "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]
+                "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
+                "storytelling", "visualizer", "reporter"]
 
-WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "storytelling",
-                    "visualizer", "reporter"}
+WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "scenario_planner",
+                    "negotiation_coach", "storytelling", "visualizer", "reporter"}
 
 
 async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -103,27 +105,36 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         # gap-detector: retry reduced-depth agents after a cooldown
         await replay_degraded(ctx)
 
-        # ROUND 2 — verdict v1 → full L1→L2→L3 deliberation → verdict v2
-        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
-        if n_rounds >= 2:
+        # ═══ ROUND 1 — the complete first pass, results and all ═══
+        async def synthesis() -> None:
+            await board.cross_pollinate(ctx)
+            await board.compliance_scan(ctx)
             await wl.weighing_wealth(ctx)
             await wl.verdict_wealth(ctx)
+            await scenario.scenario_planner(ctx)
+            await asyncio.gather(board.negotiation_coach(ctx),
+                                 board.storytelling(ctx), studio.visualizer(ctx))
+            await studio.reporter(ctx)   # last & alone, input-shrinking ladder
+
+        await synthesis()
+        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        await emit_result_set(ctx, 1)
+
+        # ═══ ROUND 2 — the whole pipeline re-runs, L0 → L4 ═══
+        if n_rounds >= 2:
             ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
                                             "recommendation": ctx.state.verdict.get("recommendation")}
+            await refine_gateway(ctx)
             await deliberation_round(ctx)
-
-        # L4 — synthesis (on the deliberated board)
-        await board.cross_pollinate(ctx)
-        await board.compliance_scan(ctx)
-        await wl.weighing_wealth(ctx)
-        await wl.verdict_wealth(ctx)
-        if n_rounds >= 2:
+            await synthesis()
+            for aid in ("cross_pollinate", "compliance_scan", "weighing_engine",
+                        "verdict_composer", "scenario_planner", "negotiation_coach",
+                        "storytelling", "visualizer", "reporter"):
+                await emitter.round(aid, 2)
             ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
                                             "recommendation": ctx.state.verdict.get("recommendation")}
             await emitter.partial("rounds", dict(ctx.state.rounds))
-        # reporter runs last & alone (biggest call → whole key pool), self-heals
-        await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
-        await studio.reporter(ctx)
+            await emit_result_set(ctx, 2)
 
         await save_run(ctx.state)
         await emitter.done(run_id)

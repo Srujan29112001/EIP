@@ -108,6 +108,19 @@ export type AgentOutput = {
   degraded_reason?: string;
 } & Record<string, unknown>;
 
+/** One COMPLETE result set (partial:result_set) — round 1 publishes in full,
+ * then round 2 publishes under it. Both render in the Results view. */
+export interface ResultSetData {
+  round: number;
+  verdict: Partial<Verdict> & Record<string, unknown>;
+  dimensions: Record<string, number>;
+  story?: Story;
+  cross?: { connections?: { a: string; b: string; type: string; insight: string }[]; emergent?: string[] };
+  compliance?: ComplianceAlert[];
+  charts?: Record<string, unknown>[];
+  report?: string;
+}
+
 /** The Compliance Sentinel's ranked red-flags (partial:compliance_alerts). */
 export interface ComplianceAlert {
   agent: string;

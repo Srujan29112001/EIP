@@ -21,7 +21,8 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds, resultSets } = useRun();
+  const twoRounds = Boolean(resultSets[1] && resultSets[2]);
 
   const exportMd = () =>
     download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
@@ -44,6 +45,25 @@ export function DecisionRoom() {
     <div className="space-y-4 pb-4">
       <QualityBanner />
       <DegradedNotice />
+
+      {/* ═══ THE TWO RESULT SETS — round 1 in full, then round 2 under it ═══ */}
+      {twoRounds && (
+        <>
+          <div className="flex items-center gap-3">
+            <span className="rounded-lg border border-ok/40 bg-ok/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-ok">
+              Round 1 — independent analysis
+            </span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <RoundOneResults data={resultSets[1]} />
+          <div className="mt-2 flex items-center gap-3">
+            <span className="rounded-lg border border-[#fbbf24]/50 bg-[#fbbf24]/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[#fbbf24]">
+              Round 2 — after full-board deliberation (final)
+            </span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      )}
 
       {/* compliance alerts — the regulatory red-flags, elevated so nothing is missed */}
       {compliance && compliance.alerts.length > 0 && (
@@ -343,6 +363,74 @@ export function DecisionRoom() {
       <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.
       </p>
+    </div>
+  );
+}
+
+/* ── the ROUND-1 result set, published in full above the final results ────── */
+import type { ResultSetData } from "@/lib/types";
+import type { ChartSpec } from "./chart-kit";
+
+function RoundOneResults({ data }: { data: ResultSetData }) {
+  const v = data.verdict ?? {};
+  const band = BAND_STYLE[String(v.recommendation)] ?? BAND_STYLE.CONDITIONAL_GO;
+  const dims = data.dimensions ?? {};
+  return (
+    <div className="space-y-3 rounded-xl border border-ok/20 bg-panel/60 p-3">
+      {/* the round-1 verdict */}
+      <section className={`rounded-xl border p-4 ${band.cls}`}>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-widest opacity-70">Round-1 verdict</div>
+            <div className="font-display text-3xl font-bold">
+              {String(v.score ?? "—")}<span className="text-lg opacity-60">/10</span>
+            </div>
+          </div>
+          <div className="rounded-lg border border-current px-3 py-1.5 font-display text-base font-bold">{band.label}</div>
+        </div>
+        {typeof v.reasoning === "string" && v.reasoning && (
+          <p className="mt-2 text-sm leading-relaxed text-slate-200">{v.reasoning}</p>
+        )}
+        {Object.keys(dims).length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-[10px]">
+            {Object.entries(dims).map(([k, val]) => (
+              <span key={k} className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-300">
+                {k} {Number(val).toFixed(1)}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* the round-1 pitch */}
+      {data.story && (data.story.one_liner || data.story.narrative) && (
+        <section className="rounded-xl border border-line bg-panel p-3">
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted">Round-1 pitch</div>
+          {data.story.one_liner && <p className="font-display text-sm font-semibold text-slate-100">“{data.story.one_liner}”</p>}
+          {data.story.narrative && <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{data.story.narrative}</p>}
+        </section>
+      )}
+
+      {/* round-1 cross-links + compliance, compact */}
+      {((data.cross?.connections?.length ?? 0) > 0 || (data.compliance?.length ?? 0) > 0) && (
+        <div className="flex flex-wrap gap-2 font-mono text-[10px]">
+          {(data.cross?.connections?.length ?? 0) > 0 && (
+            <span className="rounded border border-line bg-panel-2 px-2 py-1 text-slate-400">
+              {data.cross!.connections!.length} cross-links found in round 1
+            </span>
+          )}
+          {(data.compliance?.length ?? 0) > 0 && (
+            <span className="rounded border border-warn/30 bg-warn/10 px-2 py-1 text-warn">
+              {data.compliance!.length} compliance flag{data.compliance!.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* the round-1 chart gallery + report, in full */}
+      <ChartGallery charts={(data.charts ?? []) as unknown as ChartSpec[]}
+        title={`Round-1 insight gallery — ${data.charts?.length ?? 0} charts`} />
+      {data.report && <ReportSection report={data.report} title="The round-1 decision report" />}
     </div>
   );
 }

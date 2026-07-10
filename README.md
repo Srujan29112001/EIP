@@ -165,7 +165,7 @@ flowchart LR
 
 ## 🤖 The agent roster
 
-**63 agents defined · 60 implemented**, across six intelligence layers. Tier legend: `t0` = deterministic (no LLM), `t1/t2` = fast tier, `t3` = flagship tier.
+**73 agents defined · 70 implemented**, across six intelligence layers — including the ten "future-improvements" agents (Scenario Planner, Pricing Strategist, Supply-Chain, Cohort/Retention, Cap-Table, Sentiment, Patent/IP, Insurance & Risk-Transfer, Sustainability Accountant, Negotiation Coach), now shipped. Tier legend: `t0` = deterministic (no LLM), `t1/t2` = fast tier, `t3` = flagship tier.
 
 ### L0 · Gateway (3)
 | Agent | Tier | Capability |
@@ -325,7 +325,10 @@ flowchart TD
 
 ## 📊 Results you get
 
+- **TWO complete result sets** — round 1 (independent analysis) published in full, round 2 (after full-board deliberation) under it: two verdicts, two chart galleries, two reports.
 - **Weighted verdict** — score /10, band, reasoning, sensitivities ("what would change this").
+- **Scenario simulation** — Monte-Carlo P10/P50/P90 verdict band, P(GO)/P(NO-GO), and the dimension that most often breaks the case.
+- **Negotiation plan** — BATNA, anchor, ordered concessions, walk-away for your next conversation.
 - **Compliance Sentinel banner** — ranked regulatory red-flags, high-severity elevated.
 - **Dimension radar** + exact per-dimension scores.
 - **Risk register & opportunities** with the sourcing agent named.
@@ -547,7 +550,9 @@ flowchart LR
 - **Reporter → templated exports**: investor-memo / one-pager / board-deck formats.
 - **Weighing Engine → learned weights**: calibrate dimension weights from the outcome-tracking data.
 
-### New agents worth adding
+### New agents worth adding — ✅ ALL TEN SHIPPED (Phase 13)
+
+The table below was the proposal; every row is now implemented and wired into the modes, depths, mesh, weighing, and picker.
 | Proposed agent | Layer | Skill / logic it adds |
 |---|---|---|
 | **Scenario Planner** | L4 | Monte-Carlo the verdict across best/base/worst macro + demand assumptions. |
@@ -580,6 +585,7 @@ flowchart LR
 - ✅ **Phase 10 (scaffold)** — anonymous accounts + **tiers**, per-user history, persistent-DB path (`EIP_DB_PATH`), Postgres-ready.
 - ✅ **Phase 11** — **two-round golden-arc deliberation** (all-to-all re-read, round-1 vs round-2 results) + **16 keys/provider** rotation.
 - ✅ **Phase 12** — deliberation extended to **every layer (L1→L2→L3, sequential) with the TWO verdicts** + ✓✓ round badges; **RAG** (per-agent BM25-relevant evidence + past-run memory recall); reporter **prompt-compaction ladder + split-report fallback** (the actual starvation root-cause: oversized single requests); picker shows the golden mesh; arcs pulse only while agents communicate.
+- ✅ **Phase 13** — **the TRUE two-pass pipeline**: round 1 completes in full and PUBLISHES its complete results (verdict, pitch, charts, report), then L0→L1→L2→L3→L4 all re-run with the whole round-1 board visible, and the **round-2 results render under the round-1 results** — two full result sets per run. Grounding + crucible now deliberate too (✓✓ across every layer). Plus **10 new agents from the future-improvements table**, incl. a deterministic **Monte-Carlo Scenario Planner** (P10/P50/P90, P(GO), what-breaks-it chart) and a **Negotiation Coach** (BATNA/anchor/concessions).
 - ⏳ **Phase 10 (managed)** — real auth + Stripe + managed Postgres/pgvector (needs a Neon/Supabase + Stripe signup).
 - ⏳ **Phase 8.2** — OCR of scanned images (deferred; heavy vision deps vs. free CPU).
 - 🔭 **Next** — true RAG memory, scenario planner, learned weights (see [Future improvements](#-future-improvements)).

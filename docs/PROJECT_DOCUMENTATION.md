@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 12 (all-layer two-round deliberation + two verdicts + RAG + reporter compaction) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 13 (true two-pass pipeline with TWO published result sets + 10 future-improvements agents shipped) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -22,7 +22,7 @@
 
 **Part II — The Code & The Agents**
 9. Backend — file by file, function by function
-10. The agent compendium — all 63 agents (logic · prompt · wiring · output)
+10. The agent compendium — all 73 agents (logic · prompt · wiring · output)
 11. The weighing engines & dimensions (exact scoring logic)
 12. Modes × depths — the exact scope matrix
 
@@ -148,7 +148,7 @@ One HTTP POST (`/api/run`) returns `text/event-stream`. Every agent action is on
 | `done` | `run_id` | pipeline completed | switch to Results, enable Ask-the-Board |
 | `fatal` | `message` | unrecoverable pipeline error | error banner |
 
-**`partial` sections:** `brief`, `scope`, `agent_output` (per-agent structured output), `finance_core`, `radar`, `verdict`, `charts`, `report`, `story`, `cross_insights`, `compliance_alerts`, `rounds` (two-round deliberation deltas).
+**`partial` sections:** `brief`, `scope`, `agent_output` (per-agent structured output), `finance_core`, `radar`, `verdict`, `charts`, `report`, `story`, `cross_insights`, `compliance_alerts`, `rounds` (two-round deliberation deltas), `result_set` (a COMPLETE published result set per round — verdict, dimensions, story, cross-links, compliance, charts, report).
 
 ## 6. The six intelligence layers, in depth
 
@@ -181,7 +181,7 @@ Four mechanisms, weakest to strongest:
 flowchart TB
     m1["1 · SHARED BOARD (blue)<br/>every prompt embeds evidence_digest(14):<br/>top cited claims from ALL prior agents — broadcast"]
     m2["2 · CURATED PEER-INJECTION (bright gold, round 1)<br/>PEERS map: each agent handed its named colleagues'<br/>verdict_line + top insight → 'build on, reconcile, push back'"]
-    m3["3 · TWO-ROUND DELIBERATION (full gold mesh, round 2)<br/>ROUND-1 VERDICT taken, then L1 -> L2 -> L3 re-run IN ORDER,<br/>every agent reading the FULL board; verdict taken AGAIN.<br/>Two verdicts ship; every refined agent earns a second gold tick"]
+    m3["3 · TWO-ROUND DELIBERATION (full gold mesh, round 2)<br/>ROUND 1 COMPLETES IN FULL and publishes its result set,<br/>then L0 -> L1 -> L2 -> L3 -> L4 ALL re-run with the round-1 board visible,<br/>and the ROUND-2 RESULT SET publishes under round 1's.<br/>Every layer earns its second gold tick"]
     m4["4 · CROSS-POLLINATOR (L4)<br/>one agent reads all headlines → synergies/tensions/emergent"]
     m1-->m2-->m3-->m4
 ```
@@ -326,7 +326,7 @@ The three asyncio DAGs (§6 order). Each: scope honoring, two-wave L2, the **rou
 ### `app/grounding/*` · `app/engine/*` · `app/memory/store.py`
 Connectors (yfinance / World Bank / web-news), the pure-pandas indicator engine + backtester, and the fail-soft SQLite store (runs, outcomes, users/tiers, `track_record()` calibration; `EIP_DB_PATH` for a persistent volume; `DATABASE_URL` documented for Postgres).
 
-## 10. The agent compendium — all 63 agents
+## 10. The agent compendium — all 73 agents
 
 Legend — **tier**: t0 = deterministic math (cannot hallucinate) · t1/t2 = fast LLM tier · t3 = flagship tier. Every LLM agent also carries a deterministic fallback and the honest-degraded contract. "Wires" = round-1 curated peers (`PEERS`); **in round 2 every scored L2 agent additionally reads ALL scored L2 colleagues**.
 
@@ -600,7 +600,7 @@ flowchart LR
 
 **Sharper existing agents:** fact-checker → live per-claim re-search · backtester → walk-forward + Monte-Carlo · risk manager → portfolio VaR/correlation · competitor intel → live funding-graph · reporter → investor-memo/one-pager templates · weighing → outcome-calibrated learned weights.
 
-**New agents worth adding:** Scenario Planner (L4, Monte-Carlo fan of the verdict) · Pricing Strategist (Van Westendorp) · Supply-Chain Analyst · Cohort/Retention Analyst · Cap-Table Modeler · Sentiment Analyst (L1) · Patent/IP Scout · Insurance & Risk-Transfer · Sustainability Accountant · Negotiation Coach (BATNA/anchors from the verdict).
+**New agents — ✅ ALL TEN SHIPPED in Phase 13:** Scenario Planner (L4 t0, seeded 1000-draw Monte-Carlo over the dimension scores → P10/P50/P90, P(GO)/P(NO-GO), what-breaks-it + chart) · Pricing Strategist · Supply-Chain Analyst · Cohort/Retention Analyst (L2 human) · Cap-Table Modeler · Sentiment Analyst (L1 grounding, demand-signal read of the live evidence) · Patent/IP Scout · Insurance & Risk-Transfer · Sustainability Accountant (L2 world) · Negotiation Coach (L4 t3, BATNA/anchor/concessions/walk-away). All are lens agents on the shared board: wired into PEERS, the deliberation mesh, the weighing dimensions (sentiment+cohort→Market, pricing+cap-table→Economics, supply→Execution, patent+insurance→Regulatory), the founder Board/War-Room scopes, trader (sentiment, supply-chain) and wealth (insurance) extras, and the board picker in every mode.
 
 ## 23. Glossary
 

@@ -507,6 +507,121 @@ async def banking(ctx: Ctx) -> None:
         "Banking read needs a model", 5.5)
 
 
+# ── Phase-13 expansion — the "future improvements" agents, implemented ────────
+
+async def pricing_strategist(ctx: Ctx) -> None:
+    await _lens(ctx, "pricing_strategist",
+        "You are a pricing strategist: Van-Westendorp thinking, value-based pricing, "
+        "willingness-to-pay bands, price architecture (anchor/decoy/tiers). Ground in the "
+        "evidence; tag unsourced numbers ESTIMATE.",
+        "Design the price architecture: the WTP band for the target segment (ESTIMATE ok), the "
+        "recommended price + tier structure, and ONE pricing experiment to run first. "
+        "Score 0-10 for pricing power.",
+        "Pricing read needs a model — WTP band unestimated", 5.0)
+
+
+async def supply_chain(ctx: Ctx) -> None:
+    await _lens(ctx, "supply_chain",
+        "You are a supply-chain analyst: input dependencies, single-source fragility, logistics "
+        "cost share, buffer strategy. India-first when the geography says so.",
+        "Map the supply chain: the 2-3 critical inputs and their sourcing risk, the single point "
+        "of failure, logistics cost as % of COGS (ESTIMATE ok), one resilience move. "
+        "Score 0-10 for supply resilience.",
+        "Supply-chain map needs a model", 5.0)
+
+
+async def cohort_retention(ctx: Ctx) -> None:
+    await _lens(ctx, "cohort_retention",
+        "You are a cohort & retention analyst: retention curves, LTV by cohort, churn drivers, "
+        "repeat-purchase economics.",
+        "Project the retention reality: expected M1/M3/M6 retention for this category (ESTIMATE), "
+        "the dominant churn driver, LTV:CAC implication, one retention lever. "
+        "Score 0-10 for retention durability.",
+        "Retention curve needs a model", 5.0)
+
+
+async def cap_table(ctx: Ctx) -> None:
+    await _lens(ctx, "cap_table",
+        "You are a cap-table and dilution modeler: round math, ESOP pools, founder dilution "
+        "across scenarios, clean vs messy structures.",
+        "Model the equity path: a sensible first-round structure for this stage, founder % after "
+        "two rounds (ESTIMATE math shown), the ESOP reserve, one cap-table mistake to avoid. "
+        "Score 0-10 for founder-equity health on the current plan.",
+        "Dilution math needs a model", 5.5)
+
+
+async def patent_ip(ctx: Ctx) -> None:
+    await _lens(ctx, "patent_ip",
+        "You are a patent / IP scout: prior-art signals, freedom-to-operate, what is protectable "
+        "(marks, designs, process), India + global filings awareness.",
+        "Give the IP read: what here is protectable and how, the freedom-to-operate risk level, "
+        "one filing worth its fee, one infringement trap. Score 0-10 for IP defensibility.",
+        "IP scan needs a model", 5.0)
+
+
+async def insurance_risk(ctx: Ctx) -> None:
+    await _lens(ctx, "insurance_risk",
+        "You are an insurance & risk-transfer advisor: what is insurable, what liability to "
+        "transfer vs retain, the covers a lender or landlord will demand.",
+        "Lay out risk transfer: the 2-3 covers this venture actually needs (with rough premium "
+        "band, ESTIMATE), the liability best transferred by contract, the uninsurable risk to "
+        "engineer around. Score 0-10 for risk transferability.",
+        "Insurance read needs a model", 5.5)
+
+
+async def sustainability_acct(ctx: Ctx) -> None:
+    await _lens(ctx, "sustainability_accountant",
+        "You are a sustainability accountant: carbon/impact quantified into cost and moat — "
+        "compliance today, pricing power and procurement preference tomorrow.",
+        "Quantify sustainability: the main footprint driver (ESTIMATE), the cost of cleaning it "
+        "vs the moat it buys (green procurement, premium positioning), one credible claim that "
+        "won't be greenwashing. Score 0-10 for sustainability advantage.",
+        "Impact accounting needs a model", 5.0)
+
+
+async def sentiment_analyst(ctx: Ctx) -> None:
+    await _lens(ctx, "sentiment_analyst",
+        "You are a sentiment analyst: read the live news/web evidence as a DEMAND SIGNAL — "
+        "consumer mood, category buzz, backlash risk. Never invent items not on the board.",
+        "Read the sentiment: the net mood in the live evidence toward this category (bullish/"
+        "neutral/bearish and why), the strongest positive and negative signal, what would flip "
+        "it. Score 0-10 for demand-signal strength.",
+        "Sentiment read needs a model — evidence counted only", 5.0)
+
+
+async def negotiation_coach(ctx: Ctx) -> None:
+    """L4 — turns the verdict into the next conversation: BATNA, anchors, concessions."""
+    aid, layer = "negotiation_coach", "L4"
+    await ctx.start(aid, layer)
+    lines = {k: v.get("verdict_line") for k, v in list(ctx.state.outputs.items())[:24]
+             if isinstance(v, dict) and v.get("verdict_line")}
+    schema = ('{"counterparty": str (who the next negotiation is with), '
+              '"batna": str (<=25 words — the walk-away alternative), '
+              '"anchor": str (<=20 words — the opening position, with a number if evidenced), '
+              '"concessions": [str x2 (<=15 words each — what to give, in order)], '
+              '"walk_away": str (<=15 words — the red line), '
+              '"verdict_line": str (<=90 chars)}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are a negotiation coach. Turn the board's verdict into the user's NEXT conversation "
+        "(investor, bank, landlord, supplier, or broker — pick the most imminent). Give BATNA, "
+        "anchor, ordered concessions, and the walk-away line. Grounded in the findings only.",
+        f"BRIEF: {str(ctx.state.brief)[:400]}\nVERDICT: {ctx.state.verdict.get('score')}/10 "
+        f"{ctx.state.verdict.get('recommendation')}\nFINDINGS: {lines}",
+        schema, max_tokens=500, agent=aid)
+    if data and data.get("batna"):
+        await ctx.emit.usage(aid, res.tokens, res.route)
+        await ctx.emit.log(aid, f"next table: {str(data.get('counterparty',''))[:60]} · "
+                                f"anchor: {str(data.get('anchor',''))[:60]}", "ok")
+        out = {"verdict_line": data.get("verdict_line") or f"negotiation plan vs {data.get('counterparty')}",
+               "degraded": False, **data}
+    else:
+        out = {"verdict_line": "Negotiation plan needs a model", "batna": "", "anchor": "",
+               "concessions": [], "degraded": True}
+        await ctx.emit.log(aid, "LLM unavailable — no negotiation plan", "warn")
+    await ctx.finish(aid, layer, out)
+
+
 async def storytelling(ctx: Ctx) -> None:
     """L4 communication agent — turns the board's analysis into a pitch story.
     Runs after the verdict so it can frame the honest narrative."""
@@ -553,6 +668,15 @@ WORLD_WAVE = {
     "intl_markets": intl_markets,
     "trends": trends,
     "esg_impact": esg_impact,
+    # Phase-13 expansion lenses
+    "pricing_strategist": pricing_strategist,
+    "supply_chain": supply_chain,
+    "cohort_retention": cohort_retention,
+    "cap_table": cap_table,
+    "patent_ip": patent_ip,
+    "insurance_risk": insurance_risk,
+    "sustainability_accountant": sustainability_acct,
+    "sentiment_analyst": sentiment_analyst,
 }
 
 

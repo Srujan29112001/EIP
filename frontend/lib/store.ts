@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, LogKind, RadarData, RoundsData, RunEvent, StageStatus, Story, Verdict,
+  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, LogKind, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -29,6 +29,8 @@ interface RunStore {
   crossInsights: CrossInsights | null;
   compliance: ComplianceAlerts | null;
   rounds: RoundsData | null;
+  /** round number → the COMPLETE published result set for that round */
+  resultSets: Record<number, ResultSetData>;
   story: Story | null;
   charts: Record<string, unknown>[];
   report: string | null;
@@ -57,6 +59,7 @@ const EMPTY = {
   crossInsights: null as CrossInsights | null,
   compliance: null as ComplianceAlerts | null,
   rounds: null as RoundsData | null,
+  resultSets: {} as Record<number, ResultSetData>,
   story: null as Story | null,
   charts: [] as Record<string, unknown>[],
   report: null as string | null,
@@ -111,6 +114,10 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "cross_insights") return { crossInsights: e.data as CrossInsights };
           if (e.section === "compliance_alerts") return { compliance: e.data as ComplianceAlerts };
           if (e.section === "rounds") return { rounds: e.data as RoundsData };
+          if (e.section === "result_set") {
+            const rs = e.data as ResultSetData;
+            return { resultSets: { ...s.resultSets, [rs.round]: rs } };
+          }
           if (e.section === "report") return { report: e.data as string };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };

@@ -103,14 +103,18 @@ async def scope_planner(ctx: Ctx) -> None:
     spine = ["web_researcher", "news_intel", "market_data", "macro_data",
              "market_analyst", "finance_modeler",
              "red_team", "fact_checker", "bias_auditor",
-             "weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"]
+             "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
+             "storytelling", "visualizer", "reporter"]
     board_wave = ["competitor_intel", "market_research", "banking", "gtm_distribution", "legal", "tax",
-                  "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots"]
+                  "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots",
+                  "pricing_strategist", "cohort_retention", "sentiment_analyst"]
     human_wave = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
                   "philosophy_ethics", "money_happiness", "philanthropy_impact"]
     world_wave = ["business_model", "marketing_strategy",
                   "subsidies_schemes", "hr_talent", "optimization_predictor", "regulator",
-                  "macroeconomist", "geopolitics", "intl_markets", "trends", "esg_impact"]
+                  "macroeconomist", "geopolitics", "intl_markets", "trends", "esg_impact",
+                  "supply_chain", "cap_table", "patent_ip", "insurance_risk",
+                  "sustainability_accountant"]
     scope = (spine if depth == "pulse"
              else spine + board_wave + human_wave if depth == "board"
              else spine + board_wave + human_wave + world_wave)
@@ -122,7 +126,8 @@ async def scope_planner(ctx: Ctx) -> None:
     # synthesis layer is never optional — someone has to sign the verdict
     enabled = set(ctx.state.raw.get("agents_enabled") or [])
     if enabled:
-        mandatory = {"weighing_engine", "verdict_composer", "storytelling", "visualizer", "reporter"}
+        mandatory = {"weighing_engine", "verdict_composer", "scenario_planner",
+                     "negotiation_coach", "storytelling", "visualizer", "reporter"}
         dropped = [a for a in scope if a not in enabled and a not in mandatory]
         scope = [a for a in scope if a in enabled or a in mandatory]
         if dropped:
@@ -390,6 +395,15 @@ PEERS: dict[str, list[str]] = {
     "real_estate": ["salary_budget", "debt_banking", "banking"],
     "debt_banking": ["salary_budget", "banking"],
     "location_scout": ["subsidies_schemes"],
+    # Phase-13 expansion lenses
+    "pricing_strategist": ["consumer_analysis", "market_research", "finance_modeler"],
+    "supply_chain": ["production_ops", "industry_expert"],
+    "cohort_retention": ["consumer_analysis", "marketing_strategy"],
+    "cap_table": ["finance_modeler", "banking"],
+    "patent_ip": ["legal", "industry_expert"],
+    "insurance_risk": ["legal", "production_ops"],
+    "sustainability_accountant": ["esg_impact", "production_ops", "finance_modeler"],
+    "sentiment_analyst": ["news_intel", "consumer_analysis"],
 }
 
 
@@ -768,8 +782,9 @@ async def weighing_engine(ctx: Ctx) -> None:
 
     dims = {
         "Market": avg(["market_analyst", "market_research", "competitor_intel", "industry_expert",
-                       "trends", "consumer_analysis"]) or 5.0,
-        "Economics": avg(["finance_modeler", "tax", "subsidies_schemes", "banking"]) or 5.0,
+                       "trends", "consumer_analysis", "sentiment_analyst", "cohort_retention"]) or 5.0,
+        "Economics": avg(["finance_modeler", "tax", "subsidies_schemes", "banking",
+                          "pricing_strategist", "cap_table"]) or 5.0,
         "Evidence": evidence_dim,
         "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy",
                           "hr_talent", "production_ops"]) or 5.0,

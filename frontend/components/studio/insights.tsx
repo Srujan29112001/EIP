@@ -14,13 +14,15 @@ import { AgentSim } from "./agent-sim";
 import { ChartCard, type ChartSpec } from "./chart-kit";
 
 /* ── chart gallery — every insight, visualized ────────────────────────────── */
-export function ChartGallery() {
-  const charts = useRun((s) => s.charts) as unknown as ChartSpec[];
+export function ChartGallery({ charts: chartsProp, title }: {
+  charts?: ChartSpec[]; title?: string } = {}) {
+  const storeCharts = useRun((s) => s.charts) as unknown as ChartSpec[];
+  const charts = chartsProp ?? storeCharts;
   if (!charts?.length) return null;
   return (
     <section>
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
-        <BarChart3 size={13} /> The insight gallery — {charts.length} interactive charts
+        <BarChart3 size={13} /> {title ?? `The insight gallery — ${charts.length} interactive charts`}
       </h3>
       <div className="grid gap-3 lg:grid-cols-2">
         {charts.map((c) => <ChartCard key={c.id} spec={c} />)}
@@ -125,14 +127,16 @@ export function SmartInsights() {
 }
 
 /* ── the reporter's full document ─────────────────────────────────────────── */
-export function ReportSection() {
-  const report = useRun((s) => s.report);
+export function ReportSection({ report: reportProp, title }: {
+  report?: string; title?: string } = {}) {
+  const storeReport = useRun((s) => s.report);
   const [expanded, setExpanded] = useState(false);
+  const report = reportProp ?? storeReport;
   if (!report) return null;
   return (
     <section className="rounded-xl border border-line bg-panel p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
-        <FileText size={13} /> The full decision report — by the Reporter
+        <FileText size={13} /> {title ?? "The full decision report — by the Reporter"}
       </h3>
       <div className={`relative overflow-hidden ${expanded ? "" : "max-h-72"}`}>
         <Markdown text={report} />

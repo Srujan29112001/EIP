@@ -38,15 +38,17 @@ L2_FOUNDATIONAL = {
 # extra lens agents convened per depth, per mode (beyond each mode's core desk)
 TRADER_EXTRA = {
     "board": ["macroeconomist", "geopolitics", "trends", "regulator", "industry_expert",
-              "market_research", "human_behaviour", "money_happiness", "philosophy_ethics"],
+              "market_research", "sentiment_analyst", "human_behaviour", "money_happiness",
+              "philosophy_ethics"],
     "war_room": ["macroeconomist", "geopolitics", "trends", "regulator", "industry_expert",
-                 "market_research", "banking", "intl_markets", "esg_impact", "policy_compliance",
-                 "optimization_predictor", *HUMAN_WAVE],
+                 "market_research", "sentiment_analyst", "banking", "intl_markets", "esg_impact",
+                 "policy_compliance", "optimization_predictor", "supply_chain", *HUMAN_WAVE],
 }
 WEALTH_EXTRA = {
     "board": ["macroeconomist", "trends", "regulator", "fund_analyst", "market_research", "banking",
-              "money_happiness", "human_needs", "philosophy_ethics", "philanthropy_impact"],
+              "insurance_risk", "money_happiness", "human_needs", "philosophy_ethics",
+              "philanthropy_impact"],
     "war_room": ["macroeconomist", "trends", "regulator", "fund_analyst", "market_research", "banking",
-                 "geopolitics", "intl_markets", "esg_impact", "optimization_predictor",
-                 "subsidies_schemes", *HUMAN_WAVE],
+                 "insurance_risk", "sentiment_analyst", "geopolitics", "intl_markets", "esg_impact",
+                 "optimization_predictor", "subsidies_schemes", *HUMAN_WAVE],
 }

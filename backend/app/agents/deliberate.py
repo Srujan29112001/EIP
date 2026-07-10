@@ -37,14 +37,28 @@ _NARRATIVE_SCHEMA = ('{"verdict_line": str (<=120 chars, refined), '
                      '"key_insights": [str x2 (cross-agent, round-2 insights)]}')
 
 
+def _line_of(out: dict[str, Any]) -> str:
+    """A one-line summary of ANY agent's output — verdict_line when present,
+    else the first informative field (so grounding/crucible agents that never
+    produce a scored verdict still deliberate in round 2)."""
+    for key in ("verdict_line", "no_case", "summary", "note"):
+        if out.get(key):
+            return str(out[key])
+    for key in ("attacks", "checks", "biases", "key_facts", "insights"):
+        v = out.get(key)
+        if isinstance(v, list) and v:
+            return str(v[0])[:120]
+    return "completed round 1"
+
+
 def _refinables(ctx: Ctx) -> dict[str, list[str]]:
-    """layer → agent ids eligible for round 2: produced a verdict_line, is an
-    LLM-tier agent (not t0 math), and lives in a round-2 layer."""
+    """layer → agent ids eligible for round 2: any LLM-tier agent (not t0
+    math) with an output, in L1/L2/L3 — grounding and crucible included."""
     by_layer: dict[str, list[str]] = {l: [] for l in _ROUND2_LAYERS}
     for k, v in ctx.state.outputs.items():
         meta = BY_ID.get(k)
         if (meta and meta.layer in _ROUND2_LAYERS and meta.tier != "t0"
-                and isinstance(v, dict) and v.get("verdict_line")):
+                and isinstance(v, dict)):
             by_layer[meta.layer].append(k)
     return by_layer
 
@@ -55,7 +69,7 @@ def _headlines(ctx: Ctx, ids: list[str]) -> str:
     for k in ids:
         s = o[k].get("score")
         tag = f" (score {s}/10)" if isinstance(s, (int, float)) else ""
-        lines.append(f"- {k}: {str(o[k].get('verdict_line'))[:110]}{tag}")
+        lines.append(f"- {k}: {_line_of(o[k])[:110]}{tag}")
     return "\n".join(lines)
 
 
@@ -79,7 +93,7 @@ async def _refine_one(ctx: Ctx, aid: str, board_block: str, peers_all: list[str]
                   "Round 1 was independent analysis; now the FULL board's findings are in front "
                   "of you. Refine YOUR output in the light of ALL of them. Never just restate "
                   f"round 1. {role_hint}")
-        own = (f"YOUR ROUND-1 FINDING: {prev.get('verdict_line')}"
+        own = (f"YOUR ROUND-1 FINDING: {_line_of(prev)}"
                + (f" (score {prev.get('score')}/10)" if scored else ""))
         user = (f"BRIEF: {str(ctx.state.brief)[:500]}\n{own}\n{verdict_note}"
                 f"THE FULL BOARD, ROUND 1 (every specialist):\n{board_block}\n\n"
@@ -110,6 +124,87 @@ async def _refine_one(ctx: Ctx, aid: str, board_block: str, peers_all: list[str]
     await ctx.emit.log(aid, "round 2 skipped for this agent (no LLM) — round-1 finding stands", "muted")
     await ctx.emit.stage(aid, "degraded" if prev.get("degraded") else "done", meta.layer)
     return False
+
+
+async def refine_gateway(ctx: Ctx) -> None:
+    """L0's round 2 — the gateway re-reads its own framing in the light of the
+    round-1 results. The intake brief and profile are REFINED (not re-parsed —
+    the user's input is fixed, like the notebook's 'User Input = A'), and the
+    scope planner re-audits board coverage. Each earns its second ✓."""
+    v1 = ctx.state.rounds.get("verdict1") or {}
+    top = _headlines(ctx, [a for ids in _refinables(ctx).values() for a in ids][:14])
+
+    # intake_parser: sharpen the brief with what the board actually found
+    await ctx.emit.stage("intake_parser", "active", "L0")
+    schema = ('{"keywords": [str x4-8 (refined, incl. themes the board surfaced)], '
+              '"uncertainty": str (<=15 words - the REAL open question after round 1)}')
+    data, res = await ctx.llm.structured(
+        "t1",
+        "You are the intake parser in deliberation round 2. The user's input is fixed; "
+        "refine the BRIEF's keywords and core uncertainty using what the board found in round 1.",
+        f"BRIEF: {str(ctx.state.brief)[:400]}\nROUND-1 VERDICT: {v1}\nBOARD FINDINGS:\n{top[:1200]}",
+        schema, max_tokens=250, agent="intake_parser")
+    if data and isinstance(data.get("keywords"), list) and data["keywords"]:
+        ctx.state.brief["keywords"] = [str(k)[:40] for k in data["keywords"]][:8]
+        if data.get("uncertainty"):
+            ctx.state.brief["uncertainty"] = str(data["uncertainty"])[:120]
+        await ctx.emit.usage("intake_parser", res.tokens, res.route)
+        await ctx.emit.partial("brief", ctx.state.brief)
+        await ctx.emit.log("intake_parser", "round 2: brief sharpened with the board's findings", "info")
+        await ctx.emit.stage("intake_parser", "done", "L0")
+        await ctx.emit.round("intake_parser", 2)
+    else:
+        await ctx.emit.stage("intake_parser", "done", "L0")
+
+    # context_profiler: deterministic re-read (risk posture vs the round-1 verdict)
+    await ctx.emit.stage("context_profiler", "active", "L0")
+    score = v1.get("score")
+    if isinstance(score, (int, float)):
+        posture = ("verdict supports the profile's risk capacity" if score >= 6
+                   else "verdict is below the comfort line — profile flags caution")
+        ctx.state.profile["round2_posture"] = posture
+        await ctx.emit.log("context_profiler", f"round 2: {posture}", "info")
+    await ctx.emit.stage("context_profiler", "done", "L0")
+    await ctx.emit.round("context_profiler", 2)
+
+    # scope_planner: deterministic coverage audit of the convened board
+    await ctx.emit.stage("scope_planner", "active", "L0")
+    degraded = [k for k, v in ctx.state.outputs.items()
+                if isinstance(v, dict) and v.get("degraded")]
+    await ctx.emit.log("scope_planner",
+                       f"round 2 coverage audit: {len(ctx.state.outputs)} agents reported, "
+                       f"{len(degraded)} still deterministic-only", "info" if not degraded else "warn")
+    await ctx.emit.stage("scope_planner", "done", "L0")
+    await ctx.emit.round("scope_planner", 2)
+
+
+def result_snapshot(ctx: Ctx, round_no: int) -> dict[str, Any]:
+    """A COMPLETE result set for one round — verdict, dimensions, pitch,
+    cross-links, compliance, charts, report — so the Results view can show
+    round 1 and round 2 side by side, in full."""
+    o = ctx.state.outputs
+    story = o.get("storytelling") or {}
+    cross = o.get("cross_pollinate") or {}
+    comp = o.get("compliance_scan") or {}
+    return {
+        "round": round_no,
+        "verdict": dict(ctx.state.verdict),
+        "dimensions": dict(ctx.state.dimensions),
+        "story": {k: story.get(k) for k in ("hook", "narrative", "one_liner", "three_beats")
+                  if story.get(k)},
+        "cross": {"connections": (cross.get("connections") or [])[:7],
+                  "emergent": (cross.get("emergent") or [])[:3]},
+        "compliance": (comp.get("alerts") or [])[:8],
+        "charts": (o.get("visualizer", {}) or {}).get("charts") or [],
+        "report": str((o.get("reporter", {}) or {}).get("report_md") or "")[:24000],
+    }
+
+
+async def emit_result_set(ctx: Ctx, round_no: int) -> None:
+    snap = result_snapshot(ctx, round_no)
+    ctx.state.rounds.setdefault("results", {})[str(round_no)] = {
+        k: snap[k] for k in ("verdict", "dimensions", "story")}   # persist the light core
+    await ctx.emit.partial("result_set", snap)
 
 
 async def deliberation_round(ctx: Ctx) -> None:

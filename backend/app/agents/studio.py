@@ -124,6 +124,19 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                                          for d in moved],
                               "values": [_num(d.get("after"), 0.0) for d in moved], "max": 10}))
 
+    # column — the verdict under uncertainty (Scenario Planner's Monte-Carlo)
+    sc = o.get("scenario_planner", {}) or {}
+    if isinstance(sc.get("p50"), (int, float)):
+        charts.append(_chart("col_scenarios", "column", "The verdict under uncertainty",
+                             f"{sc.get('draws', 1000)} Monte-Carlo draws around the board's scores: "
+                             f"P(GO) {int(_num(sc.get('prob_go'), 0) * 100)}%, "
+                             f"P(NO-GO) {int(_num(sc.get('prob_nogo'), 0) * 100)}%"
+                             + (f" — the case most often breaks on {sc['breaks_it']}." if sc.get("breaks_it") else "."),
+                             "scenario_planner",
+                             {"labels": ["P10 (bad luck)", "P50 (expected)", "P90 (good luck)"],
+                              "values": [_num(sc.get("p10"), 0), _num(sc.get("p50"), 0),
+                                         _num(sc.get("p90"), 0)], "max": 10}))
+
     # donut — how the specialists connect (cross-pollination synergies vs tensions)
     conns = (o.get("cross_pollinate", {}) or {}).get("connections") or []
     if conns:
@@ -237,7 +250,8 @@ async def visualizer(ctx: Ctx) -> None:
 
     await ctx.emit.partial("charts", charts)
     await ctx.emit.log(aid, f"{len(charts)} interactive charts → Decision Room", "ok")
-    await ctx.finish(aid, layer, {"verdict_line": f"{len(charts)} charts rendered", "count": len(charts)})
+    await ctx.finish(aid, layer, {"verdict_line": f"{len(charts)} charts rendered",
+                                  "count": len(charts), "charts": charts})
 
 
 _REPORT_SCHEMA = ('{"report_markdown": str (a complete decision report in markdown, 600-1000 words: '
@@ -341,4 +355,5 @@ async def reporter(ctx: Ctx) -> None:
         await ctx.emit.log(aid, "LLM unavailable after full ladder + split — deterministic report assembly", "warn")
     await ctx.emit.partial("report", str(report))
     await ctx.finish(aid, layer, {"verdict_line": "full decision report ready",
-                                  "chars": len(str(report)), "degraded": degraded})
+                                  "chars": len(str(report)), "degraded": degraded,
+                                  "report_md": str(report)})

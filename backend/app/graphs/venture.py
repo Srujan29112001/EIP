@@ -9,8 +9,8 @@ from __future__ import annotations
 import asyncio
 import traceback
 
-from ..agents import board, catalog, studio, venture as v
-from ..agents.deliberate import deliberation_round
+from ..agents import board, catalog, scenario, studio, venture as v
+from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
@@ -72,36 +72,43 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         # core, by retrying after the rate-limit window refreshes
         await replay_degraded(ctx)
 
-        # ROUND 2 — the notebook's full second pass. First take the ROUND-1
-        # VERDICT (the first result set), then every layer re-runs L1→L2→L3
-        # with the whole board visible, then the verdict is taken AGAIN on the
-        # deliberated board. Both verdicts ship. Pulse stays single-round.
-        depth_now = (payload.get("depth") or "pulse").lower()
-        n_rounds = int(payload.get("rounds") or (1 if depth_now == "pulse" else 2))
-        if n_rounds >= 2:
+        # ═══ ROUND 1 — the COMPLETE first pass, results and all (notebook: IJK) ═══
+        async def synthesis() -> None:
+            await board.cross_pollinate(ctx)
+            await board.compliance_scan(ctx)
+            if "connecting_dots" in scoped:
+                await board.connecting_dots(ctx)
             await v.weighing_engine(ctx)
             await v.verdict_composer(ctx)
+            await scenario.scenario_planner(ctx)   # Monte-Carlo the verdict (t0)
+            await asyncio.gather(board.negotiation_coach(ctx),
+                                 board.storytelling(ctx), studio.visualizer(ctx))
+            # reporter runs LAST and ALONE (whole key pool) with its own
+            # input-shrinking ladder — no outer rescue needed
+            await studio.reporter(ctx)
+
+        await synthesis()
+        depth_now = (payload.get("depth") or "pulse").lower()
+        n_rounds = int(payload.get("rounds") or (1 if depth_now == "pulse" else 2))
+        await emit_result_set(ctx, 1)   # ← the ROUND-1 RESULTS, published in full
+
+        # ═══ ROUND 2 — the whole pipeline re-runs, L0 → L1 → L2 → L3 → L4,
+        # every agent reading the full round-1 board (notebook: β γ ᾱ) ═══
+        if n_rounds >= 2:
             ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
                                             "recommendation": ctx.state.verdict.get("recommendation")}
-            await deliberation_round(ctx)
-
-        # L4 — synthesis (on the deliberated board)
-        await board.cross_pollinate(ctx)
-        await board.compliance_scan(ctx)
-        if "connecting_dots" in scoped:
-            await board.connecting_dots(ctx)
-        await v.weighing_engine(ctx)
-        await v.verdict_composer(ctx)
-        if n_rounds >= 2:
+            await refine_gateway(ctx)          # L0 ✓✓
+            await deliberation_round(ctx)      # L1 → L2 → L3 ✓✓ (incl. grounding + crucible)
+            await synthesis()                  # L4 re-runs in full — the second results
+            for aid in ("cross_pollinate", "compliance_scan",
+                        *(["connecting_dots"] if "connecting_dots" in scoped else []),
+                        "weighing_engine", "verdict_composer", "scenario_planner",
+                        "negotiation_coach", "storytelling", "visualizer", "reporter"):
+                await emitter.round(aid, 2)    # L4 ✓✓
             ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
                                             "recommendation": ctx.state.verdict.get("recommendation")}
             await emitter.partial("rounds", dict(ctx.state.rounds))
-        # storytelling frames the pitch from the verdict; visualizer builds charts.
-        # reporter runs LAST and ALONE so the biggest single call gets the whole
-        # key pool to itself, then self-heals via its own retry ladder — no outer
-        # rescue needed (the ladder spans a full minute of quota refreshes).
-        await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
-        await studio.reporter(ctx)
+            await emit_result_set(ctx, 2)      # ← the ROUND-2 RESULTS, under round 1
 
         await save_run(ctx.state)
         await emitter.done(run_id)
