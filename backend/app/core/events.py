@@ -48,6 +48,10 @@ class Emitter:
         Drives the A2A edges in the flow map + decision graph."""
         await self.queue.put({"type": "collab", "agent": agent, "peers": peers})
 
+    async def round(self, agent: str, round_: int) -> None:
+        """An agent completed deliberation round N — drives the ✓✓ badges."""
+        await self.queue.put({"type": "round", "agent": agent, "round": round_})
+
     async def prompt(self, agent: str, system: str, user: str) -> None:
         """Radical transparency: the exact prompt an agent sends to its model."""
         await self.queue.put({"type": "prompt", "agent": agent,

@@ -137,6 +137,32 @@ async def scope_planner(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, {"scope": scope})
 
 
+# ── L1.5: memory recall — RAG over past runs (the board remembers) ────────────
+
+async def memory_recall(ctx: Ctx) -> None:
+    """Cross-run RAG: retrieve the most similar PAST decisions (BM25 over the
+    stored briefs) and put their verdicts on the evidence board, so every
+    specialist can weigh 'we have seen something like this before'."""
+    from ..memory import store as _store
+    from ..memory.rag import recall_similar
+    try:
+        runs = await _store.list_runs(60)
+    except Exception:
+        return
+    sit = str(ctx.state.raw.get("situation") or ctx.state.brief.get("summary") or "")
+    similar = [r for r in recall_similar(runs, sit, str(ctx.state.raw.get("mode", "founder")))
+               if r.get("id") != ctx.state.run_id]
+    for r in similar:
+        line = (f"MEMORY: a similar past decision — '{str(r.get('situation'))[:90]}' — "
+                f"scored {r.get('score')}/10 ({str(r.get('band') or 'no outcome yet')})")
+        ctx.state.evidence.append({"text": line, "source": {"name": f"past run {r.get('id')}"},
+                                   "agent": "decision_graph"})
+        await ctx.emit.claim("decision_graph", line, confidence=0.4)
+    if similar:
+        await ctx.emit.log("scope_planner",
+                           f"memory recall (RAG): {len(similar)} similar past decision(s) now on the board", "info")
+
+
 # ── L1: web researcher ────────────────────────────────────────────────────────
 
 async def web_researcher(ctx: Ctx) -> None:
@@ -424,10 +450,13 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
             await ctx.emit.log(aid, f"└ building on colleagues: {', '.join(got)}", "muted")
             await ctx.emit.collab(aid, got)
 
+    # RAG: this agent retrieves the evidence most relevant to ITS question,
+    # not the first-N items by arrival order
+    rag_query = f"{aid.replace('_', ' ')} {ask[:160]} {' '.join(ctx.state.brief.get('keywords', [])[:6])}"
     user_full = (f"BRIEF: {ctx.state.brief}\nPROFILE: {ctx.state.profile}\n"
                  + (f"USER'S DIRECT BRIEF TO YOU: {str(user_ctx)[:500]}\n" if user_ctx else "")
                  + peer_block + research_block
-                 + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(14)}\n\nTASK: {ask}")
+                 + f"EVIDENCE BOARD (most relevant to you):\n{ctx.state.evidence_digest(14, rag_query)}\n\nTASK: {ask}")
     if user_ctx:
         await ctx.emit.log(aid, f"user brief → me: {str(user_ctx)[:90]}", "muted")
     await ctx.emit.prompt(aid, system_full, user_full)   # glass box: show the exact prompt

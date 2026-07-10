@@ -16,6 +16,7 @@ const DOT: Record<StageStatus, string> = {
 export function PipelineRail() {
   const status = useRun((s) => s.agentStatus);
   const scope = useRun((s) => s.scope);
+  const roundsDone = useRun((s) => s.roundsDone);
   const layers = ["L0", "L1", "L2", "L3", "L4", "L5"] as const;
   // only the convened board belongs in the rail — the full registry is 55+
   const convened = new Set(["intake_parser", "context_profiler", "scope_planner", ...scope]);
@@ -44,7 +45,11 @@ export function PipelineRail() {
                       {a.name}
                     </span>
                     <span className={`ml-auto font-mono text-[9px] ${st === "degraded" ? "text-warn" : "text-slate-600"}`}>
-                      {st === "degraded" ? "no-LLM" : st}
+                      {st === "done" && (roundsDone[a.id] ?? 0) >= 2 ? (
+                        <span title="round 1 + round 2 (deliberation) complete">
+                          <span className="text-ok">✓</span><span className="text-[#fbbf24]">✓</span>
+                        </span>
+                      ) : st === "degraded" ? "no-LLM" : st}
                     </span>
                   </li>
                 );

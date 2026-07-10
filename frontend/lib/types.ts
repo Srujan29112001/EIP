@@ -129,6 +129,9 @@ export interface RoundsData {
   deltas: { agent: string; before: number; after: number; delta: number }[];
   refined: number;
   revised: number;
+  /** the verdict BEFORE deliberation vs AFTER — the two result sets */
+  verdict1?: { score?: number; recommendation?: string };
+  verdict2?: { score?: number; recommendation?: string };
 }
 
 /** The Cross-Pollinator's inter-agent map (partial:cross_insights). */
@@ -165,6 +168,7 @@ export type RunEvent =
   | { type: "log"; agent: string; kind: LogKind; text: string }
   | { type: "prompt"; agent: string; system: string; user: string }
   | { type: "collab"; agent: string; peers: string[] }
+  | { type: "round"; agent: string; round: number }
   | { type: "claim"; agent: string; claim: { text: string; source?: Source | null; confidence: number } }
   | { type: "conflict"; a: string; b: string; topic: string }
   | { type: "debate"; agent: string; round: number; stance: "attack" | "rebuttal" | "concession"; text: string }

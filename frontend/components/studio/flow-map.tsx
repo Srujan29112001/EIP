@@ -6,14 +6,14 @@
  */
 
 import { useMemo, useState } from "react";
-import { AGENTS, LAYER_LABELS, PEERS, agentById, type Layer } from "@/lib/agents";
+import { AGENTS, LAYER_LABELS, agentById, type Layer } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput } from "@/lib/types";
 
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 
 export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
-  const { agentStatus, scope, agentOutputs, collabs } = useRun();
+  const { agentStatus, scope, agentOutputs, collabs, roundsDone } = useRun();
   const [sel, setSel] = useState<string | null>(null);
 
   const active = useMemo(() => {
@@ -43,28 +43,31 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
     for (const a of cols[i]) for (const b of cols[i + 1]) edges.push({ from: a.id, to: b.id });
   }
 
+  const status = (id: string) => agentStatus[id] ?? "queued";
+
   // A2A mesh: WITHIN each layer, every agent is wired to every OTHER agent — a
-  // fully-connected layer, like a neural net. They all read & write the one
-  // shared evidence board, so the domain layer genuinely is a complete graph;
-  // no specialist is an island. A pair glows bright + pulses when it actually
-  // built on the other this run (collab event, or the curated PEERS affinity);
-  // every other same-layer pair stays a visible-but-quiet gold thread.
-  const isLive = (x: string, y: string) =>
-    (collabs[x] ?? []).includes(y) || (collabs[y] ?? []).includes(x) ||
-    (PEERS[x] ?? []).includes(y) || (PEERS[y] ?? []).includes(x);
-  const peerEdges: { from: string; to: string; live: boolean }[] = [];
+  // fully-connected layer, like a neural net (they all share one evidence
+  // board). Three visual states, honestly separated:
+  //   PULSING  = the pair is communicating RIGHT NOW (a collab fired and one
+  //              endpoint is actively working — e.g. its round-2 re-read)
+  //   BRIGHT   = they communicated this run (collab event), now settled
+  //   FAINT    = structurally connected via the board, no direct hand-off yet
+  const talked = (x: string, y: string) =>
+    (collabs[x] ?? []).includes(y) || (collabs[y] ?? []).includes(x);
+  const peerEdges: { from: string; to: string; live: boolean; pulsing: boolean }[] = [];
   cols.forEach((col, ci) => {
     if (ci === 0 || col.length < 2) return;   // L0 gateway is a sequence, not a mesh
     for (let a = 0; a < col.length; a++) {
       for (let b = a + 1; b < col.length; b++) {
-        peerEdges.push({ from: col[a].id, to: col[b].id, live: isLive(col[a].id, col[b].id) });
+        const x = col[a].id, y = col[b].id;
+        const live = talked(x, y);
+        const pulsing = live && (status(x) === "active" || status(y) === "active");
+        peerEdges.push({ from: x, to: y, live, pulsing });
       }
     }
   });
-  // paint the quiet threads first, the live/pulsing links last (on top)
+  // paint the quiet threads first, the live links last (on top)
   peerEdges.sort((x, y) => Number(x.live) - Number(y.live));
-
-  const status = (id: string) => agentStatus[id] ?? "queued";
   const selAgent = sel ? agentById(sel) : null;
   const selOut = sel ? (agentOutputs[sel] as AgentOutput | undefined) : undefined;
 
@@ -111,7 +114,7 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
               column, alternating sides for a balanced web. Bright + pulsing =
               the pair actively built on each other this run; quiet gold thread =
               connected via the shared board. */}
-          {peerEdges.map(({ from, to, live }, i) => {
+          {peerEdges.map(({ from, to, live, pulsing }, i) => {
             const p1 = pos.get(from), p2 = pos.get(to);
             if (!p1 || !p2) return null;
             const dy = Math.abs(p2.y - p1.y);
@@ -126,11 +129,11 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
                 d={`M${p1.x + edgeX},${p1.y} Q${cx},${cy} ${p2.x + edgeX},${p2.y}`}
                 fill="none"
                 stroke="#fbbf24"
-                strokeOpacity={live ? 0.92 : 0.26}
-                strokeWidth={live ? 2 : 0.7}
+                strokeOpacity={pulsing ? 0.95 : live ? 0.5 : 0.16}
+                strokeWidth={pulsing ? 2.2 : live ? 1.2 : 0.7}
                 strokeLinecap="round"
-                strokeDasharray={live ? "5 6" : undefined}
-                style={live ? { animation: "flowdash 0.9s linear infinite" } : undefined}
+                strokeDasharray={pulsing ? "5 6" : undefined}
+                style={pulsing ? { animation: "flowdash 0.9s linear infinite" } : undefined}
               />
             );
           })}
@@ -167,6 +170,13 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
                   <g>
                     <circle cx={p.x + 10} cy={p.y - 9} r="4.5" fill="#9ae64a" />
                     <text x={p.x + 10} y={p.y - 6.5} textAnchor="middle" style={{ font: "700 6.5px sans-serif", fill: "#04060f" }}>✓</text>
+                  </g>
+                )}
+                {(roundsDone[a.id] ?? 0) >= 2 && (
+                  <g>
+                    <title>round 2 (deliberation) complete</title>
+                    <circle cx={p.x - 10} cy={p.y - 9} r="4.5" fill="#fbbf24" />
+                    <text x={p.x - 10} y={p.y - 6.5} textAnchor="middle" style={{ font: "700 6.5px sans-serif", fill: "#04060f" }}>✓</text>
                   </g>
                 )}
                 {st === "degraded" && (
@@ -216,7 +226,13 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#fbbf24" strokeOpacity="0.92" strokeWidth="2" strokeDasharray="4 3" /></svg>
-          agent ↔ agent — every specialist in a layer wired to every other (neural mesh); pulsing = building on each other now
+          agent ↔ agent — pulsing = communicating NOW · steady gold = communicated this run · faint = shared-board wiring
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#9ae64a] text-center font-mono text-[7px] leading-[10px] text-ink">✓</span>
+          round 1 ·
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#fbbf24] text-center font-mono text-[7px] leading-[10px] text-ink">✓</span>
+          round 2 (deliberation)
         </span>
       </div>
     </div>

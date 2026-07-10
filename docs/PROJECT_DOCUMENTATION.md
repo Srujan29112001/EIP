@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 11 (two-round deliberation + 16-key rotation) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 12 (all-layer two-round deliberation + two verdicts + RAG + reporter compaction) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -137,7 +137,8 @@ One HTTP POST (`/api/run`) returns `text/event-stream`. Every agent action is on
 | `stage` | `agent, status(queued/active/done/degraded/error/skipped), layer` | lifecycle change | rail dot, flow-map node glow, badges |
 | `log` | `agent, kind(info/code/ok/err/warn/muted), text` | any narration | stage-card log lines |
 | `prompt` | `agent, system, user` | before every LLM call | "exact prompt" reveal (glass box) |
-| `collab` | `agent, peers[]` | agent reads colleagues (round 1 curated, round 2 full board, cross-pollinator) | gold arcs light in flow-map + 3D graph edges |
+| `collab` | `agent, peers[]` | agent reads colleagues (round 1 curated, round 2 full board, cross-pollinator) | gold arcs light in flow-map + 3D graph edges (pulse only while an endpoint is actively working) |
+| `round` | `agent, round` | an agent completed deliberation round N | the second (gold) ✓ badge in the rail + flow-map |
 | `claim` | `agent, claim{text, source?, confidence}` | evidence-backed statement | Boardroom feed, 3D claim nodes |
 | `conflict` | `a, b, topic` | two agents disagree (incl. cross-pollinator tensions) | Disagreements panel, red graph edge |
 | `debate` | `agent, round, stance(attack/rebuttal/concession), text` | War-Room debate turns | Boardroom debate thread |
@@ -180,7 +181,7 @@ Four mechanisms, weakest to strongest:
 flowchart TB
     m1["1 · SHARED BOARD (blue)<br/>every prompt embeds evidence_digest(14):<br/>top cited claims from ALL prior agents — broadcast"]
     m2["2 · CURATED PEER-INJECTION (bright gold, round 1)<br/>PEERS map: each agent handed its named colleagues'<br/>verdict_line + top insight → 'build on, reconcile, push back'"]
-    m3["3 · TWO-ROUND DELIBERATION (full gold mesh, round 2)<br/>EVERY L2 agent re-runs with EVERY colleague's round-1<br/>finding — fixes ordering unfairness; deltas kept"]
+    m3["3 · TWO-ROUND DELIBERATION (full gold mesh, round 2)<br/>ROUND-1 VERDICT taken, then L1 -> L2 -> L3 re-run IN ORDER,<br/>every agent reading the FULL board; verdict taken AGAIN.<br/>Two verdicts ship; every refined agent earns a second gold tick"]
     m4["4 · CROSS-POLLINATOR (L4)<br/>one agent reads all headlines → synergies/tensions/emergent"]
     m1-->m2-->m3-->m4
 ```
@@ -225,7 +226,7 @@ Key mechanics (`core/llm_gateway.py`):
 - **Tier split** — t3 = flagship (`llama-3.3-70b-versatile`, `claude-sonnet-4-5`, `gemini-2.5-flash`…), t1/t2 = fast sibling (`llama-3.1-8b-instant`, `claude-haiku-4-5`, `gemini-2.5-flash-lite`…). An explicit user model **wins at every tier** for its provider (a round-7 bug fix: previously t1/t2 silently downgraded).
 - **Rotation math** — 16 keys ≈ 16× requests/minute on a free tier. A War Room (~37 agents) + round-2 deliberation (~30 refines) + synthesis ≈ 80–100 calls; with 16 Groq keys at 30 rpm each, the pool absorbs it without a single cooldown.
 - **`_CLOUD_SEM = Semaphore(6)`** — global concurrency; the deliberation round holds its own `Semaphore(6)` as well.
-- **Reporter self-heal** — biggest single call, dead-last position: it runs alone (whole pool), and on starvation walks a ladder `t3(1800) → 12s → t3(1600) → 14s → t2(1400) → 16s → t2(1100)` spanning a full quota window, so it produces *narration* rather than deterministic assembly whenever any key has a shred of quota.
+- **Reporter self-heal** — the report is the biggest single call in a dead-last position, and the diagnosed root cause of its failures was **prompt size**, not just quota: with ~36 specialists the findings block alone can exceed a free tier's per-request token ceiling, making EVERY key fail on EVERY retry. The ladder therefore shrinks the **input** step by step — `t3(40 findings, 10 evidence) → t3(22, 8) → t2(22, 6) → t2(14, 4)` with cooldowns between rungs — and the final rung **splits the report into two small calls** (summary+findings, then risks+plan) and stitches them. It also runs alone (whole key pool) after everything else. Deterministic assembly remains the honest last resort.
 
 ---
 
@@ -296,18 +297,25 @@ FastAPI app factory: CORS (open — public product), mounts the `api/runs.py` ro
 ### `app/agents/board.py`
 The venture wave + world cluster via `_lens()` (a compact `_scored_analysis` wrapper); `market_research` (TAM/SAM/SOM); `banking` (credit facilities, Mudra/CGTMSE/Stand-Up India/PMEGP, capital stack); `devils_advocate` (the steel-manned NO); `connecting_dots` (cross-domain patterns); **`cross_pollinate`** (reads ALL headlines → validated `{a, b, type, insight}` pairs → `conflict` events for tensions + the `cross_insights` partial; deterministic score-extremes fallback); **`compliance_scan`** (t0 regex sweep of the regulator/legal/tax/policy/banking outputs + evidence → severity-ranked `compliance_alerts`); **`storytelling`** (verdict → hook / ~120-word narrative / one-liner / three beats → the `story` partial); `debate_rounds` (War-Room attack → rebuttal → concession).
 
-### `app/agents/deliberate.py` (Phase 11 — the notebook flow)
+### `app/memory/rag.py` (Phase 12 — the RAG engine)
 | Function | Logic |
 |---|---|
-| `_l2_scored(ctx)` | the scored L2 specialists present in outputs (registry-checked) |
-| `_refine_one(ctx, aid, headlines, peers)` | stage active → `collab(aid, ALL peers)` → the round-2 prompt (its own round-1 finding + the FULL board) → the refined output merged over round-1 (score/confidence clamped, `round: 2`) → `finish`; on LLM starvation it keeps round-1 and restores that honest status |
-| `deliberation_round(ctx)` | snapshots round-1 → parallel refines (semaphore 6) → per-agent deltas → the `rounds` partial `{round1, round2, deltas, refined, revised}` |
+| `BM25Index` | zero-dependency Okapi BM25 over short documents (free-CPU-tier safe: no model downloads, no network) |
+| `rank_evidence(evidence, query, limit)` | the per-agent RAG read: the `limit` evidence items most RELEVANT to this agent's question, instead of the first `limit` by arrival order (tax agent sees tax evidence, banker sees credit evidence) |
+| `recall_similar(runs, situation, mode)` | cross-run memory: the most similar PAST decisions land on the board as `MEMORY:` claims via `venture.memory_recall` (wired into all three graphs at L1) |
+
+### `app/agents/deliberate.py` (Phase 12 — the notebook flow, every layer)
+| Function | Logic |
+|---|---|
+| `_refinables(ctx)` | layer → eligible agents: L1/L2/L3, LLM-tier (t0 math excluded — re-running arithmetic with "context" would be theatre), produced a verdict_line |
+| `_refine_one(ctx, aid, board_block, peers, verdict_note)` | stage active → `collab(aid, ALL peers)` → the round-2 prompt (its own round-1 finding + the FULL board + the round-1 verdict, with a layer-specific mandate: L1 re-reads the world, L2 integrates colleagues, L3 re-attacks) → refined output merged over round-1 → `finish` → **`round(aid, 2)` — the second ✓**; on LLM starvation it keeps round-1 and restores that honest status |
+| `deliberation_round(ctx)` | snapshots round-1 → refines **layer by layer, L1 → L2 → L3** (headlines REBUILT before each layer, so L2's round 2 reads the refreshed L1, and L3's reads the refreshed L1+L2 — the notebook's left-to-right second pass) → per-agent deltas → the `rounds` partial `{round1, round2, deltas, refined, revised, verdict1, verdict2}` (verdicts added by the graphs, which run weighing+verdict BEFORE and AFTER this pass) |
 
 ### `app/agents/markets.py` · `wealth.py` · `human.py`
 The trader chain (history → technical → backtest → quant → risk, then the narrative desks), the money math (budget / allocation / FIRE / debt / real-estate / location), and the seven human lenses — all on the same contract.
 
 ### `app/agents/studio.py`
-`_deterministic_charts` (gauge, dimension waterfall + column, board bar, conviction scatter, evidence donut, risk heatmap, **deliberation column**, **cross-links donut**, candlestick + backtests, budget/FIRE charts) → `visualizer` (adds 2–4 LLM charts strictly from evidence figures, validated before render) → `reporter` (the sectioned markdown report, **retry ladder** t3→t3→t2→t2 with cooldowns, deterministic assembly as the last resort).
+`_deterministic_charts` (gauge, dimension waterfall + column, board bar, conviction scatter, evidence donut, risk heatmap, **deliberation column**, **cross-links donut**, candlestick + backtests, budget/FIRE charts) → `visualizer` (adds 2–4 LLM charts strictly from evidence figures, validated before render) → `reporter` (the sectioned markdown report; **input-shrinking ladder** — fewer findings, shorter lines, less evidence per rung, because the root cause of starvation was per-request token ceilings, not just quota — then a **two-call split-and-stitch**, then deterministic assembly as the honest last resort; both verdicts included when deliberation ran).
 
 ### `app/agents/replay.py`
 `RERUNNABLE` (37 safe-to-retry agents) + `replay_degraded(ctx, passes=2, cooldown=22s)` — the gap-detector that rescues starved agents after the per-minute quota refreshes.

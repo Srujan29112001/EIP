@@ -46,6 +46,8 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             "web_researcher": v.web_researcher, "news_intel": v.news_intel,
             "market_data": v.market_data, "macro_data": v.macro_data,
         }), v.doc_analyst(ctx))
+        # RAG memory: similar past decisions land on the board as evidence
+        await v.memory_recall(ctx)
 
         # L2 — two waves so experts talk to EACH OTHER (A2A): foundational
         # analysts first, then integrative agents that read their findings
@@ -55,14 +57,6 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         wave2 = {a: f for a, f in l2_all.items() if a not in catalog.L2_FOUNDATIONAL}
         await asyncio.gather(*wave(wave1))
         await asyncio.gather(*wave(wave2))
-
-        # Round 2 — the golden-arc deliberation: every specialist re-reads the
-        # FULL board (not just curated peers), so the FIRST agent gets everyone's
-        # context exactly like the last. Pulse stays single-round for speed.
-        depth_now = (payload.get("depth") or "pulse").lower()
-        n_rounds = int(payload.get("rounds") or (1 if depth_now == "pulse" else 2))
-        if n_rounds >= 2:
-            await deliberation_round(ctx)
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
         await asyncio.gather(*wave({
@@ -78,15 +72,30 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         # core, by retrying after the rate-limit window refreshes
         await replay_degraded(ctx)
 
-        # L4 — synthesis (reflects the rescued board)
-        # cross-pollinate FIRST: every specialist read against every other, so
-        # the mesh goes live and synergies/tensions surface before we weigh
+        # ROUND 2 — the notebook's full second pass. First take the ROUND-1
+        # VERDICT (the first result set), then every layer re-runs L1→L2→L3
+        # with the whole board visible, then the verdict is taken AGAIN on the
+        # deliberated board. Both verdicts ship. Pulse stays single-round.
+        depth_now = (payload.get("depth") or "pulse").lower()
+        n_rounds = int(payload.get("rounds") or (1 if depth_now == "pulse" else 2))
+        if n_rounds >= 2:
+            await v.weighing_engine(ctx)
+            await v.verdict_composer(ctx)
+            ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await deliberation_round(ctx)
+
+        # L4 — synthesis (on the deliberated board)
         await board.cross_pollinate(ctx)
         await board.compliance_scan(ctx)
         if "connecting_dots" in scoped:
             await board.connecting_dots(ctx)
         await v.weighing_engine(ctx)
         await v.verdict_composer(ctx)
+        if n_rounds >= 2:
+            ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await emitter.partial("rounds", dict(ctx.state.rounds))
         # storytelling frames the pitch from the verdict; visualizer builds charts.
         # reporter runs LAST and ALONE so the biggest single call gets the whole
         # key pool to itself, then self-heals via its own retry ladder — no outer

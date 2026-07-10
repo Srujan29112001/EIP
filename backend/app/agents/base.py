@@ -6,6 +6,7 @@ from typing import Any
 
 from ..core.events import Emitter
 from ..core.llm_gateway import Gateway
+from ..memory.rag import rank_evidence
 
 
 @dataclass
@@ -25,9 +26,13 @@ class RunState:
     # verdict can show HOW the board changed its mind after the all-to-all read
     rounds: dict[str, Any] = field(default_factory=dict)
 
-    def evidence_digest(self, limit: int = 24) -> str:
+    def evidence_digest(self, limit: int = 24, query: str = "") -> str:
+        """The evidence an agent reads. With a query, this is the RAG read:
+        the `limit` items most RELEVANT to this agent's question (BM25),
+        instead of the first `limit` by arrival order."""
+        picked = rank_evidence(self.evidence, query, limit)
         lines = []
-        for c in self.evidence[:limit]:
+        for c in picked:
             src = c.get("source") or {}
             tag = src.get("url") or src.get("name") or "unsourced"
             lines.append(f"- {c['text']} [{tag}]")

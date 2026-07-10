@@ -88,6 +88,8 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
             return
         await asyncio.gather(*(f(ctx) for a, f in
                                (("news_intel", v.news_intel), ("macro_data", v.macro_data)) if a in on))
+        # RAG memory: similar past decisions land on the board as evidence
+        await v.memory_recall(ctx)
 
         # L2 — deterministic chain first (each feeds the next), narrative in parallel
         await m.technical_analyst(ctx)
@@ -107,11 +109,6 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
                                if a in catalog.LENS_AGENTS
                                and a not in ("fund_analyst", "options_desk", "microstructure")))
 
-        # Round 2 — golden-arc deliberation (all-to-all re-read; pulse skips)
-        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
-        if n_rounds >= 2:
-            await deliberation_round(ctx)
-
         # L3 — crucible
         await asyncio.gather(*(f(ctx) for a, f in
                                (("red_team", v.red_team), ("fact_checker", v.fact_checker),
@@ -120,11 +117,24 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
         # gap-detector: retry reduced-depth agents after a cooldown
         await replay_degraded(ctx)
 
-        # L4 — synthesis (cross-pollinate lights the mesh + surfaces synergies/tensions)
+        # ROUND 2 — verdict v1 → full L1→L2→L3 deliberation → verdict v2
+        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        if n_rounds >= 2:
+            await m.weighing_trader(ctx)
+            await m.verdict_trader(ctx)
+            ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await deliberation_round(ctx)
+
+        # L4 — synthesis (on the deliberated board)
         await board.cross_pollinate(ctx)
         await board.compliance_scan(ctx)
         await m.weighing_trader(ctx)
         await m.verdict_trader(ctx)
+        if n_rounds >= 2:
+            ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await emitter.partial("rounds", dict(ctx.state.rounds))
         # reporter runs last & alone (biggest call → whole key pool), self-heals
         await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
         await studio.reporter(ctx)

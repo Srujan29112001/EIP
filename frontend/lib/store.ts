@@ -24,6 +24,8 @@ interface RunStore {
   prompts: Record<string, { system: string; user: string }>;
   /** agent id → the colleagues it built on (A2A collab events) */
   collabs: Record<string, string[]>;
+  /** agent id → highest deliberation round completed (drives the ✓✓ badges) */
+  roundsDone: Record<string, number>;
   crossInsights: CrossInsights | null;
   compliance: ComplianceAlerts | null;
   rounds: RoundsData | null;
@@ -51,6 +53,7 @@ const EMPTY = {
   financeCore: null,
   prompts: {},
   collabs: {} as Record<string, string[]>,
+  roundsDone: {} as Record<string, number>,
   crossInsights: null as CrossInsights | null,
   compliance: null as ComplianceAlerts | null,
   rounds: null as RoundsData | null,
@@ -80,6 +83,8 @@ export const useRun = create<RunStore>((set) => ({
           return { prompts: { ...s.prompts, [e.agent]: { system: e.system, user: e.user } } };
         case "collab":
           return { collabs: { ...s.collabs, [e.agent]: e.peers } };
+        case "round":
+          return { roundsDone: { ...s.roundsDone, [e.agent]: Math.max(e.round, s.roundsDone[e.agent] ?? 0) } };
         case "claim":
           return {
             board: [...s.board, {

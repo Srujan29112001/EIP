@@ -252,7 +252,7 @@ async def reporter(ctx: Ctx) -> None:
     await ctx.emit.log(aid, "writing the full decision report from every agent's output", "muted")
     o = ctx.state.outputs
     verdict = ctx.state.verdict or {}
-    lines = {k: v.get("verdict_line") for k, v in o.items()
+    lines = {k: str(v.get("verdict_line")) for k, v in o.items()
              if isinstance(v, dict) and v.get("verdict_line")}
 
     def fallback_report() -> str:
@@ -267,25 +267,43 @@ async def reporter(ctx: Ctx) -> None:
         md += ["", "_Deterministic assembly — add a model/key for the narrated report._"]
         return "\n".join(md)
 
+    # ── the real reason this agent kept starving: PROMPT SIZE, not just quota.
+    # With ~36 specialists the findings block alone can blow a free tier's
+    # per-request token ceiling — then EVERY key fails on EVERY retry, no
+    # matter how many keys or how long we cool down. So the ladder now shrinks
+    # the INPUT step by step (fewer findings, shorter lines, less evidence),
+    # and the final rung SPLITS the report into two small calls and stitches.
+    def findings_block(cap: int, width: int) -> str:
+        items = list(lines.items())
+        if len(items) > cap:
+            # keep the most informative findings: strongest deviations from neutral
+            def dev(kv: tuple) -> float:
+                s = o.get(kv[0], {}).get("score")
+                return abs(float(s) - 5.0) if isinstance(s, (int, float)) else 0.0
+            items = sorted(items, key=dev, reverse=True)[:cap]
+        return "\n".join(f"- {k}: {v[:width]}" for k, v in items)
+
+    rd = ctx.state.rounds or {}
+    v1 = rd.get("verdict1")
+    rounds_note = (f"\nROUND-1 VERDICT (before deliberation): {v1}" if v1 else "")
+    core = (f"BRIEF: {str(ctx.state.brief)[:600]}\n"
+            f"VERDICT: { {k: verdict.get(k) for k in ('score', 'recommendation', 'reasoning', 'sensitivities')} }"
+            f"{rounds_note}\n"
+            f"RISKS: {[str(r.get('text'))[:100] for r in (verdict.get('risks') or [])[:6]]}\n")
     system = ("You are the board's reporter. Write the decision report a paying client would expect: "
               "specific, sourced from the agent findings given, honest about dissent. Never invent "
               "numbers; cite agents by name. Markdown only.")
-    user = (f"BRIEF: {ctx.state.brief}\nVERDICT: { {k: verdict.get(k) for k in ('score', 'recommendation', 'reasoning', 'sensitivities')} }\n"
-            f"AGENT FINDINGS: {lines}\n"
-            f"RISKS: {[r.get('text') for r in (verdict.get('risks') or [])[:6]]}\n"
-            f"TOP EVIDENCE:\n{ctx.state.evidence_digest(12)}")
 
-    # The report is the single biggest LLM call and runs dead-last, when every
-    # per-minute key quota is most likely spent — the #1 reason it starved.
-    # A retry ladder rescues it: escalating cooldowns (Groq/Gemini refresh per
-    # minute) and a drop to the faster tier so we still get NARRATION, never
-    # just deterministic assembly, whenever any key has a shred of quota left.
-    ladder = [("t3", 1800, 0.0), ("t3", 1600, 12.0), ("t2", 1400, 14.0), ("t2", 1100, 16.0)]
+    # (tier, max_out, findings cap, line width, evidence items, cooldown)
+    ladder = [("t3", 1600, 40, 100, 10, 0.0), ("t3", 1400, 22, 80, 8, 10.0),
+              ("t2", 1200, 22, 80, 6, 12.0), ("t2", 1000, 14, 60, 4, 14.0)]
     report = None
-    for tier, cap, wait in ladder:
+    for tier, cap, n_find, width, n_ev, wait in ladder:
         if wait:
-            await ctx.emit.log(aid, f"report starved — cooling {wait:.0f}s for quota, retrying on {tier}", "warn")
+            await ctx.emit.log(aid, f"report attempt failed — shrinking the prompt, cooling {wait:.0f}s, retrying on {tier}", "warn")
             await asyncio.sleep(wait)
+        user = (core + f"AGENT FINDINGS:\n{findings_block(n_find, width)}\n"
+                + f"TOP EVIDENCE:\n{ctx.state.evidence_digest(n_ev, 'verdict decision risks ' + str(ctx.state.brief.get('summary', ''))[:80])}")
         data, res = await ctx.llm.structured(tier, system, user, _REPORT_SCHEMA, max_tokens=cap, agent=aid)
         candidate = (data or {}).get("report_markdown")
         if candidate and len(str(candidate)) > 300:
@@ -293,10 +311,34 @@ async def reporter(ctx: Ctx) -> None:
             await ctx.emit.usage(aid, res.tokens, res.route)
             await ctx.emit.log(aid, f"report written · {len(report):,} chars via {res.route}", "ok")
             break
+
+    if report is None:
+        # last resort before deterministic: SPLIT the report into two small
+        # calls (half the findings each, tiny prompts) and stitch the halves
+        await ctx.emit.log(aid, "single-call report impossible — splitting into two smaller passes", "warn")
+        half_schema = '{"section_markdown": str (markdown for ONLY the requested sections, 250-450 words)}'
+        asks = [("## Executive summary / ## What the evidence says / ## Domain findings",
+                 findings_block(12, 60)),
+                ("## Risks & dissent / ## The plan: 30-60-90 days / ## What would change this verdict",
+                 findings_block(8, 60))]
+        parts: list[str] = []
+        for section_ask, fb in asks:
+            data, res = await ctx.llm.structured(
+                "t2", system, core + f"AGENT FINDINGS:\n{fb}\n\nWRITE ONLY THESE SECTIONS: {section_ask}",
+                half_schema, max_tokens=700, agent=aid)
+            part = (data or {}).get("section_markdown")
+            if part and len(str(part)) > 150:
+                parts.append(str(part))
+                await ctx.emit.usage(aid, res.tokens, res.route)
+        if parts:
+            title = f"# Decision report — {str(ctx.state.brief.get('summary', ''))[:100]}\n\n"
+            report = title + "\n\n".join(parts)
+            await ctx.emit.log(aid, f"report stitched from {len(parts)} split passes · {len(report):,} chars", "ok")
+
     degraded = report is None
     if degraded:
         report = fallback_report()
-        await ctx.emit.log(aid, "LLM unavailable after full retry ladder — deterministic report assembly", "warn")
+        await ctx.emit.log(aid, "LLM unavailable after full ladder + split — deterministic report assembly", "warn")
     await ctx.emit.partial("report", str(report))
     await ctx.finish(aid, layer, {"verdict_line": "full decision report ready",
                                   "chars": len(str(report)), "degraded": degraded})

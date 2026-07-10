@@ -83,6 +83,8 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
 
         # L1 — grounding (macro matters for allocation; news for schemes/rates)
         await asyncio.gather(*wave((("news_intel", v.news_intel), ("macro_data", v.macro_data))))
+        # RAG memory: similar past decisions land on the board as evidence
+        await v.memory_recall(ctx)
 
         # L2 — money math in parallel, narrative agents too (shared blackboard)
         await asyncio.gather(*wave((("salary_budget", wl.salary_budget),
@@ -95,22 +97,30 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
                                if a in catalog.LENS_AGENTS
                                and a not in ("debt_banking", "real_estate", "location_scout")))
 
-        # Round 2 — golden-arc deliberation (all-to-all re-read; pulse skips)
-        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
-        if n_rounds >= 2:
-            await deliberation_round(ctx)
-
         # L3 — crucible (red team attacks the plan; bias auditor reads the framing)
         await asyncio.gather(*wave((("red_team", v.red_team), ("bias_auditor", v.bias_auditor))))
 
         # gap-detector: retry reduced-depth agents after a cooldown
         await replay_degraded(ctx)
 
-        # L4 — synthesis (cross-pollinate lights the mesh + surfaces synergies/tensions)
+        # ROUND 2 — verdict v1 → full L1→L2→L3 deliberation → verdict v2
+        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        if n_rounds >= 2:
+            await wl.weighing_wealth(ctx)
+            await wl.verdict_wealth(ctx)
+            ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await deliberation_round(ctx)
+
+        # L4 — synthesis (on the deliberated board)
         await board.cross_pollinate(ctx)
         await board.compliance_scan(ctx)
         await wl.weighing_wealth(ctx)
         await wl.verdict_wealth(ctx)
+        if n_rounds >= 2:
+            ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await emitter.partial("rounds", dict(ctx.state.rounds))
         # reporter runs last & alone (biggest call → whole key pool), self-heals
         await asyncio.gather(board.storytelling(ctx), studio.visualizer(ctx))
         await studio.reporter(ctx)

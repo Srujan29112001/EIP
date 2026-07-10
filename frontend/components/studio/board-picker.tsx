@@ -103,6 +103,18 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
     }
   }
 
+  // the golden A2A mesh — same neural wiring the live pipeline shows: within
+  // each layer (L1+), every CONVENED agent talks to every other. Shown here so
+  // you see the communication fabric you are convening, in every mode.
+  const peerEdges: { from: string; to: string }[] = [];
+  cols.forEach((col, ci) => {
+    if (ci === 0) return;   // L0 gateway is a sequence
+    const on = col.filter((a) => isOn(a.id));
+    for (let a = 0; a < on.length; a++) {
+      for (let b = a + 1; b < on.length; b++) peerEdges.push({ from: on[a].id, to: on[b].id });
+    }
+  });
+
   const onCount = roster.filter((a) => isOn(a.id)).length;
   const briefAgent = briefFor ? agentById(briefFor) : null;
   const briefedCount = Object.values(agentContext).filter((v) => v?.trim()).length;
@@ -136,6 +148,24 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
                 d={`M${p1.x + 15},${p1.y} C${mx},${p1.y} ${mx},${p2.y} ${p2.x - 15},${p2.y}`}
                 fill="none" stroke="rgba(34,211,238,0.22)" strokeWidth="1"
                 className="transition-all duration-500" />
+            );
+          })}
+
+          {/* the golden agent↔agent mesh — bench someone and their arcs vanish */}
+          {peerEdges.map(({ from, to }, i) => {
+            const p1 = pos.get(from), p2 = pos.get(to);
+            if (!p1 || !p2) return null;
+            const dy = Math.abs(p2.y - p1.y);
+            const bulge = Math.min(120, 24 + dy * 0.45);
+            const side = i % 2 === 0 ? -1 : 1;
+            const edgeX = side < 0 ? -13 : 13;
+            const cx = p1.x + side * bulge;
+            const cy = (p1.y + p2.y) / 2;
+            return (
+              <path key={`peer${i}`}
+                d={`M${p1.x + edgeX},${p1.y} Q${cx},${cy} ${p2.x + edgeX},${p2.y}`}
+                fill="none" stroke="#fbbf24" strokeOpacity="0.2" strokeWidth="0.8"
+                strokeLinecap="round" className="transition-all duration-500" />
             );
           })}
 

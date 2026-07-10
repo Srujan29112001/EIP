@@ -214,10 +214,28 @@ export function DecisionRoom() {
             <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
               <Repeat size={13} className="text-[#fbbf24]" /> Two-round deliberation — how the board changed its mind
             </h3>
-            <p className="mb-3 text-[11px] text-slate-500">
-              Round 1: every specialist analyzed independently. Round 2: each re-read the <b>full board</b> and refined —
+            <p className="mb-2 text-[11px] text-slate-500">
+              Round 1: every layer ran independently. Round 2: L1 → L2 → L3 re-ran with the <b>full board</b> visible —
               {" "}{rounds.refined} refined their analysis, {rounds.revised} revised their score.
             </p>
+            {rounds.verdict1 && rounds.verdict2 && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-panel-2 px-3 py-2 text-xs">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">the two verdicts</span>
+                <span className="text-slate-300">
+                  Round 1: <b>{rounds.verdict1.score}/10</b> {String(rounds.verdict1.recommendation ?? "").replaceAll("_", " ")}
+                </span>
+                <ArrowRight size={11} className="text-[#fbbf24]" />
+                <span className="text-slate-100">
+                  After deliberation: <b>{rounds.verdict2.score}/10</b> {String(rounds.verdict2.recommendation ?? "").replaceAll("_", " ")}
+                </span>
+                {typeof rounds.verdict1.score === "number" && typeof rounds.verdict2.score === "number" && (
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9px] ${
+                    rounds.verdict2.score >= rounds.verdict1.score ? "bg-ok/15 text-ok" : "bg-err/15 text-err"}`}>
+                    {rounds.verdict2.score > rounds.verdict1.score ? "+" : ""}{(rounds.verdict2.score - rounds.verdict1.score).toFixed(1)}
+                  </span>
+                )}
+              </div>
+            )}
             {movers.length > 0 ? (
               <div className="grid gap-1.5 sm:grid-cols-2">
                 {movers.map((d) => {
