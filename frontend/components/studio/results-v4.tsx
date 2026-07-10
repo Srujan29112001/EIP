@@ -239,7 +239,7 @@ export function DegradedNotice() {
         ))}
       </div>
       <p className="mt-2 font-mono text-[9px] text-slate-500">
-        Fix: add more API keys in the engine step (up to 7 per provider — they rotate automatically), or re-run at a lighter depth.
+        Fix: add more API keys in the engine step (up to 16 per provider — they rotate automatically), or re-run at a lighter depth.
       </p>
     </section>
   );

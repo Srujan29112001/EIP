@@ -69,11 +69,11 @@ export function EnginePanel({ engine, onChange, status }: {
     set("agent_routes", next);
   };
 
-  // 5 key slots per provider; the first non-blank also mirrors to api_keys so
+  // 16 key slots per provider; the first non-blank also mirrors to api_keys so
   // the badge/available-provider logic keeps working unchanged
   const keysOf = (p: string): string[] => {
     const arr = engine.api_keys_multi?.[p] ?? [];
-    return Array.from({ length: 7 }, (_, i) => arr[i] ?? "");
+    return Array.from({ length: 16 }, (_, i) => arr[i] ?? "");
   };
   const setKeyAt = (p: string, i: number, key: string) => {
     const arr = keysOf(p);
@@ -163,10 +163,10 @@ export function EnginePanel({ engine, onChange, status }: {
             <div className="mt-2 rounded-lg border border-cyan/30 bg-panel-2 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-                  {p.label} · up to 7 keys — load spreads across all of them (round-robin)
+                  {p.label} · up to 16 keys — load spreads across all of them (round-robin)
                 </span>
-                <span className={`font-mono text-[9px] ${filled >= 5 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
-                  {filled}/7 keys{filled < 5 ? " · 5+ recommended for a full War Room (~40 agents)" : " ✓"}
+                <span className={`font-mono text-[9px] ${filled >= 7 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
+                  {filled}/16 keys{filled < 7 ? " · 7+ recommended for a full War Room + two deliberation rounds" : " ✓"}
                 </span>
               </div>
               <div className="space-y-1.5">

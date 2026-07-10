@@ -32,6 +32,7 @@ class RunRequest(BaseModel):
     team_size: str = ""
     uncertainty: str = ""
     depth: str = "pulse"                 # pulse | board | war_room (all modes)
+    rounds: int = 0                      # 0 = auto (pulse→1, board/war_room→2 deliberation rounds)
     # founder extras
     target_customer: str = ""
     competitors: str = ""

@@ -21,6 +21,9 @@ class RunState:
     conflicts: list[dict[str, Any]] = field(default_factory=list)
     dimensions: dict[str, float] = field(default_factory=dict)     # L4 radar
     verdict: dict[str, Any] = field(default_factory=dict)
+    # two-round deliberation: round-1 snapshot + per-agent score deltas, so the
+    # verdict can show HOW the board changed its mind after the all-to-all read
+    rounds: dict[str, Any] = field(default_factory=dict)
 
     def evidence_digest(self, limit: int = 24) -> str:
         lines = []

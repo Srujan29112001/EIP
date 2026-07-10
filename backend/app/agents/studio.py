@@ -109,6 +109,21 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                                         "value": round(_num(r.get("severity"), 0.5), 2),
                                         "group": str(r.get("source_agent", "board"))} for r in risks]}))
 
+    # column — the deliberation: how each specialist's score moved after the
+    # all-to-all round-2 read (the golden-arc pass, made visible as a chart)
+    rd = ctx.state.rounds or {}
+    dl = [d for d in (rd.get("deltas") or []) if isinstance(d, dict)]
+    if dl:
+        moved = sorted(dl, key=lambda d: -abs(_num(d.get("delta"), 0.0)))[:10]
+        charts.append(_chart("col_deliberation", "column", "The board, after deliberation",
+                             f"{rd.get('revised', 0)} of {len(dl)} specialists revised their score "
+                             "after reading the FULL board in round 2 — convergence is confidence, "
+                             "movement is where new context mattered.",
+                             "weighing_engine",
+                             {"labels": [f"{d['agent']} ({'+' if d['delta'] >= 0 else ''}{d['delta']})"
+                                         for d in moved],
+                              "values": [_num(d.get("after"), 0.0) for d in moved], "max": 10}))
+
     # donut — how the specialists connect (cross-pollination synergies vs tensions)
     conns = (o.get("cross_pollinate", {}) or {}).get("connections") or []
     if conns:

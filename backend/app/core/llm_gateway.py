@@ -33,7 +33,7 @@ class EngineConfig:
     model: str = ""                  # explicit model override
     routes: dict[str, str] = field(default_factory=dict)  # tier → "provider:model"
     api_keys: dict[str, str] = field(default_factory=dict)     # provider → key (multi-BYOK)
-    # provider → up to 5 keys, rotated when one exhausts mid-run (the "never
+    # provider → up to 16 keys, rotated when one exhausts mid-run (the "never
     # dies half-way" feature). Keys are tried in order; an exhausted key is
     # cooled and the next takes over automatically.
     api_keys_multi: dict[str, list[str]] = field(default_factory=dict)
@@ -380,7 +380,7 @@ class Gateway:
                 all_cooling.append((provider, model, keys[0]))
                 continue
             # ROUND-ROBIN: start each call at a different key so N keys share the
-            # load evenly from the first request — 7 keys ≈ 7× the free-tier
+            # load evenly from the first request — 16 keys ≈ 16× the free-tier
             # requests/minute instead of hammering key #1 until it dies.
             if len(fresh) > 1:
                 global _KEY_RR

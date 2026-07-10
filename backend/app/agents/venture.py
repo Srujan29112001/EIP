@@ -447,7 +447,7 @@ async def _scored_analysis(ctx: Ctx, aid: str, system: str, ask: str,
     await ctx.emit.log(aid, "LLM unavailable — deterministic core only (reduced depth)", "warn")
     fallback["degraded"] = True
     fallback["degraded_reason"] = ("No LLM answered this agent — every configured key was rate-limited "
-                                   "or missing. Add more API keys (the studio takes up to 7 per provider) "
+                                   "or missing. Add more API keys (the studio takes up to 16 per provider) "
                                    "so the whole board gets narrated.")
     fallback.setdefault("route", "deterministic")
     return fallback

@@ -18,6 +18,8 @@
 
 ---
 
+> 📖 **Deep dive:** the full ~50-page engineering document — every file, every function, every agent's prompt/logic/wiring, all permutations, testing guide — lives at [docs/PROJECT_DOCUMENTATION.md](docs/PROJECT_DOCUMENTATION.md).
+
 ## Table of contents
 
 1. [What makes it different](#-what-makes-it-different)
@@ -141,7 +143,9 @@ flowchart TD
     L4["L4 - Synthesis<br/>Cross-Pollinator -> Compliance Sentinel -> Connecting Dots -><br/>Weighing -> Verdict -> Storyteller -> Visualizer -> Reporter"]
     L5["L5 - Memory<br/>run saved -> Decision Graph + history + outcome tracking"]
 
-    L0 --> L1 --> L2a --> L2b --> L3 --> L35 --> REPLAY --> L4 --> L5
+    R2["ROUND 2 - golden-arc deliberation (Board/War Room)<br/>EVERY specialist re-reads the FULL board and refines -<br/>the first agent now sees everyone, exactly like the last"]
+
+    L0 --> L1 --> L2a --> L2b --> R2 --> L3 --> L35 --> REPLAY --> L4 --> L5
 ```
 
 **Every agent's contract** (the invariant that makes the glass box trustworthy):
@@ -210,7 +214,8 @@ The substrate is a **shared evidence board** (`RunState.evidence` + `RunState.ou
 
 1. **Curated peer-injection** (`venture.PEERS`) — each specialist is handed the headline findings of the colleagues it should build on, with the instruction *"build on, reconcile, or push back — don't just repeat."*
 2. **Two-wave L2** — foundational analysts run first; integrative agents run second and read the first wave.
-3. **The Cross-Pollinator** (L4) — a second synthesis pass that reads *every* specialist's headline against *every* other, emits a `collab` event from each to all peers (lighting the full intra-layer mesh live), and surfaces labeled **synergies** and **tensions**.
+3. **Two-round deliberation** (`deliberate.py`, Board/War Room) — round 1 is independent analysis; in **round 2 every specialist re-runs with the FULL board's round-1 findings in its prompt**. This fixes the ordering unfairness: the *first* agent now reads everyone, exactly like the last. The round-1 snapshot is kept, so results show who revised, who converged, who dug in.
+4. **The Cross-Pollinator** (L4) — a final synthesis pass that reads *every* specialist's headline against *every* other, emits a `collab` event from each to all peers (lighting the full intra-layer mesh live), and surfaces labeled **synergies** and **tensions**.
 
 ```mermaid
 flowchart TB
@@ -288,7 +293,7 @@ flowchart TD
     R -->|explicit user model| P1["honor it at every tier"]
     R -->|else t3| P2["flagship (DEFAULT_MODELS)"]
     R -->|else t1/t2| P3["fast sibling (FAST_MODELS)"]
-    P1 & P2 & P3 --> K["round-robin key picker<br/>(up to 7 keys/provider)"]
+    P1 & P2 & P3 --> K["round-robin key picker<br/>(up to 16 keys/provider)"]
     K --> PACE["per-key pacing +<br/>per-key 429 cooldown (sha1)"]
     PACE --> CALL{call ok?}
     CALL -->|200| DONE["narrated (done)"]
@@ -298,7 +303,7 @@ flowchart TD
 ```
 
 - **8 providers**: Groq · Google · Anthropic · OpenAI · DeepSeek · Mistral · xAI · OpenRouter (+ local Ollama).
-- **Multi-key rotation** — up to 7 keys per provider, round-robin from call #1 for N× throughput on free tiers.
+- **Multi-key rotation** — up to **16 keys per provider**, round-robin from call #1 for N× throughput on free tiers (sized so a full War Room + two deliberation rounds + the Reporter never starve).
 - **Tier-split** — `t3` uses flagship models (e.g. `llama-3.3-70b`, `claude-sonnet-4-5`); `t1/t2` use fast siblings; an explicit user choice wins at every tier.
 - **Degraded honesty** — if no key answers, the agent ships its deterministic core with an amber `degraded` status; the **gap-detector** retries it after the per-minute quota refreshes.
 - **BYOK & privacy** — keys are per-run, never stored server-side; local-GPU mode hides the cloud grid entirely.
@@ -325,6 +330,7 @@ flowchart TD
 - **Risk register & opportunities** with the sourcing agent named.
 - **The pitch** (Storyteller) — hook, ~120-word narrative, one-liner, three beats.
 - **Cross-pollination** — synergies & tensions between specialists + emergent board-level insights.
+- **Two-round deliberation** — round-1 vs round-2 comparison: which specialists revised their score after reading the full board (+ a "board after deliberation" chart).
 - **Interactive chart gallery** (Visualizer) — gauge, waterfall, bar/column, donut, scatter, heatmap, candlestick, area, bullet — each with a **what-if slider**.
 - **Per-agent cards** — every specialist's finding, score, confidence, sources, and its own what-if.
 - **The full written report** (Reporter) — a sectioned decision document.
@@ -489,7 +495,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 npm run dev            # http://localhost:3000
 ```
 
-Zero keys? The app runs in **Demo** mode (deterministic cores). One Groq key unlocks full narration. Add up to 7 keys/provider in the engine panel for free-tier throughput.
+Zero keys? The app runs in **Demo** mode (deterministic cores). One Groq key unlocks full narration. Add up to 16 keys/provider in the engine panel for free-tier throughput.
 
 **Optional local GPU:** install [Ollama](https://ollama.com), `ollama pull qwen3:4b`, pick **Local GPU** in the engine panel — fully private, zero cloud.
 
@@ -570,6 +576,7 @@ flowchart LR
 - ✅ **Phase 9** — gap-detector replay; PDF export; **outcome tracking + calibration**; **Compliance Sentinel**.
 - ✅ **Phase 9.5** — **Cross-Pollinator** (all-to-all second synthesis pass, live mesh).
 - ✅ **Phase 10 (scaffold)** — anonymous accounts + **tiers**, per-user history, persistent-DB path (`EIP_DB_PATH`), Postgres-ready.
+- ✅ **Phase 11** — **two-round golden-arc deliberation** (all-to-all re-read, round-1 vs round-2 results) + **16 keys/provider** rotation.
 - ⏳ **Phase 10 (managed)** — real auth + Stripe + managed Postgres/pgvector (needs a Neon/Supabase + Stripe signup).
 - ⏳ **Phase 8.2** — OCR of scanned images (deferred; heavy vision deps vs. free CPU).
 - 🔭 **Next** — true RAG memory, scenario planner, learned weights (see [Future improvements](#-future-improvements)).

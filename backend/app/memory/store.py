@@ -76,7 +76,7 @@ def _save_sync(state: RunState) -> None:
         "brief": state.brief, "profile": state.profile, "scope": state.scope,
         "evidence": state.evidence, "outputs": state.outputs,
         "conflicts": state.conflicts, "dimensions": state.dimensions,
-        "verdict": state.verdict,
+        "verdict": state.verdict, "rounds": state.rounds,
     }).decode()
     user_id = (state.raw.get("user_id") or "").strip()
     with _connect() as c:

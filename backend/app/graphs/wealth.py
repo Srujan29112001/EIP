@@ -9,6 +9,7 @@ import traceback
 from ..agents import board
 from ..agents import catalog
 from ..agents import studio
+from ..agents.deliberate import deliberation_round
 from ..agents import wealth as wl
 from ..agents import venture as v
 from ..agents.replay import replay_degraded
@@ -93,6 +94,11 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
                              *(catalog.LENS_AGENTS[a](ctx) for a in on
                                if a in catalog.LENS_AGENTS
                                and a not in ("debt_banking", "real_estate", "location_scout")))
+
+        # Round 2 — golden-arc deliberation (all-to-all re-read; pulse skips)
+        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        if n_rounds >= 2:
+            await deliberation_round(ctx)
 
         # L3 — crucible (red team attacks the plan; bias auditor reads the framing)
         await asyncio.gather(*wave((("red_team", v.red_team), ("bias_auditor", v.bias_auditor))))

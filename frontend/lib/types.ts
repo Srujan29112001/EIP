@@ -121,6 +121,16 @@ export interface ComplianceAlerts {
   high: number;
 }
 
+/** Two-round deliberation snapshot (partial:rounds) — round 1 = independent
+ * analysis, round 2 = every specialist re-read the FULL board and refined. */
+export interface RoundsData {
+  round1: Record<string, { score?: number; verdict_line?: string; confidence?: number }>;
+  round2: Record<string, { score?: number; verdict_line?: string }>;
+  deltas: { agent: string; before: number; after: number; delta: number }[];
+  refined: number;
+  revised: number;
+}
+
 /** The Cross-Pollinator's inter-agent map (partial:cross_insights). */
 export interface CrossInsights {
   connections?: { a: string; b: string; type: "synergy" | "tension"; insight: string }[];

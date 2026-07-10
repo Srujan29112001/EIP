@@ -10,6 +10,7 @@ import asyncio
 import traceback
 
 from ..agents import board, catalog, studio, venture as v
+from ..agents.deliberate import deliberation_round
 from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..core.events import Emitter
@@ -54,6 +55,14 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         wave2 = {a: f for a, f in l2_all.items() if a not in catalog.L2_FOUNDATIONAL}
         await asyncio.gather(*wave(wave1))
         await asyncio.gather(*wave(wave2))
+
+        # Round 2 — the golden-arc deliberation: every specialist re-reads the
+        # FULL board (not just curated peers), so the FIRST agent gets everyone's
+        # context exactly like the last. Pulse stays single-round for speed.
+        depth_now = (payload.get("depth") or "pulse").lower()
+        n_rounds = int(payload.get("rounds") or (1 if depth_now == "pulse" else 2))
+        if n_rounds >= 2:
+            await deliberation_round(ctx)
 
         # L3 — crucible in parallel (attack the thesis, check the facts, audit the framing)
         await asyncio.gather(*wave({

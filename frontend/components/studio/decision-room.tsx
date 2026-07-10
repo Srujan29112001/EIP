@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Mic, Network, Scale } from "lucide-react";
+import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Mic, Network, Repeat, Scale } from "lucide-react";
 import { NeuralMap } from "@/components/graph/neural-map";
 import { agentById } from "@/lib/agents";
 import { buildMarkdown, download, printPdf } from "@/lib/export";
@@ -21,7 +21,7 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds } = useRun();
 
   const exportMd = () =>
     download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
@@ -202,6 +202,52 @@ export function DecisionRoom() {
           </ul>
         </section>
       </div>
+
+      {/* two-round deliberation — round 1 independent, round 2 all-to-all re-read */}
+      {rounds && (rounds.deltas?.length ?? 0) > 0 && (() => {
+        const movers = [...rounds.deltas]
+          .filter((d) => Math.abs(d.delta) >= 0.1)
+          .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+          .slice(0, 12);
+        return (
+          <section className="rounded-xl border border-line bg-panel p-4">
+            <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+              <Repeat size={13} className="text-[#fbbf24]" /> Two-round deliberation — how the board changed its mind
+            </h3>
+            <p className="mb-3 text-[11px] text-slate-500">
+              Round 1: every specialist analyzed independently. Round 2: each re-read the <b>full board</b> and refined —
+              {" "}{rounds.refined} refined their analysis, {rounds.revised} revised their score.
+            </p>
+            {movers.length > 0 ? (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {movers.map((d) => {
+                  const a = agentById(d.agent);
+                  return (
+                    <div key={d.agent} className="flex items-center gap-2 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-xs">
+                      <span className="truncate" style={{ color: a.accent }}>{a.icon} {a.name}</span>
+                      <span className="ml-auto font-mono text-[10px] text-slate-500">{d.before}</span>
+                      <ArrowRight size={10} className="shrink-0 text-slate-600" />
+                      <span className="font-mono text-[11px] text-slate-200">{d.after}</span>
+                      <span className={`rounded px-1 py-0.5 font-mono text-[9px] ${
+                        d.delta > 0 ? "bg-ok/15 text-ok" : "bg-err/15 text-err"}`}>
+                        {d.delta > 0 ? "+" : ""}{d.delta}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-lg border border-ok/30 bg-ok/5 p-2.5 text-xs text-slate-300">
+                All {rounds.deltas.length} specialists held their scores after reading the full board — strong convergence:
+                the round-1 reads survived full-board scrutiny.
+              </p>
+            )}
+            <p className="mt-2 font-mono text-[9px] text-slate-500">
+              Unmoved scores = the specialist read everyone and stood firm (convergence). Movement = new context genuinely mattered.
+            </p>
+          </section>
+        );
+      })()}
 
       {/* cross-pollination — how the specialists' findings connect (A2A synthesis) */}
       {crossInsights && ((crossInsights.connections?.length ?? 0) > 0 || (crossInsights.emergent?.length ?? 0) > 0) && (
