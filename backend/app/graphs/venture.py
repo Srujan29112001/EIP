@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 
-from ..agents import board, catalog, scenario, studio, venture as v
+from ..agents import board, catalog, meta, scenario, studio, venture as v
 from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
@@ -51,8 +51,10 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             "web_researcher": v.web_researcher, "news_intel": v.news_intel,
             "market_data": v.market_data, "macro_data": v.macro_data,
         }), v.doc_analyst(ctx))
-        # RAG memory: similar past decisions land on the board as evidence
+        # RAG memory: similar past decisions land on the board as evidence,
+        # then the retrieval agent indexes everything for per-specialist reads
         await v.memory_recall(ctx)
+        await meta.rag_memory(ctx)
 
         # L2 — two waves so experts talk to EACH OTHER (A2A): foundational
         # analysts first, then integrative agents that read their findings
@@ -116,6 +118,8 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
             await emit_result_set(ctx, 2)      # ← the ROUND-2 RESULTS, under round 1
 
         await save_run(ctx.state)
+        # L5 — the outcome tracker closes the loop: calibration, in the open
+        await meta.outcome_tracker(ctx)
         await emitter.done(run_id)
     except Exception:
         await emitter.log("verdict_composer", traceback.format_exc(limit=3), "err")

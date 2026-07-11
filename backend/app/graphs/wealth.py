@@ -8,6 +8,7 @@ import traceback
 
 from ..agents import board
 from ..agents import catalog
+from ..agents import meta
 from ..agents import scenario
 from ..agents import studio
 from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
@@ -19,15 +20,16 @@ from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
 from ..memory.store import save_run
 
-WEALTH_SCOPE = ["news_intel", "macro_data",
+WEALTH_SCOPE = ["news_intel", "macro_data", "rag_memory",
                 "salary_budget", "portfolio_allocator", "fire_planner",
                 "debt_banking", "real_estate", "location_scout",
                 "red_team", "bias_auditor",
                 "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
-                "storytelling", "visualizer", "reporter"]
+                "storytelling", "visualizer", "reporter", "outcome_tracker"]
 
-WEALTH_MANDATORY = {"salary_budget", "weighing_engine", "verdict_composer", "scenario_planner",
-                    "negotiation_coach", "storytelling", "visualizer", "reporter"}
+WEALTH_MANDATORY = {"salary_budget", "rag_memory", "weighing_engine", "verdict_composer",
+                    "scenario_planner", "negotiation_coach", "storytelling", "visualizer",
+                    "reporter", "outcome_tracker"}
 
 
 async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -90,8 +92,10 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
 
         # L1 — grounding (macro matters for allocation; news for schemes/rates)
         await asyncio.gather(*wave((("news_intel", v.news_intel), ("macro_data", v.macro_data))))
-        # RAG memory: similar past decisions land on the board as evidence
+        # RAG memory: similar past decisions land on the board as evidence,
+        # then the retrieval agent indexes everything for per-specialist reads
         await v.memory_recall(ctx)
+        await meta.rag_memory(ctx)
 
         # L2 — money math in parallel, narrative agents too (shared blackboard)
         await asyncio.gather(*wave((("salary_budget", wl.salary_budget),
@@ -142,6 +146,7 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
             await emit_result_set(ctx, 2)
 
         await save_run(ctx.state)
+        await meta.outcome_tracker(ctx)
         await emitter.done(run_id)
     except Exception:
         await emitter.log("verdict_composer", traceback.format_exc(limit=3), "err")

@@ -6,8 +6,9 @@
 const FOUNDER: Record<string, string[]> = {
   Market: ["market_analyst", "market_research", "competitor_intel", "industry_expert", "trends",
     "consumer_analysis", "sentiment_analyst", "cohort_retention"],
-  Economics: ["finance_modeler", "tax", "subsidies_schemes", "banking", "pricing_strategist", "cap_table"],
-  Execution: ["gtm_distribution", "business_model", "marketing_strategy", "hr_talent", "production_ops"],
+  Economics: ["finance_modeler", "tax", "subsidies_schemes", "banking", "pricing_strategist", "cap_table", "fundraising_capital"],
+  Execution: ["gtm_distribution", "business_model", "marketing_strategy", "hr_talent", "production_ops",
+    "product_ux", "sales_revops", "customer_success", "software_architecture"],
   Regulatory: ["policy_compliance", "legal", "regulator"],
   HumanFit: ["human_behaviour", "human_needs", "money_happiness", "philosophy_ethics", "philanthropy_impact"],
 };

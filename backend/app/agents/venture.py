@@ -100,21 +100,26 @@ async def scope_planner(ctx: Ctx) -> None:
     aid, layer = "scope_planner", "L0"
     await ctx.start(aid, layer)
     depth = (ctx.state.raw.get("depth") or "pulse").lower()
-    spine = ["web_researcher", "news_intel", "market_data", "macro_data",
+    spine = ["web_researcher", "news_intel", "market_data", "macro_data", "rag_memory",
              "market_analyst", "finance_modeler",
              "red_team", "fact_checker", "bias_auditor",
              "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
-             "storytelling", "visualizer", "reporter"]
+             "storytelling", "visualizer", "reporter", "outcome_tracker"]
     board_wave = ["competitor_intel", "market_research", "banking", "gtm_distribution", "legal", "tax",
                   "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots",
-                  "pricing_strategist", "cohort_retention", "sentiment_analyst"]
+                  "pricing_strategist", "cohort_retention", "sentiment_analyst",
+                  "product_ux", "fundraising_capital", "sales_revops", "customer_success",
+                  "brand_creative"]
     human_wave = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
-                  "philosophy_ethics", "money_happiness", "philanthropy_impact"]
+                  "philosophy_ethics", "money_happiness", "philanthropy_impact",
+                  "founder_coaching"]
     world_wave = ["business_model", "marketing_strategy",
                   "subsidies_schemes", "hr_talent", "optimization_predictor", "regulator",
                   "macroeconomist", "geopolitics", "intl_markets", "trends", "esg_impact",
                   "supply_chain", "cap_table", "patent_ip", "insurance_risk",
-                  "sustainability_accountant"]
+                  "sustainability_accountant",
+                  "ai_ml_strategist", "data_analytics", "software_architecture",
+                  "cybersecurity_privacy", "deep_tech", "partnerships_bd", "pr_communications"]
     scope = (spine if depth == "pulse"
              else spine + board_wave + human_wave if depth == "board"
              else spine + board_wave + human_wave + world_wave)
@@ -127,7 +132,8 @@ async def scope_planner(ctx: Ctx) -> None:
     enabled = set(ctx.state.raw.get("agents_enabled") or [])
     if enabled:
         mandatory = {"weighing_engine", "verdict_composer", "scenario_planner",
-                     "negotiation_coach", "storytelling", "visualizer", "reporter"}
+                     "negotiation_coach", "storytelling", "visualizer", "reporter",
+                     "rag_memory", "outcome_tracker"}
         dropped = [a for a in scope if a not in enabled and a not in mandatory]
         scope = [a for a in scope if a in enabled or a in mandatory]
         if dropped:
@@ -412,6 +418,20 @@ PEERS: dict[str, list[str]] = {
     "insurance_risk": ["legal", "production_ops"],
     "sustainability_accountant": ["esg_impact", "production_ops", "finance_modeler"],
     "sentiment_analyst": ["news_intel", "consumer_analysis"],
+    # Phase-15 catalog build-out
+    "ai_ml_strategist": ["software_architecture", "data_analytics"],
+    "data_analytics": ["market_research", "finance_modeler"],
+    "software_architecture": ["product_ux", "finance_modeler"],
+    "product_ux": ["consumer_analysis", "human_behaviour"],
+    "cybersecurity_privacy": ["software_architecture", "policy_compliance"],
+    "deep_tech": ["trends", "industry_expert"],
+    "fundraising_capital": ["cap_table", "finance_modeler", "banking"],
+    "sales_revops": ["gtm_distribution", "pricing_strategist"],
+    "customer_success": ["cohort_retention", "consumer_analysis"],
+    "partnerships_bd": ["gtm_distribution", "industry_expert"],
+    "brand_creative": ["marketing_strategy", "consumer_analysis"],
+    "pr_communications": ["brand_creative", "news_intel"],
+    "founder_coaching": ["hr_talent", "human_behaviour"],
 }
 
 
@@ -792,10 +812,11 @@ async def weighing_engine(ctx: Ctx) -> None:
         "Market": avg(["market_analyst", "market_research", "competitor_intel", "industry_expert",
                        "trends", "consumer_analysis", "sentiment_analyst", "cohort_retention"]) or 5.0,
         "Economics": avg(["finance_modeler", "tax", "subsidies_schemes", "banking",
-                          "pricing_strategist", "cap_table"]) or 5.0,
+                          "pricing_strategist", "cap_table", "fundraising_capital"]) or 5.0,
         "Evidence": evidence_dim,
         "Execution": avg(["gtm_distribution", "business_model", "marketing_strategy",
-                          "hr_talent", "production_ops"]) or 5.0,
+                          "hr_talent", "production_ops", "product_ux", "sales_revops",
+                          "customer_success", "software_architecture"]) or 5.0,
         "Timing": max(1.0, min(9.5, timing)),
     }
     regulatory = avg(["policy_compliance", "legal", "regulator"])

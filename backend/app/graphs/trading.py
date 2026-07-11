@@ -13,6 +13,7 @@ import traceback
 from ..agents import board
 from ..agents import catalog
 from ..agents import markets as m
+from ..agents import meta
 from ..agents import scenario
 from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents import studio
@@ -23,18 +24,18 @@ from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
 from ..memory.store import save_run
 
-TRADER_SCOPE = ["news_intel", "market_data", "macro_data",
+TRADER_SCOPE = ["news_intel", "market_data", "macro_data", "rag_memory",
                 "technical_analyst", "stock_analyst", "backtest_engineer",
                 "quant_signals", "risk_manager",
                 "fund_analyst", "options_desk", "microstructure",
                 "red_team", "fact_checker", "bias_auditor",
                 "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
-                "storytelling", "visualizer", "reporter"]
+                "storytelling", "visualizer", "reporter", "outcome_tracker"]
 
 # the desk can be hand-picked, but the data spine + synthesis cannot be benched
-TRADER_MANDATORY = {"market_data", "technical_analyst", "weighing_engine",
+TRADER_MANDATORY = {"market_data", "technical_analyst", "rag_memory", "weighing_engine",
                     "verdict_composer", "scenario_planner", "negotiation_coach",
-                    "storytelling", "visualizer", "reporter"}
+                    "storytelling", "visualizer", "reporter", "outcome_tracker"}
 
 
 async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
@@ -96,8 +97,10 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
             return
         await asyncio.gather(*(f(ctx) for a, f in
                                (("news_intel", v.news_intel), ("macro_data", v.macro_data)) if a in on))
-        # RAG memory: similar past decisions land on the board as evidence
+        # RAG memory: similar past decisions land on the board as evidence,
+        # then the retrieval agent indexes everything for per-specialist reads
         await v.memory_recall(ctx)
+        await meta.rag_memory(ctx)
 
         # L2 — deterministic chain first (each feeds the next), narrative in parallel
         await m.technical_analyst(ctx)
@@ -157,6 +160,7 @@ async def run_trading(run_id: str, payload: dict, emitter: Emitter) -> None:
             await emit_result_set(ctx, 2)
 
         await save_run(ctx.state)
+        await meta.outcome_tracker(ctx)
         await emitter.done(run_id)
     except Exception:
         await emitter.log("verdict_composer", traceback.format_exc(limit=3), "err")

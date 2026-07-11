@@ -310,6 +310,135 @@ async def cross_pollinate(ctx: Ctx) -> None:
     await ctx.finish(aid, layer, result)
 
 
+# ── Phase-15 expansion — the full catalog build-out (13 new lenses) ───────────
+
+async def ai_ml_strategist(ctx: Ctx) -> None:
+    await _lens(ctx, "ai_ml_strategist",
+        "You are an AI & ML strategist: AI feasibility for THIS business, model build-vs-buy, "
+        "data moats, AI governance and the EU-AI-Act/DPDP-style obligations that may apply.",
+        "Give the AI read: where AI genuinely helps this venture (or doesn't), build-vs-buy for the "
+        "first use case, the data moat potential, one governance obligation to respect. "
+        "Score 0-10 for AI leverage.",
+        "AI-leverage read needs a model", 5.0)
+
+
+async def data_analytics(ctx: Ctx) -> None:
+    await _lens(ctx, "data_analytics",
+        "You are a data science & analytics lead: data strategy, instrumentation, the metrics tree, "
+        "and what can honestly be predicted at this stage.",
+        "Design the data spine: the 4-5 metrics that matter first (the metric tree), what to "
+        "instrument from day one, one prediction that becomes possible after 90 days of data. "
+        "Score 0-10 for data-advantage potential.",
+        "Data-strategy read needs a model", 5.0)
+
+
+async def software_architecture(ctx: Ctx) -> None:
+    await _lens(ctx, "software_architecture",
+        "You are a software architect: technical feasibility, architecture shape, build-cost/time "
+        "ESTIMATES, scalability and the buy-vs-build stack choices.",
+        "Give the build read: the simplest architecture that works, rough build cost + time to MVP "
+        "(ESTIMATE, show the math), the scaling wall, one thing NOT to build. "
+        "Score 0-10 for technical feasibility.",
+        "Build estimate needs a model", 5.5)
+
+
+async def product_ux(ctx: Ctx) -> None:
+    await _lens(ctx, "product_ux",
+        "You are a product & UX strategist: user research, product-market-fit signals, the core "
+        "loop, onboarding friction.",
+        "Give the product read: the ONE core user loop, the riskiest UX assumption, the PMF signal "
+        "to watch weekly, one onboarding fix. Score 0-10 for product-market-fit potential.",
+        "Product read needs a model", 5.0)
+
+
+async def cybersecurity_privacy(ctx: Ctx) -> None:
+    await _lens(ctx, "cybersecurity_privacy",
+        "You are a cybersecurity & privacy lead: threat model, privacy-by-design (DPDP/GDPR), "
+        "certification readiness (SOC2/ISO), and what a breach would cost this venture.",
+        "Give the security read: the 2 most likely threats, the privacy obligation that applies "
+        "from day one, the certification that unlocks enterprise sales, one cheap hardening move. "
+        "Score 0-10 for security/privacy readiness.",
+        "Security posture needs a model", 5.5)
+
+
+async def deep_tech(ctx: Ctx) -> None:
+    await _lens(ctx, "deep_tech",
+        "You are an emerging/deep-tech analyst: technology readiness levels (TRL), hype-vs-real "
+        "maturity, and what frontier tech could disrupt or enable this venture.",
+        "Give the frontier read: the emerging technology most relevant here with its honest TRL, "
+        "whether it enables or threatens this venture, and the realistic adoption window. "
+        "Score 0-10 for deep-tech tailwind.",
+        "Frontier read needs a model", 5.0)
+
+
+async def fundraising_capital(ctx: Ctx) -> None:
+    await _lens(ctx, "fundraising_capital",
+        "You are a fundraising strategist: round strategy, investor-type match, the deck's spine, "
+        "terms to accept vs refuse. Distinct from bank credit (the Banker covers that).",
+        "Design the raise: should they raise at all vs bootstrap, the right round size + investor "
+        "type for this stage, the 3 deck slides that must land, one term to never sign. "
+        "Score 0-10 for fundability.",
+        "Raise strategy needs a model", 5.0)
+
+
+async def sales_revops(ctx: Ctx) -> None:
+    await _lens(ctx, "sales_revops",
+        "You are a sales & revenue-ops lead: sales motion design, playbooks, pipeline math, "
+        "compensation that doesn't backfire.",
+        "Design the sales motion: founder-led vs inside vs field for this ticket size, the pipeline "
+        "math (leads→close ESTIMATE), the first sales hire trigger, one comp-plan trap. "
+        "Score 0-10 for sales-motion clarity.",
+        "Sales-motion read needs a model", 5.0)
+
+
+async def customer_success(ctx: Ctx) -> None:
+    await _lens(ctx, "customer_success",
+        "You are a customer-success & retention lead: onboarding, activation, expansion revenue, "
+        "churn saves. (The Cohort Analyst does the curves; you do the OPERATING plan.)",
+        "Design retention operations: the activation moment to engineer, the onboarding step that "
+        "kills churn, the expansion-revenue lever, one save-play for at-risk customers. "
+        "Score 0-10 for retention-ops readiness.",
+        "Retention-ops read needs a model", 5.0)
+
+
+async def partnerships_bd(ctx: Ctx) -> None:
+    await _lens(ctx, "partnerships_bd",
+        "You are a partnerships & BD strategist: alliances, channel partners, deal structures "
+        "that don't give the company away.",
+        "Design the partnership play: the ONE partner type that changes the trajectory, the deal "
+        "structure to offer, what to never exclusivity away, and the first outreach. "
+        "Score 0-10 for partnership leverage.",
+        "Partnership read needs a model", 5.0)
+
+
+async def brand_creative(ctx: Ctx) -> None:
+    await _lens(ctx, "brand_creative",
+        "You are a brand & creative director: identity, naming, positioning territory, the "
+        "creative direction that fits the audience and budget.",
+        "Give the brand read: the positioning territory to own (vs competitors on the board), a "
+        "naming direction, the ONE brand asset to invest in first. Score 0-10 for brand-edge potential.",
+        "Brand read needs a model", 5.0)
+
+
+async def pr_communications(ctx: Ctx) -> None:
+    await _lens(ctx, "pr_communications",
+        "You are a PR & communications strategist: media relations, the story angles journalists "
+        "actually take, crisis comms preparedness.",
+        "Design the comms plan: the press-worthy angle in this venture, the 2 outlets/beats that "
+        "matter, the crisis scenario to pre-draft for. Score 0-10 for earned-media potential.",
+        "Comms read needs a model", 5.0)
+
+
+async def founder_coaching(ctx: Ctx) -> None:
+    await _lens(ctx, "founder_coaching",
+        "You are a founder coach & org designer: the founder's leverage, decision hygiene, the org "
+        "and culture that scaling will demand.",
+        "Coach the founder: the biggest founder-side risk in this plan, the weekly decision ritual "
+        "to adopt, the first culture norm to write down, when to hire a complement. "
+        "Score 0-10 for founder-org readiness.",
+        "Founder-coaching read needs a model", 5.5)
+
+
 # ── L4: compliance alerts — deterministic regulatory red-flag scan ────────────
 
 _COMPLIANCE_AGENTS = ("policy_compliance", "regulator", "legal", "tax", "subsidies_schemes",
@@ -677,6 +806,20 @@ WORLD_WAVE = {
     "insurance_risk": insurance_risk,
     "sustainability_accountant": sustainability_acct,
     "sentiment_analyst": sentiment_analyst,
+    # Phase-15 catalog build-out
+    "ai_ml_strategist": ai_ml_strategist,
+    "data_analytics": data_analytics,
+    "software_architecture": software_architecture,
+    "product_ux": product_ux,
+    "cybersecurity_privacy": cybersecurity_privacy,
+    "deep_tech": deep_tech,
+    "fundraising_capital": fundraising_capital,
+    "sales_revops": sales_revops,
+    "customer_success": customer_success,
+    "partnerships_bd": partnerships_bd,
+    "brand_creative": brand_creative,
+    "pr_communications": pr_communications,
+    "founder_coaching": founder_coaching,
 }
 
 

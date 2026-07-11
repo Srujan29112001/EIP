@@ -11,21 +11,22 @@ import { useMemo, useState } from "react";
 import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, capsFor, type Layer } from "@/lib/agents";
 
 const MANDATORY = new Set(["intake_parser", "context_profiler", "scope_planner",
-  "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
-  "storytelling", "visualizer", "reporter"]);
+  "rag_memory", "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
+  "storytelling", "visualizer", "reporter", "outcome_tracker"]);
 
 const PULSE_ONLY = new Set(["web_researcher", "news_intel", "market_data", "macro_data", "doc_analyst",
   "market_analyst", "finance_modeler", "red_team", "fact_checker", "bias_auditor",
   ...MANDATORY]);
 const BOARD_EXTRA = new Set(["competitor_intel", "market_research", "banking", "gtm_distribution",
   "legal", "tax", "policy_compliance", "industry_expert", "devils_advocate", "connecting_dots",
-  "pricing_strategist", "cohort_retention", "sentiment_analyst"]);
+  "pricing_strategist", "cohort_retention", "sentiment_analyst",
+  "product_ux", "fundraising_capital", "sales_revops", "customer_success", "brand_creative"]);
 
 const HUMAN_WAVE = ["human_behaviour", "human_needs", "consumer_analysis", "production_ops",
   "philosophy_ethics", "money_happiness", "philanthropy_impact"];
 
-const SYNTH = ["weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
-  "storytelling", "visualizer", "reporter"];
+const SYNTH = ["rag_memory", "weighing_engine", "verdict_composer", "scenario_planner",
+  "negotiation_coach", "storytelling", "visualizer", "reporter", "outcome_tracker"];
 const TRADER_CORE = ["news_intel", "market_data", "macro_data", "technical_analyst",
   "stock_analyst", "backtest_engineer", "quant_signals", "risk_manager",
   "fund_analyst", "options_desk", "microstructure", "red_team", "fact_checker",
@@ -35,7 +36,7 @@ const TRADER_BOARD = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends",
   "philosophy_ethics"];
 const TRADER_WAR = [...TRADER_CORE, "macroeconomist", "geopolitics", "trends", "regulator",
   "industry_expert", "market_research", "sentiment_analyst", "banking", "intl_markets", "esg_impact",
-  "policy_compliance", "optimization_predictor", "supply_chain", ...HUMAN_WAVE];
+  "policy_compliance", "optimization_predictor", "supply_chain", "data_analytics", ...HUMAN_WAVE];
 const TRADER_MANDATORY = new Set(["market_data", "technical_analyst", ...SYNTH]);
 
 const WEALTH_CORE = ["news_intel", "macro_data", "salary_budget", "portfolio_allocator",
@@ -260,6 +261,18 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
                   {caps.subagents.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
               ) : <p className="text-slate-600">works solo on the shared board</p>}
+            </div>
+          </div>
+
+          {/* tools & data access — the additive tech layer for this specialist */}
+          <div className="mb-2">
+            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">tools & data access</div>
+            <div className="flex flex-wrap gap-1">
+              {caps.tools.map((t, i) => (
+                <span key={i} className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[9px] text-slate-300">
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
 

@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 14 (Results v5: 15 animated chart types + prediction/negotiation/comparative/bottom-line panels · fresh-run guarantee · client-side OCR · learned weights) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 15 (full catalog build-out: 88 agents incl. RAG Memory + Outcome Tracker as visible board members · tools badges on every capability card) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -22,7 +22,7 @@
 
 **Part II — The Code & The Agents**
 9. Backend — file by file, function by function
-10. The agent compendium — all 73 agents (logic · prompt · wiring · output)
+10. The agent compendium — all 88 agents (logic · prompt · wiring · output)
 11. The weighing engines & dimensions (exact scoring logic)
 12. Modes × depths — the exact scope matrix
 
@@ -326,7 +326,7 @@ The three asyncio DAGs (§6 order). Each: scope honoring, two-wave L2, the **rou
 ### `app/grounding/*` · `app/engine/*` · `app/memory/store.py`
 Connectors (yfinance / World Bank / web-news), the pure-pandas indicator engine + backtester, and the fail-soft SQLite store (runs, outcomes, users/tiers, `track_record()` calibration; `EIP_DB_PATH` for a persistent volume; `DATABASE_URL` documented for Postgres).
 
-## 10. The agent compendium — all 73 agents
+## 10. The agent compendium — all 88 agents
 
 Legend — **tier**: t0 = deterministic math (cannot hallucinate) · t1/t2 = fast LLM tier · t3 = flagship tier. Every LLM agent also carries a deterministic fallback and the honest-degraded contract. "Wires" = round-1 curated peers (`PEERS`); **in round 2 every scored L2 agent additionally reads ALL scored L2 colleagues**.
 
@@ -414,8 +414,11 @@ Legend — **tier**: t0 = deterministic math (cannot hallucinate) · t1/t2 = fas
 | `visualizer` 🎨 | t2 | deterministic chart specs + validated LLM extras → the interactive gallery |
 | `reporter` 🖋️ | t3 | the full sectioned report; retry ladder; runs last & alone |
 
-### L5 · Memory (1)
-`decision_graph` t0 — every run persisted → history, outcome tracking, Ask-the-Board grounding, the 3D neural map.
+### L5 · Memory (2)
+`decision_graph` t0 — every run persisted → history, outcome tracking, Ask-the-Board grounding, the 3D neural map. · `outcome_tracker` 🗂️ t0 — reads the graded track record IN the run: GO hit-rate + whether learned weights are active.
+
+### Phase-15 catalog build-out (15 agents)
+`rag_memory` 📚 (L1 t0 — the retrieval layer on stage: indexes the board with BM25, reports coverage; every specialist then reads its own most-relevant slice) · `ai_ml_strategist` 🤖 (AI feasibility, build-vs-buy, governance) · `data_analytics` 📐 (metric tree, instrumentation, honest predictability) · `software_architecture` 💻 (build cost/time ESTIMATE, scaling wall) · `product_ux` 🖌️ (core loop, PMF signals) · `cybersecurity_privacy` 🔐 (threat model, DPDP/GDPR, cert path) · `deep_tech` 🛰️ (TRL maturity, enabler-or-threat) · `fundraising_capital` 💰 (raise-vs-bootstrap, investor match, terms) · `sales_revops` 📞 (sales motion, pipeline math) · `customer_success` 💚 (activation, churn saves, expansion) · `partnerships_bd` 🔗 (the one partner type, deal structure) · `brand_creative` ✨ (positioning territory, naming) · `pr_communications` 📢 (press angles, crisis pre-draft) · `founder_coaching` 🧗 (founder risk, decision ritual, culture). All are shared-board lenses: PEERS-wired, deliberation-included, picker-selectable in every mode; product/sales/customer-success/software feed Execution, fundraising feeds Economics.
 
 ### The universal agent contract (diagrammatic)
 ```mermaid

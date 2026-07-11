@@ -31,6 +31,7 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("macro_data", "Macro Data", "L1", "grounding", "t0", "GDP, inflation, rates from official series", True),
     AgentMeta("doc_analyst", "Document Analyst", "L1", "grounding", "t2", "Reads your pitch deck, plan, contracts", True),
     AgentMeta("sentiment_analyst", "Sentiment Analyst", "L1", "grounding", "t2", "Social/news sentiment as a live demand signal", True),
+    AgentMeta("rag_memory", "RAG Memory", "L1", "grounding", "t0", "Indexes the board — every specialist retrieves its own most-relevant evidence", True),
     # L2 — Venture
     AgentMeta("market_analyst", "Market Analyst", "L2", "venture", "t2", "Market size, growth, competition — sourced", True),
     AgentMeta("market_research", "Market Research", "L2", "venture", "t2", "Primary demand signals — surveys, search, cohort pull", True),
@@ -50,6 +51,16 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("cap_table", "Cap-Table Modeler", "L2", "venture", "t2", "Round math, ESOP, dilution across scenarios", True),
     AgentMeta("patent_ip", "Patent / IP Scout", "L2", "venture", "t2", "Prior-art & freedom-to-operate signals", True),
     AgentMeta("insurance_risk", "Insurance & Risk-Transfer", "L2", "venture", "t2", "What's insurable, what liability to transfer", True),
+    AgentMeta("ai_ml_strategist", "AI & ML Strategist", "L2", "venture", "t3", "AI feasibility, build-vs-buy, data moats, AI governance", True),
+    AgentMeta("data_analytics", "Data Science & Analytics", "L2", "venture", "t2", "Metric tree, instrumentation, what's honestly predictable", True),
+    AgentMeta("software_architecture", "Software Architecture", "L2", "venture", "t3", "Technical feasibility, build cost/time, the scaling wall", True),
+    AgentMeta("product_ux", "Product & UX Design", "L2", "venture", "t2", "The core loop, PMF signals, onboarding friction", True),
+    AgentMeta("cybersecurity_privacy", "Cybersecurity & Privacy", "L2", "venture", "t2", "Threat model, privacy-by-design, certification readiness", True),
+    AgentMeta("fundraising_capital", "Fundraising & Capital", "L2", "venture", "t2", "Round strategy, investor match, terms to never sign", True),
+    AgentMeta("sales_revops", "Sales & Revenue Ops", "L2", "venture", "t2", "Sales motion, pipeline math, comp that doesn't backfire", True),
+    AgentMeta("partnerships_bd", "Partnerships & BD", "L2", "venture", "t2", "Alliances, deal structures, what never to exclusivity away", True),
+    AgentMeta("brand_creative", "Brand & Creative", "L2", "venture", "t2", "Identity, naming, the positioning territory to own", True),
+    AgentMeta("pr_communications", "PR & Communications", "L2", "venture", "t2", "Media angles, the outlets that matter, crisis comms", True),
     AgentMeta("industry_expert", "Industry Expert", "L2", "venture", "t2", "Sector-specific dynamics and benchmarks", True),
     AgentMeta("hr_talent", "HR & Talent", "L2", "venture", "t2", "Team, salaries, hiring plan", True),
     AgentMeta("optimization_predictor", "Optimization Predictor", "L2", "venture", "t2", "Legal/tax optimizations and their risks", True),
@@ -76,6 +87,7 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("trends", "Trends & Weak Signals", "L2", "world", "t2", "What is emerging before it is obvious", True),
     AgentMeta("esg_impact", "ESG & Impact", "L2", "world", "t2", "Sustainability, ethics, impact economics", True),
     AgentMeta("sustainability_accountant", "Sustainability Accountant", "L2", "world", "t2", "Carbon/impact quantified into cost & moat", True),
+    AgentMeta("deep_tech", "Emerging / Deep Tech", "L2", "world", "t2", "Frontier-tech maturity (TRL) and realistic feasibility", True),
     # L2 — Human layer (blueprint: behaviour, needs, consumer, production, philosophy, money-happiness, philanthropy)
     AgentMeta("human_behaviour", "Human Behaviour", "L2", "human", "t2", "How real people will actually behave toward this", True),
     AgentMeta("human_needs", "Human Needs", "L2", "human", "t2", "Does this serve a real, durable need (Maslow)", True),
@@ -85,6 +97,8 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("money_happiness", "Money & Happiness", "L2", "human", "t2", "Will this actually buy a better life", True),
     AgentMeta("philanthropy_impact", "Philanthropy & Impact", "L2", "human", "t2", "Where doing good compounds the mission", True),
     AgentMeta("cohort_retention", "Cohort / Retention Analyst", "L2", "human", "t2", "Retention curves, LTV by cohort, churn drivers", True),
+    AgentMeta("customer_success", "Customer Success & Retention", "L2", "human", "t2", "Onboarding, activation, expansion, churn saves — the operating plan", True),
+    AgentMeta("founder_coaching", "Founder Coaching & Org", "L2", "human", "t2", "The founder's leverage, decision hygiene, org & culture for scale", True),
     # L3 — Crucible
     AgentMeta("red_team", "Red Team", "L3", "crucible", "t3", "Attacks the thesis with evidence", True),
     AgentMeta("devils_advocate", "Devil's Advocate", "L3", "crucible", "t3", "Steel-mans the NO case", True),
@@ -103,6 +117,7 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("reporter", "Reporter", "L4", "synthesis", "t3", "The full written decision report", True),
     # L5 — Memory
     AgentMeta("decision_graph", "Decision Graph", "L5", "memory", "t0", "Every run becomes memory you can see"),
+    AgentMeta("outcome_tracker", "Outcome Tracker", "L5", "memory", "t0", "Graded outcomes → GO hit-rate calibration + learned weights", True),
 ]
 
 BY_ID: dict[str, AgentMeta] = {a.id: a for a in ROSTER}

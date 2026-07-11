@@ -42,7 +42,8 @@ TRADER_EXTRA = {
               "philosophy_ethics"],
     "war_room": ["macroeconomist", "geopolitics", "trends", "regulator", "industry_expert",
                  "market_research", "sentiment_analyst", "banking", "intl_markets", "esg_impact",
-                 "policy_compliance", "optimization_predictor", "supply_chain", *HUMAN_WAVE],
+                 "policy_compliance", "optimization_predictor", "supply_chain", "data_analytics",
+                 *HUMAN_WAVE],
 }
 WEALTH_EXTRA = {
     "board": ["macroeconomist", "trends", "regulator", "fund_analyst", "market_research", "banking",

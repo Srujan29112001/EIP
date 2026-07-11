@@ -39,6 +39,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "macro_data", name: "Macro Data", layer: "L1", cluster: "grounding", blurb: "GDP, inflation, rates from official series", accent: "#38bdf8" },
   { id: "doc_analyst", name: "Document Analyst", layer: "L1", cluster: "grounding", blurb: "Your uploads, on the evidence board", accent: "#0ea5e9" },
   { id: "sentiment_analyst", name: "Sentiment Analyst", layer: "L1", cluster: "grounding", blurb: "News/social mood as a live demand signal", accent: "#7dd3fc" },
+  { id: "rag_memory", name: "RAG Memory", layer: "L1", cluster: "grounding", blurb: "Indexes the board — every specialist retrieves its most-relevant evidence", accent: "#5eead4" },
   // L2 — Domain analysis (violet family for venture cluster)
   { id: "market_analyst", name: "Market Analyst", layer: "L2", cluster: "venture", blurb: "Market size, growth, competition — sourced", accent: "#8b5cf6" },
   { id: "market_research", name: "Market Research", layer: "L2", cluster: "venture", blurb: "TAM/SAM/SOM, segments, real demand signals", accent: "#9d7bf5" },
@@ -59,6 +60,16 @@ export const AGENTS: AgentInfo[] = [
   { id: "cap_table", name: "Cap-Table Modeler", layer: "L2", cluster: "venture", blurb: "Round math, ESOP, founder dilution across scenarios", accent: "#9333ea" },
   { id: "patent_ip", name: "Patent / IP Scout", layer: "L2", cluster: "venture", blurb: "Prior-art, freedom-to-operate, what's protectable", accent: "#c084fc" },
   { id: "insurance_risk", name: "Insurance & Risk-Transfer", layer: "L2", cluster: "venture", blurb: "What to insure, what to transfer, what to engineer around", accent: "#7c3aed" },
+  { id: "ai_ml_strategist", name: "AI & ML Strategist", layer: "L2", cluster: "venture", blurb: "AI feasibility, build-vs-buy, data moats, governance", accent: "#818cf8" },
+  { id: "data_analytics", name: "Data Science & Analytics", layer: "L2", cluster: "venture", blurb: "Metric tree, instrumentation, honest predictability", accent: "#6366f1" },
+  { id: "software_architecture", name: "Software Architecture", layer: "L2", cluster: "venture", blurb: "Feasibility, build cost/time, the scaling wall", accent: "#a5b4fc" },
+  { id: "product_ux", name: "Product & UX Design", layer: "L2", cluster: "venture", blurb: "The core loop, PMF signals, onboarding friction", accent: "#c4b5fd" },
+  { id: "cybersecurity_privacy", name: "Cybersecurity & Privacy", layer: "L2", cluster: "venture", blurb: "Threat model, privacy-by-design, cert readiness", accent: "#8b5cf6" },
+  { id: "fundraising_capital", name: "Fundraising & Capital", layer: "L2", cluster: "venture", blurb: "Round strategy, investor match, terms to never sign", accent: "#a78bfa" },
+  { id: "sales_revops", name: "Sales & Revenue Ops", layer: "L2", cluster: "venture", blurb: "Sales motion, pipeline math, comp that works", accent: "#9333ea" },
+  { id: "partnerships_bd", name: "Partnerships & BD", layer: "L2", cluster: "venture", blurb: "Alliances and deal structures that keep the company", accent: "#7c3aed" },
+  { id: "brand_creative", name: "Brand & Creative", layer: "L2", cluster: "venture", blurb: "Identity, naming, the territory to own", accent: "#c084fc" },
+  { id: "pr_communications", name: "PR & Communications", layer: "L2", cluster: "venture", blurb: "Press angles, the outlets that matter, crisis comms", accent: "#d8b4fe" },
   { id: "hr_talent", name: "HR & Talent", layer: "L2", cluster: "venture", blurb: "Hiring order, salary bands, team risk", accent: "#9333ea" },
   { id: "optimization_predictor", name: "Loophole Predictor", layer: "L2", cluster: "venture", blurb: "Legit optimizations + their grey-zone risk", accent: "#7c3aed" },
   { id: "regulator", name: "Regulator Watch", layer: "L2", cluster: "venture", blurb: "SEBI/RBI/CCI/FSSAI posture & scrutiny", accent: "#6d28d9" },
@@ -68,6 +79,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "trends", name: "Trends & Weak Signals", layer: "L2", cluster: "world", blurb: "What's emerging before it's obvious", accent: "#93c5fd" },
   { id: "esg_impact", name: "ESG & Impact", layer: "L2", cluster: "world", blurb: "Where impact becomes a moat", accent: "#1d4ed8" },
   { id: "sustainability_accountant", name: "Sustainability Accountant", layer: "L2", cluster: "world", blurb: "Carbon/impact quantified into cost & moat", accent: "#60a5fa" },
+  { id: "deep_tech", name: "Emerging / Deep Tech", layer: "L2", cluster: "world", blurb: "Frontier-tech maturity (TRL), enabler or threat", accent: "#93c5fd" },
   // L2 — Wealth cluster (amber family)
   { id: "salary_budget", name: "Salary & Budget", layer: "L2", cluster: "wealth", blurb: "Savings rate, 50/30/20, surplus math", accent: "#f59e0b" },
   { id: "portfolio_allocator", name: "Portfolio Allocator", layer: "L2", cluster: "wealth", blurb: "Glide-path allocation for your age & risk", accent: "#fbbf24" },
@@ -84,6 +96,8 @@ export const AGENTS: AgentInfo[] = [
   { id: "money_happiness", name: "Money & Happiness", layer: "L2", cluster: "human", blurb: "Will this actually buy a better life", accent: "#fb7185" },
   { id: "philanthropy_impact", name: "Philanthropy & Impact", layer: "L2", cluster: "human", blurb: "Where doing good compounds the mission", accent: "#fda4af" },
   { id: "cohort_retention", name: "Cohort / Retention Analyst", layer: "L2", cluster: "human", blurb: "Retention curves, LTV by cohort, churn drivers", accent: "#f472b6" },
+  { id: "customer_success", name: "Customer Success & Retention", layer: "L2", cluster: "human", blurb: "Onboarding, activation, expansion, churn saves", accent: "#f9a8d4" },
+  { id: "founder_coaching", name: "Founder Coaching & Org", layer: "L2", cluster: "human", blurb: "Founder leverage, decision hygiene, culture for scale", accent: "#fb7185" },
   // L2 — Markets cluster (green family — the Trading Co-Pilot)
   { id: "technical_analyst", name: "Technical Analyst", layer: "L2", cluster: "markets", blurb: "Indicators, levels, multi-signal read — pure math", accent: "#34d399" },
   { id: "stock_analyst", name: "Stock Analyst", layer: "L2", cluster: "markets", blurb: "Fundamentals + what the market is pricing in", accent: "#6ee7b7" },
@@ -105,6 +119,7 @@ export const AGENTS: AgentInfo[] = [
   { id: "storytelling", name: "Storyteller", layer: "L4", cluster: "synthesis", blurb: "The pitch — hook, narrative, one-liner, three beats", accent: "#fca5a5" },
   { id: "scenario_planner", name: "Scenario Planner", layer: "L4", cluster: "synthesis", blurb: "Monte-Carlo the verdict — P10/P50/P90 + what breaks it", accent: "#fef08a" },
   { id: "negotiation_coach", name: "Negotiation Coach", layer: "L4", cluster: "synthesis", blurb: "BATNA, anchor, concessions for the next conversation", accent: "#fdba74" },
+  { id: "outcome_tracker", name: "Outcome Tracker", layer: "L5", cluster: "memory", blurb: "Graded outcomes → GO hit-rate calibration + learned weights", accent: "#a78bfa" },
   { id: "weighing_engine", name: "Weighing Engine", layer: "L4", cluster: "synthesis", blurb: "Deterministic scoring — disagreement preserved", accent: "#eab308" },
   { id: "visualizer", name: "Visualizer", layer: "L4", cluster: "synthesis", blurb: "Best-fit interactive charts for every insight", accent: "#fcd34d" },
   { id: "reporter", name: "Reporter", layer: "L4", cluster: "synthesis", blurb: "The full written decision report", accent: "#fde68a" },
@@ -118,6 +133,10 @@ const ICONS: Record<string, string> = {
   sentiment_analyst: "💬", pricing_strategist: "💲", supply_chain: "🚛", cap_table: "🪙",
   patent_ip: "📑", insurance_risk: "☂️", sustainability_accountant: "♻️", cohort_retention: "🔁",
   scenario_planner: "🎲", negotiation_coach: "🤝",
+  rag_memory: "📚", ai_ml_strategist: "🤖", data_analytics: "📐", software_architecture: "💻",
+  product_ux: "🖌️", cybersecurity_privacy: "🔐", deep_tech: "🛰️", fundraising_capital: "💰",
+  sales_revops: "📞", customer_success: "💚", partnerships_bd: "🔗", brand_creative: "✨",
+  pr_communications: "📢", founder_coaching: "🧗", outcome_tracker: "🗂️",
   market_analyst: "🧭", market_research: "🔬", finance_modeler: "🧮", competitor_intel: "♟️", gtm_distribution: "🚚",
   legal: "⚖️", tax: "🧾", policy_compliance: "📋", industry_expert: "🏭",
   business_model: "🧩", marketing_strategy: "📣", subsidies_schemes: "🎁", banking: "🏦", hr_talent: "🧑‍🤝‍🧑",
@@ -168,6 +187,21 @@ export const STAGE_IO: Record<string, { in: string; out: string }> = {
   sentiment_analyst: { in: "Live news/web evidence", out: "Net demand mood + strongest signals" },
   scenario_planner: { in: "Dimension scores + confidence", out: "P10/P50/P90 + P(GO) + what breaks it" },
   negotiation_coach: { in: "Verdict + board findings", out: "BATNA + anchor + concessions + walk-away" },
+  rag_memory: { in: "Every evidence item + past runs", out: "BM25 index — per-agent relevance retrieval" },
+  ai_ml_strategist: { in: "Brief + architecture/data reads", out: "AI leverage + build-vs-buy + governance" },
+  data_analytics: { in: "Market + finance reads", out: "Metric tree + instrumentation + first prediction" },
+  software_architecture: { in: "Product + finance reads", out: "Architecture + build cost/time + scaling wall" },
+  product_ux: { in: "Consumer + behaviour reads", out: "Core loop + PMF signal + onboarding fix" },
+  cybersecurity_privacy: { in: "Architecture + policy reads", out: "Threat model + privacy duty + cert path" },
+  deep_tech: { in: "Trends + industry reads", out: "TRL read + enabler-or-threat + adoption window" },
+  fundraising_capital: { in: "Cap-table + finance + banking reads", out: "Raise-vs-bootstrap + investor match + terms" },
+  sales_revops: { in: "GTM + pricing reads", out: "Sales motion + pipeline math + first hire trigger" },
+  customer_success: { in: "Cohort + consumer reads", out: "Activation moment + churn kill + expansion lever" },
+  partnerships_bd: { in: "GTM + industry reads", out: "The one partner type + deal structure" },
+  brand_creative: { in: "Marketing + consumer reads", out: "Positioning territory + naming direction" },
+  pr_communications: { in: "Brand + live news reads", out: "Press angle + outlets + crisis pre-draft" },
+  founder_coaching: { in: "HR + behaviour reads", out: "Founder risk + decision ritual + culture norm" },
+  outcome_tracker: { in: "Your graded outcomes", out: "GO hit-rate + learned weights fed back" },
   hr_talent: { in: "Team + stage", out: "Hiring order + salary bands" },
   optimization_predictor: { in: "Brief + evidence", out: "Legit optimizations + risks" },
   regulator: { in: "Evidence board", out: "Regulator posture + scrutiny map" },
@@ -217,6 +251,8 @@ export interface AgentCaps {
   can: string[];
   talks_to: string[];
   subagents: string[];
+  /** tools & data access badges (additive layer on top of skills) */
+  tools: string[];
 }
 
 const T0_SUB = "🧮 deterministic math core (no LLM — cannot hallucinate)";
@@ -269,6 +305,19 @@ export const PEERS: Record<string, string[]> = {
   insurance_risk: ["legal", "production_ops"],
   sustainability_accountant: ["esg_impact", "production_ops", "finance_modeler"],
   sentiment_analyst: ["news_intel", "consumer_analysis"],
+  ai_ml_strategist: ["software_architecture", "data_analytics"],
+  data_analytics: ["market_research", "finance_modeler"],
+  software_architecture: ["product_ux", "finance_modeler"],
+  product_ux: ["consumer_analysis", "human_behaviour"],
+  cybersecurity_privacy: ["software_architecture", "policy_compliance"],
+  deep_tech: ["trends", "industry_expert"],
+  fundraising_capital: ["cap_table", "finance_modeler", "banking"],
+  sales_revops: ["gtm_distribution", "pricing_strategist"],
+  customer_success: ["cohort_retention", "consumer_analysis"],
+  partnerships_bd: ["gtm_distribution", "industry_expert"],
+  brand_creative: ["marketing_strategy", "consumer_analysis"],
+  pr_communications: ["brand_creative", "news_intel"],
+  founder_coaching: ["hr_talent", "human_behaviour"],
 };
 
 /** who reads whose output — the A2A communication map, humanized */
@@ -296,6 +345,67 @@ const TALKS: Record<string, string[]> = {
   reporter: ["you — the full written decision report"],
 };
 
+/** Tools & data access per agent (ADDITIVE — the tech each specialist wields,
+ * shown as badges in its capability card, on top of its skills). */
+const TOOLS: Record<string, string[]> = {
+  intake_parser: ["Regex core", "LLM · t1", "Board · state write"],
+  context_profiler: ["LLM · t1", "Board · state R/W"],
+  scope_planner: ["Deterministic core", "Config", "Board · state write"],
+  web_researcher: ["Web search (live)", "LLM · t2", "Board · state write"],
+  news_intel: ["News RSS (live)", "LLM · t2", "Board"],
+  market_data: ["yfinance connector", "Deterministic core", "Board"],
+  macro_data: ["World Bank connector", "Deterministic core", "Board"],
+  doc_analyst: ["Docs (pypdf)", "Browser OCR (tesseract.js)", "LLM · t2", "Board"],
+  sentiment_analyst: ["News/social evidence", "LLM · t2", "RAG retrieval"],
+  rag_memory: ["RAG · BM25 index", "Past-run recall", "Board"],
+  finance_modeler: ["Deterministic core", "LLM · t2", "Peers mesh"],
+  technical_analyst: ["Deterministic core (40+ indicators)", "yfinance"],
+  backtest_engineer: ["Deterministic core (backtests)", "yfinance"],
+  quant_signals: ["Deterministic core (regime + ensemble)"],
+  risk_manager: ["Deterministic core (sizing/ATR)"],
+  stock_analyst: ["LLM · t2", "yfinance", "Peers mesh"],
+  options_desk: ["Deterministic core", "LLM · t2"],
+  salary_budget: ["Deterministic core", "LLM · t2"],
+  portfolio_allocator: ["Deterministic core (glide path)"],
+  fire_planner: ["Deterministic core (compounding)"],
+  debt_banking: ["Deterministic core", "LLM · t2"],
+  real_estate: ["Deterministic core", "LLM · t2"],
+  location_scout: ["LLM · t2", "Web search"],
+  subsidies_schemes: ["LLM · t2", "Web search", "RAG retrieval"],
+  regulator: ["Web search", "LLM · t2", "Board"],
+  geopolitics: ["LLM · t2", "Web search", "Peers mesh"],
+  pricing_strategist: ["Van-Westendorp frame", "LLM · t2", "RAG retrieval"],
+  cap_table: ["Deterministic dilution math", "LLM · t2"],
+  insurance_risk: ["Risk register frame", "LLM · t2"],
+  patent_ip: ["Prior-art heuristics", "LLM · t2", "RAG retrieval"],
+  scenario_planner: ["Deterministic Monte-Carlo (1000 draws)", "Seeded RNG"],
+  ai_ml_strategist: ["LLM · t3-class ask", "RAG retrieval"],
+  data_analytics: ["Metric-tree frame", "LLM · t2", "RAG retrieval"],
+  software_architecture: ["Build-estimate frame", "LLM · t3-class ask", "RAG retrieval"],
+  cybersecurity_privacy: ["Threat-model frame", "LLM · t2", "RAG retrieval"],
+  deep_tech: ["TRL framework", "Web evidence", "LLM · t2"],
+  fundraising_capital: ["Dilution math (peer)", "LLM · t2", "RAG retrieval"],
+  customer_success: ["Cohort frame (peer)", "LLM · t2"],
+  pr_communications: ["Live news evidence", "LLM · t2"],
+  red_team: ["LLM · t3", "Board · full read"],
+  devils_advocate: ["LLM · t3", "Board · full read"],
+  bias_auditor: ["LLM · t3", "Your framing (verbatim)"],
+  fact_checker: ["Claim-vs-board overlap", "LLM · t2"],
+  cross_pollinate: ["LLM · t3", "Board · full read", "Conflict emit"],
+  compliance_scan: ["Regex compliance sweep", "Board · full read"],
+  connecting_dots: ["LLM · t3", "Board · full read"],
+  weighing_engine: ["Deterministic scoring", "Learned weights (outcomes)", "Board · read"],
+  verdict_composer: ["LLM · t3", "Board · read"],
+  storytelling: ["LLM · t3"],
+  negotiation_coach: ["BATNA framework", "LLM · t3"],
+  visualizer: ["Chart-kit (15 animated types)", "Deterministic specs", "LLM · t2 extras"],
+  reporter: ["LLM · t3", "Input-shrinking retry ladder", "Split-and-stitch"],
+  decision_graph: ["SQLite persistence", "3D graph builder", "Board · read"],
+  outcome_tracker: ["SQLite track record", "Deterministic calibration"],
+};
+const LENS_TOOLS = ["LLM · t2", "RAG retrieval (relevant evidence)", "Peers mesh (round 1)",
+  "Full-board deliberation (round 2)"];
+
 export function capsFor(id: string): AgentCaps {
   const a = agentById(id);
   const io = STAGE_IO[id];
@@ -309,7 +419,8 @@ export function capsFor(id: string): AgentCaps {
   const talks_to = TALKS[id]
     ?? ["red team (it will attack this analysis)", "fact checker (claims get verified)",
         "weighing engine (score feeds a dimension)", "connecting dots (patterns across domains)"];
-  return { can, talks_to, subagents };
+  const tools = TOOLS[id] ?? LENS_TOOLS;
+  return { can, talks_to, subagents, tools };
 }
 
 const BY_ID = new Map(AGENTS.map((a) => [a.id, a]));
