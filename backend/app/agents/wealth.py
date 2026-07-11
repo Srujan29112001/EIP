@@ -208,6 +208,15 @@ async def weighing_wealth(ctx: Ctx) -> None:
     base_w = {"Cashflow": 0.3, "Allocation": 0.2, "GoalFit": 0.25, "DebtHealth": 0.15,
               "Opportunity": 0.1, "LifeFit": 0.15}
     weights = {k: base_w[k] for k in dims if k in base_w}
+    try:   # learned weights from the graded track record (bounded ±15%)
+        from ..memory.store import dimension_calibration
+        learned = await dimension_calibration()
+        if learned:
+            weights = {k: w * learned.get(k, 1.0) for k, w in weights.items()}
+            await ctx.emit.log(aid, "learned weights active (graded outcomes): "
+                               + ", ".join(f"{k}×{v}" for k, v in learned.items() if k in weights), "info")
+    except Exception:
+        pass
     tw = sum(weights.values()) or 1.0
     overall = round(sum(dims[k] * (w / tw) for k, w in weights.items()), 1)
     for k, v in dims.items():

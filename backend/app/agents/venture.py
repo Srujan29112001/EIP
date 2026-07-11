@@ -158,8 +158,16 @@ async def memory_recall(ctx: Ctx) -> None:
     similar = [r for r in recall_similar(runs, sit, str(ctx.state.raw.get("mode", "founder")))
                if r.get("id") != ctx.state.run_id]
     for r in similar:
+        # deepen the memory: pull the past verdict's reasoning, not just the score
+        why = ""
+        try:
+            rec = await _store.get_run(str(r.get("id")))
+            why = str(((rec or {}).get("state") or {}).get("verdict", {}).get("reasoning") or "")[:140]
+        except Exception:
+            pass
         line = (f"MEMORY: a similar past decision — '{str(r.get('situation'))[:90]}' — "
-                f"scored {r.get('score')}/10 ({str(r.get('band') or 'no outcome yet')})")
+                f"scored {r.get('score')}/10 ({str(r.get('band') or 'no outcome yet')})"
+                + (f" · why: {why}" if why else ""))
         ctx.state.evidence.append({"text": line, "source": {"name": f"past run {r.get('id')}"},
                                    "agent": "decision_graph"})
         await ctx.emit.claim("decision_graph", line, confidence=0.4)
@@ -806,6 +814,17 @@ async def weighing_engine(ctx: Ctx) -> None:
     base_w = {"Market": 0.25, "Economics": 0.25, "Evidence": 0.10, "Execution": 0.125,
               "Timing": 0.15, "Regulatory": 0.125, "HumanFit": 0.12}
     weights = {k: base_w[k] for k in dims if k in base_w}
+    # LEARNED WEIGHTS: dimensions that predicted the user's GOOD outcomes earn
+    # a bounded boost (±15%), calibrated from the graded track record
+    try:
+        from ..memory.store import dimension_calibration
+        learned = await dimension_calibration()
+    except Exception:
+        learned = {}
+    if learned:
+        weights = {k: w * learned.get(k, 1.0) for k, w in weights.items()}
+        await ctx.emit.log(aid, "learned weights active (from your graded outcomes): "
+                           + ", ".join(f"{k}×{v}" for k, v in learned.items() if k in weights), "info")
     total_w = sum(weights.values()) or 1.0
     weights = {k: v / total_w for k, v in weights.items()}
     overall = round(sum(dims[k] * w for k, w in weights.items()), 1)

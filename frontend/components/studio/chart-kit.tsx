@@ -1,9 +1,11 @@
 "use client";
 
 /** The chart kit — renders every spec the Visualizer agent emits.
- * Zero dependencies, native SVG tooltips, and a what-if multiplier slider on
- * any chart that declares one. Types: gauge, waterfall, bar, column, donut,
- * scatter, heatmap, candlestick, area, bullet, sparkline.
+ * Zero dependencies, native SVG tooltips, animated motion (draw-in lines,
+ * sweeping rings, staggered fades), and a what-if multiplier slider on any
+ * chart that declares one. Types: gauge, waterfall, bar, column, donut,
+ * scatter, heatmap, candlestick, area, bullet, line (multi-series), radial,
+ * pyramid, funnel, histogram, sparkline.
  */
 
 import { useState } from "react";
@@ -59,8 +61,26 @@ function ChartBody({ spec, mult }: { spec: ChartSpec; mult: number }) {
     case "candlestick": return <Candles d={d} mult={mult} />;
     case "area": return <Area d={d} mult={mult} />;
     case "bullet": return <Bullet d={d} />;
+    case "line": return <MultiLine d={d} mult={mult} />;
+    case "radial": return <Radial d={d} />;
+    case "pyramid": case "funnel": return <Pyramid d={d} funnel={spec.type === "funnel"} />;
+    case "histogram": return <Histogram d={d} mult={mult} />;
     default: return <pre className="font-mono text-[10px] text-slate-500">{JSON.stringify(d).slice(0, 200)}</pre>;
   }
+}
+
+/** shared motion styles — draw-in lines, sweeping rings, staggered fades */
+function AnimStyle() {
+  return (
+    <style>{`
+      @keyframes ckfade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes ckdraw { to { stroke-dashoffset: 0; } }
+      @keyframes cksweep { from { stroke-dashoffset: var(--ck-c); } to { stroke-dashoffset: var(--ck-o); } }
+      .ck-a { opacity: 0; animation: ckfade .5s ease-out forwards; }
+      .ck-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ckdraw 1.1s ease-out forwards; }
+      .ck-sweep { animation: cksweep 1s ease-out forwards; }
+    `}</style>
+  );
 }
 
 /* ── gauge (speedometer) ─────────────────────────────────────────────────── */
@@ -347,6 +367,174 @@ export function Sparkline({ values, color = CYAN }: { values: number[]; color?: 
   return (
     <svg viewBox="0 0 80 20" className="h-4 w-20">
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/* ── multi-series line (animated draw-in) — e.g. round 1 vs round 2 ────────── */
+function MultiLine({ d, mult }: {
+  d: { labels: string[]; series: { name: string; values: number[]; color?: string }[]; max?: number };
+  mult: number;
+}) {
+  const W = 560, H = 190, PADL = 34, PADB = 30;
+  const palette = [CYAN, WARN, OK, BRAND, ERR];
+  const series = (d.series ?? []).map((s, si) => ({
+    ...s,
+    color: s.color ?? palette[si % palette.length],
+    // the what-if slider bends the LAST series (the "current" one)
+    values: s.values.map((v) => (si === d.series.length - 1 ? v * mult : v)),
+  }));
+  const all = series.flatMap((s) => s.values);
+  if (!all.length) return null;
+  const hi = d.max ?? Math.max(...all, 1), lo = Math.min(0, ...all);
+  const sx = (i: number) => PADL + (i / Math.max(1, d.labels.length - 1)) * (W - PADL - 14);
+  const sy = (v: number) => H - PADB - ((v - lo) / (hi - lo || 1)) * (H - PADB - 18);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      <AnimStyle />
+      {[0.25, 0.5, 0.75, 1].map((f) => (
+        <line key={f} x1={PADL} x2={W - 14} y1={sy(lo + f * (hi - lo))} y2={sy(lo + f * (hi - lo))}
+          stroke="rgba(148,163,184,0.12)" />
+      ))}
+      {series.map((s, si) => (
+        <g key={si}>
+          <polyline className="ck-draw" pathLength={1} style={{ animationDelay: `${si * 0.25}s` }}
+            points={s.values.map((v, i) => `${sx(i)},${sy(v)}`).join(" ")}
+            fill="none" stroke={s.color} strokeWidth="2.2" strokeLinejoin="round" />
+          {s.values.map((v, i) => (
+            <circle key={i} className="ck-a" style={{ animationDelay: `${0.3 + i * 0.05}s` }}
+              cx={sx(i)} cy={sy(v)} r="3" fill={s.color}>
+              <title>{`${s.name} · ${d.labels[i]}: ${v.toFixed(1)}`}</title>
+            </circle>
+          ))}
+        </g>
+      ))}
+      {d.labels.map((l, i) => (
+        <text key={i} x={sx(i)} y={H - 10} textAnchor="middle" className="fill-slate-400"
+          style={{ font: "8.5px var(--font-jetbrains)" }}>{String(l).slice(0, 10)}</text>
+      ))}
+      {series.map((s, si) => (
+        <g key={`lg${si}`} className="ck-a" style={{ animationDelay: `${0.2 + si * 0.1}s` }}>
+          <rect x={PADL + si * 130} y={4} width="10" height="3" fill={s.color} rx="1.5" />
+          <text x={PADL + si * 130 + 14} y={9} style={{ font: "9px var(--font-jetbrains)", fill: "#94a3b8" }}>{s.name}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ── radial progress rings (animated sweep) — probabilities at a glance ────── */
+function Radial({ d }: { d: { rings: { label: string; value: number; color?: string }[] } }) {
+  const palette = [OK, CYAN, WARN, BRAND];
+  const rings = (d.rings ?? []).slice(0, 4);
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-5">
+      <svg viewBox="0 0 130 130" className="h-40 w-40">
+        <AnimStyle />
+        {rings.map((r, i) => {
+          const rad = 54 - i * 13;
+          const c = 2 * Math.PI * rad;
+          const off = c * (1 - Math.max(0, Math.min(100, r.value)) / 100);
+          return (
+            <g key={i}>
+              <circle cx="65" cy="65" r={rad} fill="none" stroke="rgba(148,163,184,0.12)" strokeWidth="9" />
+              <circle className="ck-sweep" cx="65" cy="65" r={rad} fill="none"
+                stroke={r.color ?? palette[i % palette.length]} strokeWidth="9" strokeLinecap="round"
+                strokeDasharray={c} strokeDashoffset={off}
+                style={{ ["--ck-c" as never]: `${c}`, ["--ck-o" as never]: `${off}`,
+                         transform: "rotate(-90deg)", transformOrigin: "65px 65px",
+                         animationDelay: `${i * 0.15}s` }}>
+                <title>{`${r.label}: ${Math.round(r.value)}%`}</title>
+              </circle>
+            </g>
+          );
+        })}
+        {rings[0] && (
+          <text x="65" y="70" textAnchor="middle"
+            style={{ font: "700 17px var(--font-jetbrains)", fill: rings[0].color ?? OK }}>
+            {Math.round(rings[0].value)}%
+          </text>
+        )}
+      </svg>
+      <ul className="space-y-1.5">
+        {rings.map((r, i) => (
+          <li key={i} className="flex items-center gap-2 text-xs text-slate-300">
+            <span className="h-2 w-2 rounded-full" style={{ background: r.color ?? palette[i % palette.length] }} />
+            {r.label} — <b>{Math.round(r.value)}%</b>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ── pyramid / funnel (staggered) — e.g. board consensus, TAM→SAM→SOM ──────── */
+function Pyramid({ d, funnel = false }: {
+  d: { levels: { label: string; value: number; color?: string }[] }; funnel?: boolean;
+}) {
+  const palette = [OK, CYAN, WARN, BRAND, ERR];
+  const levels = funnel ? (d.levels ?? []) : [...(d.levels ?? [])];
+  const maxV = Math.max(...levels.map((l) => Math.abs(l.value)), 1);
+  const H = levels.length * 34 + 8, W = 560;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      <AnimStyle />
+      {levels.map((l, i) => {
+        const frac = Math.max(0.12, Math.abs(l.value) / maxV);
+        const topW = funnel
+          ? Math.max(0.12, Math.abs(levels[Math.max(0, i - 1)]?.value ?? l.value) / maxV) * 300
+          : (i === 0 ? frac : Math.max(0.12, Math.abs(levels[i - 1].value) / maxV)) * 300;
+        const botW = frac * 300;
+        const y = i * 34 + 4, cx = 190;
+        return (
+          <g key={i} className="ck-a" style={{ animationDelay: `${i * 0.12}s` }}>
+            <title>{`${l.label}: ${l.value.toLocaleString()}`}</title>
+            <path d={`M${cx - topW / 2},${y} L${cx + topW / 2},${y} L${cx + botW / 2},${y + 26} L${cx - botW / 2},${y + 26} Z`}
+              fill={l.color ?? palette[i % palette.length]} opacity="0.85" className="transition-opacity hover:opacity-100" />
+            <text x={cx + 175} y={y + 17} style={{ font: "10px var(--font-jetbrains)", fill: "#cbd5e1" }}>
+              {l.label.slice(0, 26)} — <tspan style={{ fill: l.color ?? palette[i % palette.length] }}>{l.value.toLocaleString()}</tspan>
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ── histogram (distribution) — e.g. 1000 simulated verdicts ───────────────── */
+function Histogram({ d, mult }: {
+  d: { bins: number[]; start: number; step: number; marker?: number; marker_label?: string; x_label?: string };
+  mult: number;
+}) {
+  const bins = (d.bins ?? []).map((b) => b * mult);
+  if (!bins.length) return null;
+  const W = 560, H = 170, maxB = Math.max(...bins, 1), bw = (W - 60) / bins.length;
+  const sx = (v: number) => 30 + ((v - d.start) / (d.step * bins.length || 1)) * (W - 60);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      <AnimStyle />
+      {bins.map((b, i) => (
+        <g key={i} className="ck-a" style={{ animationDelay: `${i * 0.04}s` }}>
+          <title>{`${(d.start + i * d.step).toFixed(1)}–${(d.start + (i + 1) * d.step).toFixed(1)}: ${Math.round(b)}`}</title>
+          <rect x={30 + i * bw + 1} y={140 - (b / maxB) * 118} width={Math.max(2, bw - 2)}
+            height={Math.max(1, (b / maxB) * 118)} rx="2" fill={CYAN} opacity="0.75"
+            className="transition-opacity hover:opacity-100" />
+        </g>
+      ))}
+      {typeof d.marker === "number" && (
+        <g className="ck-a" style={{ animationDelay: "0.5s" }}>
+          <line x1={sx(d.marker)} x2={sx(d.marker)} y1="14" y2="142" stroke={WARN} strokeWidth="2" strokeDasharray="4 3" />
+          <text x={sx(d.marker) + 4} y="22" style={{ font: "9px var(--font-jetbrains)", fill: WARN }}>
+            {d.marker_label ?? `P50 ${d.marker}`}
+          </text>
+        </g>
+      )}
+      {[0, Math.floor(bins.length / 2), bins.length - 1].map((i) => (
+        <text key={i} x={30 + i * bw + bw / 2} y={H - 12} textAnchor="middle" className="fill-slate-400"
+          style={{ font: "8.5px var(--font-jetbrains)" }}>{(d.start + i * d.step).toFixed(1)}</text>
+      ))}
+      {d.x_label && <text x={W / 2} y={H - 1} textAnchor="middle" className="fill-slate-500"
+        style={{ font: "8.5px var(--font-jetbrains)" }}>{d.x_label}</text>}
     </svg>
   );
 }

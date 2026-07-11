@@ -35,6 +35,11 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         eng = payload.get("engine") or {}
         cfg = EngineConfig(**{k: val for k, val in eng.items() if k in EngineConfig.__dataclass_fields__})
         ctx = Ctx(emit=emitter, llm=Gateway(cfg), state=RunState(run_id=run_id, raw=payload))
+        from datetime import datetime, timezone
+        await emitter.log("scope_planner",
+                          f"FRESH RUN {run_id} · all grounding fetched LIVE at "
+                          f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC — nothing reused "
+                          "from history except claims explicitly labelled MEMORY", "info")
 
         # L0 — deterministic wealth intake
         city = payload.get("city") or "India"

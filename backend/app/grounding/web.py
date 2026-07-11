@@ -25,10 +25,19 @@ def _search_sync(query: str, n: int) -> list[dict[str, Any]]:
 
 
 async def search(query: str, n: int = 5) -> list[dict[str, Any]]:
-    try:
-        return await asyncio.wait_for(asyncio.to_thread(_search_sync, query, n), timeout=20)
-    except Exception:
-        return []
+    """EVERY call is a live fetch — nothing is cached between runs. Repeated
+    identical queries can get throttled by the source (empty result), which
+    used to read as 'stale'; one spaced retry recovers it."""
+    for attempt in (1, 2):
+        try:
+            out = await asyncio.wait_for(asyncio.to_thread(_search_sync, query, n), timeout=20)
+            if out:
+                return out
+        except Exception:
+            pass
+        if attempt == 1:
+            await asyncio.sleep(2.5)   # throttle recovery before the retry
+    return []
 
 
 def _news_sync(query: str, n: int, region: str) -> list[dict[str, Any]]:
@@ -47,7 +56,14 @@ def _news_sync(query: str, n: int, region: str) -> list[dict[str, Any]]:
 
 
 async def news(query: str, n: int = 6, region: str = "India") -> list[dict[str, Any]]:
-    try:
-        return await asyncio.wait_for(asyncio.to_thread(_news_sync, query, n, region), timeout=20)
-    except Exception:
-        return []
+    """Live RSS fetch on every call — retried once if the feed comes back empty."""
+    for attempt in (1, 2):
+        try:
+            out = await asyncio.wait_for(asyncio.to_thread(_news_sync, query, n, region), timeout=20)
+            if out:
+                return out
+        except Exception:
+            pass
+        if attempt == 1:
+            await asyncio.sleep(2.0)
+    return []

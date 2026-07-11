@@ -124,9 +124,31 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                                          for d in moved],
                               "values": [_num(d.get("after"), 0.0) for d in moved], "max": 10}))
 
-    # column — the verdict under uncertainty (Scenario Planner's Monte-Carlo)
+    # the Scenario Planner's Monte-Carlo, three ways: distribution histogram,
+    # probability rings, and the P10/P50/P90 columns
     sc = o.get("scenario_planner", {}) or {}
     if isinstance(sc.get("p50"), (int, float)):
+        if isinstance(sc.get("bins"), list) and sc["bins"]:
+            charts.append(_chart("hist_scenarios", "histogram", "1,000 simulated verdicts",
+                                 "The full distribution of the Monte-Carlo draws — a tight peak means "
+                                 "a stable verdict; a fat left tail is the risk you are actually carrying.",
+                                 "scenario_planner",
+                                 {"bins": sc["bins"], "start": _num(sc.get("bin_start"), 0.0),
+                                  "step": _num(sc.get("bin_step"), 0.714), "marker": _num(sc.get("p50"), 0),
+                                  "marker_label": f"P50 {sc.get('p50')}", "x_label": "simulated verdict score /10"}))
+        ev_n = len(ctx.state.evidence)
+        sourced_pct = (100.0 * sum(1 for e in ctx.state.evidence if (e.get("source") or {}).get("url"))
+                       / ev_n) if ev_n else 0.0
+        confs = [_num(v.get("confidence"), 0) for v in o.values()
+                 if isinstance(v, dict) and isinstance(v.get("confidence"), (int, float))]
+        avg_conf = (sum(confs) / len(confs) * 100) if confs else 0.0
+        charts.append(_chart("radial_probs", "radial", "The odds, at a glance",
+                             "Three rings: the probability this clears GO, the board's own calibrated "
+                             "confidence, and how much of the evidence is live-sourced.",
+                             "scenario_planner",
+                             {"rings": [{"label": "P(GO) — clears 7/10", "value": _num(sc.get("prob_go"), 0) * 100},
+                                        {"label": "board confidence", "value": avg_conf},
+                                        {"label": "evidence live-sourced", "value": sourced_pct}]}))
         charts.append(_chart("col_scenarios", "column", "The verdict under uncertainty",
                              f"{sc.get('draws', 1000)} Monte-Carlo draws around the board's scores: "
                              f"P(GO) {int(_num(sc.get('prob_go'), 0) * 100)}%, "
@@ -136,6 +158,33 @@ def _deterministic_charts(ctx: Ctx) -> list[Chart]:
                              {"labels": ["P10 (bad luck)", "P50 (expected)", "P90 (good luck)"],
                               "values": [_num(sc.get("p10"), 0), _num(sc.get("p50"), 0),
                                          _num(sc.get("p90"), 0)], "max": 10}))
+
+    # line — round 1 vs round 2, dimension by dimension (the deliberation, charted)
+    r1dims = ((ctx.state.rounds or {}).get("results", {}).get("1", {}) or {}).get("dimensions") or {}
+    if r1dims and dims and any(abs(_num(r1dims.get(k), 0) - _num(v, 0)) >= 0.05 for k, v in dims.items()):
+        labels = [k for k in dims if k in r1dims]
+        charts.append(_chart("line_rounds", "line", "Round 1 vs round 2, dimension by dimension",
+                             "Where the board moved after reading itself — divergence between the lines "
+                             "is exactly where deliberation changed the case.",
+                             "weighing_engine",
+                             {"labels": labels,
+                              "series": [{"name": "round 1", "values": [round(_num(r1dims[k], 0), 1) for k in labels]},
+                                         {"name": "round 2 (final)", "values": [round(_num(dims[k], 0), 1) for k in labels]}],
+                              "max": 10},
+                             {"label": "round-2 emphasis", "min": 0.7, "max": 1.3, "step": 0.05}))
+
+    # pyramid — the board's consensus shape (bullish / neutral / bearish)
+    if len(scored) >= 5:
+        bullish = sum(1 for s in scored if s[1] >= 7.0)
+        bearish = sum(1 for s in scored if s[1] < 4.5)
+        neutral = len(scored) - bullish - bearish
+        charts.append(_chart("pyr_consensus", "pyramid", "The shape of the board's consensus",
+                             "How the specialists split — a heavy bearish base means the dissent is "
+                             "structural, not one loud voice.",
+                             "cross_pollinate",
+                             {"levels": [{"label": "bullish (≥7)", "value": bullish, "color": "#9ae64a"},
+                                         {"label": "neutral", "value": neutral, "color": "#22d3ee"},
+                                         {"label": "bearish (<4.5)", "value": bearish, "color": "#fb7185"}]}))
 
     # donut — how the specialists connect (cross-pollination synergies vs tensions)
     conns = (o.get("cross_pollinate", {}) or {}).get("connections") or []

@@ -62,8 +62,18 @@ export function DecisionRoom() {
             </span>
             <span className="h-px flex-1 bg-line" />
           </div>
+          <ComparativePanel r1={resultSets[1]} r2={resultSets[2]} />
         </>
       )}
+
+      {/* the bottom line — conclusions & recommendations, composed deterministically */}
+      <BottomLine verdict={verdict} outputs={agentOutputs} />
+
+      {/* predictions under uncertainty + the negotiation playbook */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ScenarioPanel out={agentOutputs["scenario_planner"]} />
+        <NegotiationPanel out={agentOutputs["negotiation_coach"]} />
+      </div>
 
       {/* compliance alerts — the regulatory red-flags, elevated so nothing is missed */}
       {compliance && compliance.alerts.length > 0 && (
@@ -368,8 +378,159 @@ export function DecisionRoom() {
 }
 
 /* ── the ROUND-1 result set, published in full above the final results ────── */
-import type { ResultSetData } from "@/lib/types";
+import type { AgentOutput as AO, ResultSetData, Verdict as V } from "@/lib/types";
 import type { ChartSpec } from "./chart-kit";
+
+/* ── comparative analysis — round 1 vs round 2, dimension by dimension ────── */
+function ComparativePanel({ r1, r2 }: { r1: ResultSetData; r2: ResultSetData }) {
+  const d1 = r1.dimensions ?? {}, d2 = r2.dimensions ?? {};
+  const keys = Object.keys(d2).filter((k) => k in d1);
+  if (!keys.length) return null;
+  const v1s = Number(r1.verdict?.score ?? 0), v2s = Number(r2.verdict?.score ?? 0);
+  return (
+    <section className="rounded-xl border border-line bg-panel p-4">
+      <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+        <Scale size={13} className="text-[#fbbf24]" /> Comparative analysis — what deliberation changed
+      </h3>
+      <p className="mb-3 text-[11px] text-slate-500">
+        Verdict {v1s}/10 → <b className="text-slate-300">{v2s}/10</b>
+        {r1.story?.one_liner && r2.story?.one_liner && r1.story.one_liner !== r2.story.one_liner
+          ? " · the pitch itself was rewritten after the board read itself." : ""}
+      </p>
+      <div className="space-y-1.5">
+        {keys.map((k) => {
+          const a = Number(d1[k] ?? 0), b = Number(d2[k] ?? 0), delta = +(b - a).toFixed(1);
+          return (
+            <div key={k} className="flex items-center gap-2 text-xs">
+              <span className="w-24 shrink-0 font-mono text-[10px] text-slate-400">{k}</span>
+              <div className="relative h-2.5 flex-1 overflow-hidden rounded bg-panel-2">
+                <div className="absolute inset-y-0 left-0 rounded bg-slate-600/60" style={{ width: `${a * 10}%` }} />
+                <div className="absolute inset-y-0 left-0 rounded bg-[#fbbf24]/80 transition-all duration-700"
+                  style={{ width: `${b * 10}%`, mixBlendMode: "screen" }} />
+              </div>
+              <span className="w-16 shrink-0 text-right font-mono text-[10px] text-slate-400">{a} → <b className="text-slate-200">{b}</b></span>
+              <span className={`w-10 shrink-0 rounded px-1 text-center font-mono text-[9px] ${
+                delta > 0 ? "bg-ok/15 text-ok" : delta < 0 ? "bg-err/15 text-err" : "bg-panel-2 text-slate-500"}`}>
+                {delta > 0 ? "+" : ""}{delta}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 font-mono text-[9px] text-slate-500">
+        grey = round-1 score · gold = after deliberation. The gap IS the value of the second round.
+      </p>
+    </section>
+  );
+}
+
+/* ── the bottom line — conclusions & recommendations in one place ──────────── */
+function BottomLine({ verdict, outputs }: { verdict: V | null; outputs: Record<string, AO> }) {
+  if (!verdict) return null;
+  const sc = outputs["scenario_planner"] ?? {};
+  const nc = outputs["negotiation_coach"] ?? {};
+  const topRisk = (verdict.risks ?? [])[0];
+  const steps = (verdict.next_steps ?? []).slice(0, 3);
+  return (
+    <section className="rounded-xl border border-cyan/30 bg-gradient-to-br from-panel to-[#0c1a2e] p-4">
+      <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-cyan">
+        <Lightbulb size={13} /> The bottom line — conclusions, predictions, recommendations
+      </h3>
+      <div className="grid gap-2 text-xs sm:grid-cols-2">
+        <div className="rounded-lg border border-line bg-panel-2 p-2.5">
+          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">Conclusion</div>
+          <p className="text-slate-200"><b>{verdict.score}/10 · {String(verdict.recommendation ?? "").replaceAll("_", " ")}</b>
+            {typeof sc.p10 === "number" && <span className="text-slate-400"> — and under 1,000 simulated futures it stays between <b>{String(sc.p10)}</b> and <b>{String(sc.p90)}</b> (P50 {String(sc.p50)}).</span>}
+          </p>
+        </div>
+        <div className="rounded-lg border border-line bg-panel-2 p-2.5">
+          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">Prediction</div>
+          <p className="text-slate-200">
+            {typeof sc.prob_go === "number"
+              ? <>P(GO) <b className="text-ok">{Math.round(Number(sc.prob_go) * 100)}%</b> · P(NO-GO) <b className="text-err">{Math.round(Number(sc.prob_nogo ?? 0) * 100)}%</b>{sc.breaks_it ? <> — the case most often breaks on <b>{String(sc.breaks_it)}</b>.</> : "."}</>
+              : "Run at Board depth for the Monte-Carlo prediction band."}
+          </p>
+        </div>
+        {topRisk && (
+          <div className="rounded-lg border border-err/25 bg-err/5 p-2.5">
+            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-err">Guard against</div>
+            <p className="text-slate-300">{topRisk.text}</p>
+          </div>
+        )}
+        <div className="rounded-lg border border-ok/25 bg-ok/5 p-2.5">
+          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-ok">Recommended first moves</div>
+          {steps.length ? (
+            <ol className="list-decimal space-y-0.5 pl-4 text-slate-300">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
+          ) : <p className="text-slate-400">See the report's 30-60-90 plan.</p>}
+          {typeof nc.anchor === "string" && nc.anchor && (
+            <p className="mt-1.5 text-[11px] text-slate-400">Next conversation, open at: <b className="text-slate-200">{nc.anchor}</b></p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── predictions under uncertainty (Scenario Planner) ──────────────────────── */
+function ScenarioPanel({ out }: { out?: AO }) {
+  if (!out || typeof out.p50 !== "number") return null;
+  const tiles: [string, string, string][] = [
+    ["P10 · bad luck", String(out.p10), "text-err"],
+    ["P50 · expected", String(out.p50), "text-slate-100"],
+    ["P90 · good luck", String(out.p90), "text-ok"],
+  ];
+  return (
+    <section className="rounded-xl border border-line bg-panel p-4">
+      <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+        🎲 Predictions under uncertainty — {String(out.draws ?? 1000)} simulated futures
+      </h3>
+      <div className="grid grid-cols-3 gap-2">
+        {tiles.map(([l, v, cls]) => (
+          <div key={l} className="rounded-lg border border-line bg-panel-2 p-2 text-center">
+            <div className={`font-display text-xl font-bold ${cls}`}>{v}</div>
+            <div className="font-mono text-[8.5px] uppercase tracking-wider text-slate-500">{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
+        <span className="rounded bg-ok/15 px-2 py-1 text-ok">P(GO) {Math.round(Number(out.prob_go ?? 0) * 100)}%</span>
+        <span className="rounded bg-err/15 px-2 py-1 text-err">P(NO-GO) {Math.round(Number(out.prob_nogo ?? 0) * 100)}%</span>
+        {typeof out.breaks_it === "string" && out.breaks_it ? (
+          <span className="rounded bg-warn/15 px-2 py-1 text-warn">breaks on: {out.breaks_it}</span>
+        ) : null}
+      </div>
+      <p className="mt-2 font-mono text-[9px] text-slate-500">
+        Deterministic Monte-Carlo over the board's own scores — uncertainty width comes from the board's confidence.
+      </p>
+    </section>
+  );
+}
+
+/* ── the negotiation playbook (Negotiation Coach) ───────────────────────────── */
+function NegotiationPanel({ out }: { out?: AO }) {
+  if (!out || out.degraded || !out.batna) return null;
+  return (
+    <section className="rounded-xl border border-line bg-panel p-4">
+      <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+        🤝 The next conversation — negotiation playbook
+        {typeof out.counterparty === "string" && out.counterparty ? (
+          <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[9px] normal-case text-slate-400">vs {out.counterparty}</span>
+        ) : null}
+      </h3>
+      <div className="space-y-1.5 text-xs">
+        <p><span className="font-mono text-[9px] uppercase tracking-widest text-cyan">Anchor · </span><span className="text-slate-200">{String(out.anchor ?? "")}</span></p>
+        <p><span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">BATNA · </span><span className="text-slate-300">{String(out.batna)}</span></p>
+        {Array.isArray(out.concessions) && out.concessions.length > 0 && (
+          <p><span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">Give, in order · </span>
+            <span className="text-slate-300">{(out.concessions as string[]).join(" → ")}</span></p>
+        )}
+        {typeof out.walk_away === "string" && out.walk_away ? (
+          <p><span className="font-mono text-[9px] uppercase tracking-widest text-err">Walk away if · </span><span className="text-slate-300">{out.walk_away}</span></p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
 
 function RoundOneResults({ data }: { data: ResultSetData }) {
   const v = data.verdict ?? {};

@@ -29,6 +29,11 @@ async def run_venture(run_id: str, payload: dict, emitter: Emitter) -> None:
         route_note = ("demo (deterministic cores only)" if cfg.compute == "demo"
                       else f"local={'✓' if status['local'] else '✗'} · cloud={status['cloud'] or '—'}")
         await emitter.log("scope_planner", f"engine: {route_note}", "muted")
+        from datetime import datetime, timezone
+        await emitter.log("scope_planner",
+                          f"FRESH RUN {run_id} · all grounding fetched LIVE at "
+                          f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC — nothing reused "
+                          "from history except claims explicitly labelled MEMORY", "info")
 
         # L0 — sequential (each feeds the next)
         await v.intake_parser(ctx)

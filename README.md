@@ -114,7 +114,7 @@ flowchart LR
 | **Styling** | Tailwind CSS v4 | Zero-runtime, token-driven theming; fast to iterate a dense dashboard. |
 | **State** | Zustand | One tiny store fed one SSE event at a time — no boilerplate. |
 | **3D** | React-Three-Fiber + drei + three | The neural map needs a real force-directed 3D graph; R3F keeps it declarative. |
-| **Charts** | Hand-rolled zero-dep SVG (`chart-kit.tsx`) | 11 chart types + what-if sliders with **no chart library** → tiny bundle, full control. |
+| **Charts** | Hand-rolled zero-dep SVG (`chart-kit.tsx`) | **15 animated chart types** (gauge, waterfall, bar, column, donut, scatter, heatmap, candlestick, area, bullet, multi-series line, radial rings, pyramid, funnel, histogram) + what-if sliders with **no chart library** → tiny bundle, full control. |
 | **API framework** | FastAPI | First-class async + `StreamingResponse` for SSE; Pydantic validation. |
 | **Orchestration** | Plain `asyncio` DAG (not LangGraph) | We need fine-grained fan-out/fan-in, two-wave A2A ordering, and per-agent cancellation — a hand-written DAG is simpler and faster here. |
 | **Serialization** | orjson | Fastest JSON for the SSE hot path and blob storage. |
@@ -327,7 +327,11 @@ flowchart TD
 
 - **TWO complete result sets** — round 1 (independent analysis) published in full, round 2 (after full-board deliberation) under it: two verdicts, two chart galleries, two reports.
 - **Weighted verdict** — score /10, band, reasoning, sensitivities ("what would change this").
-- **Scenario simulation** — Monte-Carlo P10/P50/P90 verdict band, P(GO)/P(NO-GO), and the dimension that most often breaks the case.
+- **Scenario simulation** — Monte-Carlo P10/P50/P90 verdict band, P(GO)/P(NO-GO), the dimension that most often breaks the case, a **1,000-simulated-verdicts histogram**, and **probability rings** (P(GO) / board confidence / evidence sourced).
+- **The bottom line** — one panel composing the conclusion, the prediction band, the top risk to guard against, and the recommended first moves + negotiation anchor.
+- **Comparative analysis** — round-1 vs round-2 per-dimension bars and a two-series line chart of exactly where deliberation moved the board.
+- **Negotiation playbook** — BATNA · anchor · ordered concessions · walk-away, as its own panel.
+- **Animated motion charts** — draw-in lines, sweeping progress rings, staggered bars/pyramids across the gallery.
 - **Negotiation plan** — BATNA, anchor, ordered concessions, walk-away for your next conversation.
 - **Compliance Sentinel banner** — ranked regulatory red-flags, high-severity elevated.
 - **Dimension radar** + exact per-dimension scores.
@@ -548,7 +552,7 @@ flowchart LR
 - **Risk Manager → portfolio-level**: correlation, VaR, position interaction (not per-trade only).
 - **Competitor Intel → funding-graph**: pull live funding/hiring signals into a positioning map.
 - **Reporter → templated exports**: investor-memo / one-pager / board-deck formats.
-- **Weighing Engine → learned weights**: calibrate dimension weights from the outcome-tracking data.
+- ✅ **Weighing Engine → learned weights** — SHIPPED: dimension weights calibrate (±15%, bounded) from your graded outcomes in all three modes.
 
 ### New agents worth adding — ✅ ALL TEN SHIPPED (Phase 13)
 
@@ -585,10 +589,11 @@ flowchart LR
 - ✅ **Phase 10 (scaffold)** — anonymous accounts + **tiers**, per-user history, persistent-DB path (`EIP_DB_PATH`), Postgres-ready.
 - ✅ **Phase 11** — **two-round golden-arc deliberation** (all-to-all re-read, round-1 vs round-2 results) + **16 keys/provider** rotation.
 - ✅ **Phase 12** — deliberation extended to **every layer (L1→L2→L3, sequential) with the TWO verdicts** + ✓✓ round badges; **RAG** (per-agent BM25-relevant evidence + past-run memory recall); reporter **prompt-compaction ladder + split-report fallback** (the actual starvation root-cause: oversized single requests); picker shows the golden mesh; arcs pulse only while agents communicate.
+- ✅ **Phase 14** — **Results v5**: 15 animated chart types (line/radial/pyramid/funnel/histogram added), Scenario Predictions + Negotiation Playbook + Comparative Analysis + Bottom-Line panels; **fresh-run guarantee** (live-fetch retries on throttle + a FRESH-RUN timestamp banner — nothing is reused between runs except claims labelled MEMORY); **Phase 8.2 OCR shipped** (scanned images OCR'd IN THE BROWSER via tesseract.js — zero backend vision deps, free-tier safe); **learned weights** (dimension weights calibrated ±15% from your graded outcomes, all three modes); deeper memory recall (past verdict reasoning included).
 - ✅ **Phase 13** — **the TRUE two-pass pipeline**: round 1 completes in full and PUBLISHES its complete results (verdict, pitch, charts, report), then L0→L1→L2→L3→L4 all re-run with the whole round-1 board visible, and the **round-2 results render under the round-1 results** — two full result sets per run. Grounding + crucible now deliberate too (✓✓ across every layer). Plus **10 new agents from the future-improvements table**, incl. a deterministic **Monte-Carlo Scenario Planner** (P10/P50/P90, P(GO), what-breaks-it chart) and a **Negotiation Coach** (BATNA/anchor/concessions).
 - ⏳ **Phase 10 (managed)** — real auth + Stripe + managed Postgres/pgvector (needs a Neon/Supabase + Stripe signup).
-- ⏳ **Phase 8.2** — OCR of scanned images (deferred; heavy vision deps vs. free CPU).
-- 🔭 **Next** — true RAG memory, scenario planner, learned weights (see [Future improvements](#-future-improvements)).
+- ✅ **Phase 8.2** — OCR of scanned images — **shipped client-side** (tesseract.js WASM in the browser; zero backend vision deps).
+- 🔭 **Next** — semantic-embedding RAG (BM25 RAG, the scenario planner, and learned weights are ✅ shipped), managed auth + Postgres/pgvector, WebSocket steering.
 
 ---
 

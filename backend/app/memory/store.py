@@ -219,6 +219,45 @@ async def track_record() -> dict[str, Any]:
         return {"graded": 0, "tracked": 0, "by_status": {}, "go_hit_rate": None, "go_count": 0}
 
 
+# ── Phase 14: learned weights — calibrate dimensions from graded outcomes ─────
+
+def _dimension_calibration_sync(min_graded: int = 6) -> dict[str, float]:
+    """Which dimensions actually PREDICTED good outcomes? For runs the user
+    graded good vs bad, compare each dimension's mean score. A dimension that
+    ran hotter in good outcomes earns a small weight boost (bounded ±15%) —
+    the weighing engine learns from the platform's own track record."""
+    with _connect() as c:
+        rows = c.execute(
+            "SELECT r.state_json, o.status FROM runs r JOIN outcomes o ON o.run_id = r.id "
+            "WHERE o.status IN ('good','bad')").fetchall()
+    if len(rows) < min_graded:
+        return {}
+    good: dict[str, list[float]] = {}
+    bad: dict[str, list[float]] = {}
+    for blob, status in rows:
+        try:
+            dims = (orjson.loads(blob).get("dimensions") or {})
+        except Exception:
+            continue
+        bucket = good if status == "good" else bad
+        for k, v in dims.items():
+            if isinstance(v, (int, float)):
+                bucket.setdefault(k, []).append(float(v))
+    mult: dict[str, float] = {}
+    for k in set(good) & set(bad):
+        mg = sum(good[k]) / len(good[k])
+        mb = sum(bad[k]) / len(bad[k])
+        mult[k] = max(0.85, min(1.15, 1.0 + (mg - mb) / 20.0))
+    return {k: round(v, 3) for k, v in mult.items() if abs(v - 1.0) >= 0.01}
+
+
+async def dimension_calibration() -> dict[str, float]:
+    try:
+        return await asyncio.to_thread(_dimension_calibration_sync)
+    except Exception:
+        return {}
+
+
 # ── Phase 10: lightweight accounts + tiers ────────────────────────────────────
 
 # what each tier unlocks (informational + soft-gating; no payment wall yet)

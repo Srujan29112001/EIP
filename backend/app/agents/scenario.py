@@ -51,6 +51,11 @@ async def scenario_planner(ctx: Ctx) -> None:
     p10 = round(overalls[int(_DRAWS * 0.10)], 1)
     p50 = round(overalls[int(_DRAWS * 0.50)], 1)
     p90 = round(overalls[int(_DRAWS * 0.90)], 1)
+    # 14-bin histogram over 0-10 → the "1000 simulated verdicts" distribution chart
+    n_bins, step = 14, 10.0 / 14
+    bins = [0] * n_bins
+    for o in overalls:
+        bins[min(n_bins - 1, int(o / step))] += 1
     prob_go = round(sum(1 for o in overalls if o >= 7.0) / _DRAWS, 2)
     prob_nogo = round(sum(1 for o in overalls if o < 4.5) / _DRAWS, 2)
     breaks_it = max(fail_hits, key=fail_hits.get) if any(fail_hits.values()) else ""
@@ -67,5 +72,6 @@ async def scenario_planner(ctx: Ctx) -> None:
         "p10": p10, "p50": p50, "p90": p90,
         "prob_go": prob_go, "prob_nogo": prob_nogo,
         "sigma": round(sigma, 2), "breaks_it": breaks_it, "draws": _DRAWS,
+        "bins": bins, "bin_start": 0.0, "bin_step": round(step, 3),
     }
     await ctx.finish(aid, layer, out)

@@ -64,12 +64,23 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
     setDocBusy(true);
     setDocError("");
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const r = await fetch(`${API_BASE}/api/extract`, { method: "POST", body });
-      if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? `extract failed (${r.status})`);
-      const doc = await r.json();
-      setF((p) => ({ ...p, documents: [...p.documents, { name: doc.name, text: doc.text }].slice(0, 3) }));
+      if (file.type.startsWith("image/")) {
+        // Phase 8.2 — OCR of scanned images, IN THE BROWSER (tesseract.js WASM):
+        // zero backend vision deps, so it runs on the free tier. The heavy
+        // module is lazy-loaded only when an image is actually uploaded.
+        const { default: Tesseract } = await import("tesseract.js");
+        const { data } = await Tesseract.recognize(file, "eng", { logger: () => {} });
+        const text = (data.text || "").trim();
+        if (text.length < 20) throw new Error("OCR found almost no text in this image — try a sharper scan");
+        setF((p) => ({ ...p, documents: [...p.documents, { name: `${file.name} (OCR)`, text: text.slice(0, 20000) }].slice(0, 3) }));
+      } else {
+        const body = new FormData();
+        body.append("file", file);
+        const r = await fetch(`${API_BASE}/api/extract`, { method: "POST", body });
+        if (!r.ok) throw new Error((await r.json().catch(() => null))?.detail ?? `extract failed (${r.status})`);
+        const doc = await r.json();
+        setF((p) => ({ ...p, documents: [...p.documents, { name: doc.name, text: doc.text }].slice(0, 3) }));
+      }
     } catch (e) {
       setDocError(e instanceof Error ? e.message : "extraction failed");
     } finally {
@@ -279,8 +290,8 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
               ground it (optional) · pitch deck / P&L / contract
             </span>
             <label className="cursor-pointer rounded-md border border-line px-2.5 py-1 font-mono text-[10px] text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
-              {docBusy ? "extracting…" : "+ add PDF / TXT"}
-              <input type="file" accept=".pdf,.txt,.md,.csv" className="hidden" disabled={docBusy}
+              {docBusy ? "extracting…" : "+ add PDF / TXT / scanned image (OCR)"}
+              <input type="file" accept=".pdf,.txt,.md,.csv,image/png,image/jpeg,image/webp" className="hidden" disabled={docBusy}
                 onChange={(e) => e.target.files?.[0] && addDocument(e.target.files[0])} />
             </label>
             {docError && <span className="font-mono text-[10px] text-err">{docError}</span>}

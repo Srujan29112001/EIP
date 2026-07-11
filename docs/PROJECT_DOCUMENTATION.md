@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 13 (true two-pass pipeline with TWO published result sets + 10 future-improvements agents shipped) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 14 (Results v5: 15 animated chart types + prediction/negotiation/comparative/bottom-line panels · fresh-run guarantee · client-side OCR · learned weights) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -467,7 +467,7 @@ Rules that hold everywhere: **synthesis is never benchable** (weighing, verdict,
 ### `components/studio/`
 | File | Role / key logic |
 |---|---|
-| `intake-wizard.tsx` | the 4-step wizard: situation (per-mode fields + doc upload → `/api/extract`) → depth → board picker → engine panel; provider badges from `/api/health`; pins an explicit model into per-tier `routes` |
+| `intake-wizard.tsx` | the 4-step wizard: situation (per-mode fields + doc upload → `/api/extract`; **scanned images OCR'd in-browser via lazy-loaded tesseract.js** — Phase 8.2) → depth → board picker → engine panel; provider badges from `/api/health`; pins an explicit model into per-tier `routes` |
 | `board-picker.tsx` | the org-chart: layer columns, icon nodes, wires re-route when you bench; per-mode × per-depth rosters; capability card (`capsFor`) + **per-agent brief box** (`agent_context`) on click; mandatory sets unbenchable |
 | `engine-panel.tsx` | compute cards (Auto/Local/Cloud/Demo), 8 provider tiles, **16 key slots each** (first non-blank mirrors to `api_keys`), model pick, temperature + max-tokens sliders, per-agent routing table; local/demo hides the cloud grid |
 | `studio-client.tsx` | the run driver: `begin()` → `consumeRun(form, store.apply)`; tabs Pipeline / Boardroom / Results; rail + flow-map + stage cards composition |
@@ -565,6 +565,8 @@ SQLite (`memory/store.py`), fail-soft by design. Tables: `runs` (state blob incl
 - Ops notes: kill stale port-8000 process before local restarts; verify pushes from a fresh clone once (a bare `lib/` gitignore once swallowed `frontend/lib`).
 
 ## 20. Testing guide — manual + scripted + test cases
+
+**Freshness guarantee:** every run fetches grounding LIVE (see the `FRESH RUN <id> · fetched LIVE at HH:MM:SS UTC` log line); throttled searches retry once after a pause; the only cross-run reuse is claims explicitly labelled `MEMORY:` (the RAG recall).
 
 **Fast manual pass:** Studio → Founder → Board → Demo → run: watch the mesh light, then Results top-to-bottom. Then re-run with one Groq key: everything narrates.
 
