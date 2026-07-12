@@ -68,6 +68,25 @@ class Emitter:
     async def partial(self, section: str, data: Any) -> None:
         await self.queue.put({"type": "partial", "section": section, "data": data})
 
+    # ── Intelligent Mode (Advisory Engine) events ─────────────────────────
+    async def qa(self, status: str, issues: list[dict] | None = None, round_: int = 1) -> None:
+        """The blocking QA gate: started | passed | failed (+ issue list)."""
+        await self.queue.put({"type": "qa", "status": status, "round": round_,
+                              "issues": (issues or [])[:12]})
+
+    async def hitl(self, status: str, reason: str = "", sections: list[str] | None = None,
+                   decision: str = "", note: str = "") -> None:
+        """Human-in-the-loop: pause (awaiting review) | resumed (+ decision)."""
+        await self.queue.put({"type": "hitl", "status": status, "reason": reason,
+                              "sections": sections or [], "decision": decision,
+                              "note": note[:400]})
+
+    async def skipped_no_llm(self, agent: str, keys_exhausted: bool = True) -> None:
+        """This agent could not reach ANY model (keys exhausted / no local) —
+        it shipped its deterministic core only. Distinct from a clean done."""
+        await self.queue.put({"type": "skipped_no_llm", "agent": agent,
+                              "keys_exhausted": keys_exhausted})
+
     async def usage(self, agent: str, tokens: int, route: str) -> None:
         await self.queue.put({"type": "usage", "agent": agent, "tokens": tokens, "route": route})
 

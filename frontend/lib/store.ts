@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, LogKind, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, Verdict,
+  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, HitlState, LogKind, ManagerPlan, QaEvent, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -37,6 +37,13 @@ interface RunStore {
   tokens: number;
   routes: Set<string>;
   fatal: string | null;
+  /** Intelligent Mode (Advisory Engine) */
+  managerPlan: ManagerPlan | null;
+  bossBrief: Record<string, string> | null;
+  qa: QaEvent[];
+  hitl: HitlState | null;
+  /** agents that could not reach ANY model (deterministic core only) */
+  noLlm: Record<string, boolean>;
   begin: () => void;
   apply: (e: RunEvent) => void;
   reset: () => void;
@@ -66,6 +73,11 @@ const EMPTY = {
   tokens: 0,
   routes: new Set<string>(),
   fatal: null,
+  managerPlan: null as ManagerPlan | null,
+  bossBrief: null as Record<string, string> | null,
+  qa: [] as QaEvent[],
+  hitl: null as HitlState | null,
+  noLlm: {} as Record<string, boolean>,
 };
 
 export const useRun = create<RunStore>((set) => ({
@@ -119,6 +131,9 @@ export const useRun = create<RunStore>((set) => ({
             return { resultSets: { ...s.resultSets, [rs.round]: rs } };
           }
           if (e.section === "report") return { report: e.data as string };
+          if (e.section === "run_id") return { runId: e.data as string };
+          if (e.section === "manager_plan") return { managerPlan: e.data as ManagerPlan };
+          if (e.section === "boss_brief") return { bossBrief: e.data as Record<string, string> };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };
             return { agentOutputs: { ...s.agentOutputs, [d.agent]: d.output } };
@@ -127,6 +142,13 @@ export const useRun = create<RunStore>((set) => ({
         }
         case "usage":
           return { tokens: s.tokens + (e.tokens || 0), routes: new Set(s.routes).add(e.route) };
+        case "qa":
+          return { qa: [...s.qa, { status: e.status, round: e.round, issues: e.issues }] };
+        case "hitl":
+          return { hitl: { status: e.status, reason: e.reason, sections: e.sections,
+                           decision: e.decision, note: e.note } };
+        case "skipped_no_llm":
+          return { noLlm: { ...s.noLlm, [e.agent]: true } };
         case "done":
           return { phase: "done" as const, runId: e.run_id };
         case "fatal":

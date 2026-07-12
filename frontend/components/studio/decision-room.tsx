@@ -7,6 +7,7 @@ import { buildMarkdown, download, printPdf } from "@/lib/export";
 import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AskBoard } from "./ask-board";
+import { ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
 import { AgentTable, DegradedNotice, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
 import { Disagreements } from "./disagreements";
@@ -21,8 +22,10 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds, resultSets } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds, resultSets, managerPlan, qa, hitl, noLlm } = useRun();
   const twoRounds = Boolean(resultSets[1] && resultSets[2]);
+  const intelligent = Boolean(managerPlan || qa.length || hitl);
+  const noLlmCount = Object.keys(noLlm).length;
 
   const exportMd = () =>
     download("eip-decision.md", buildMarkdown({ brief, verdict, board, agentOutputs, tokens, routes }));
@@ -45,6 +48,31 @@ export function DecisionRoom() {
     <div className="space-y-4 pb-4">
       <QualityBanner />
       <DegradedNotice />
+
+      {/* ═══ Intelligent Mode — the Advisory Engine's audit trail ═══ */}
+      {intelligent && (
+        <div className="space-y-3 rounded-xl border border-brand/30 bg-brand/[0.03] p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-display text-sm font-bold text-slate-100">🎩 Advisory Engine · run audit</span>
+            {hitl && (
+              <span className={`rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+                hitl.decision === "approve" || hitl.decision === "auto_approved"
+                  ? "border-ok/40 bg-ok/10 text-ok"
+                  : hitl.decision === "reject" ? "border-err/40 bg-err/10 text-err"
+                  : "border-warn/40 bg-warn/10 text-warn"}`}>
+                review: {hitl.decision || "pending"}
+              </span>
+            )}
+            {noLlmCount > 0 && (
+              <span className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-warn">
+                {noLlmCount} agent{noLlmCount > 1 ? "s" : ""} deterministic-only (no LLM reached)
+              </span>
+            )}
+          </div>
+          <ManagerPlanPanel />
+          <QaGatePanel />
+        </div>
+      )}
 
       {/* ═══ THE TWO RESULT SETS — round 1 in full, then round 2 under it ═══ */}
       {twoRounds && (

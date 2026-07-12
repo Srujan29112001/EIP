@@ -22,7 +22,7 @@ export interface EngineSelection {
 }
 
 export interface IntakeForm {
-  mode: "founder" | "trader" | "wealth";
+  mode: "founder" | "trader" | "wealth" | "intelligent";
   situation: string;
   industry: string;
   geography: string;
@@ -55,6 +55,11 @@ export interface IntakeForm {
   dependents: number;
   current_debt: number;
   monthly_sip: number;
+  /** intelligent mode — the 🎩 Boss intake conversation + the human-review window */
+  conversation: { role: "user" | "assistant"; content: string }[];
+  /** the engagement the Boss classified this intake into (drives mode-aware routing) */
+  engagement_mode: "founder" | "trader" | "wealth" | "operator" | "";
+  hitl_timeout: number;
   /** document intelligence — extracted via POST /api/extract */
   documents: { name: string; text: string }[];
   /** per-agent user briefs from the board picker */
@@ -175,6 +180,56 @@ export interface Verdict {
   teach?: string;
 }
 
+/** The engagement the Boss classifies each Intelligent-Mode intake into. */
+export type EngagementMode = "founder" | "trader" | "wealth" | "operator" | "";
+
+/** One 🎩 Boss turn from POST /api/intake (Intelligent Mode). */
+export interface BossTurn {
+  complete: boolean;
+  completeness: number;
+  engagement_mode: EngagementMode;
+  question: string;
+  missing: string[];
+  brief: Record<string, string>;
+  route: string;
+  demo?: boolean;
+}
+
+/** The 🎼 Manager's routing plan (partial:manager_plan). */
+export interface ManagerPlan {
+  engagement_mode: EngagementMode;
+  mode_label: string;
+  focus: string;
+  regulated: boolean;
+  picks: { id: string; reason: string }[];
+  drops: { id: string; reason: string }[];
+  spine_locked: string[];
+  waves: Record<string, string[]>;
+  route: string;
+}
+
+/** One QA-gate issue (qa events — the blocking accuracy gate). */
+export interface QaIssue {
+  kind: "fact" | "red_team" | "bias" | "verdict";
+  severity: number;
+  agent: string;
+  note: string;
+}
+export interface QaEvent {
+  status: "started" | "passed" | "failed";
+  round: number;
+  issues: QaIssue[];
+}
+
+/** The human-in-the-loop review state (hitl events). */
+export interface HitlState {
+  status: "pause" | "resumed";
+  reason: string;
+  sections: string[];
+  decision: string;   // approve | reject | timeout | auto_approved
+  note: string;
+}
+
 /** Every event shape the backend emits over SSE — field names must match exactly. */
 export type RunEvent =
   | { type: "stage"; agent: string; status: StageStatus; layer: string }
@@ -188,5 +243,8 @@ export type RunEvent =
   | { type: "bias"; target: string; bias: string; note: string }
   | { type: "partial"; section: string; data: unknown }
   | { type: "usage"; agent: string; tokens: number; route: string }
+  | { type: "qa"; status: "started" | "passed" | "failed"; round: number; issues: QaIssue[] }
+  | { type: "hitl"; status: "pause" | "resumed"; reason: string; sections: string[]; decision: string; note: string }
+  | { type: "skipped_no_llm"; agent: string; keys_exhausted: boolean }
   | { type: "done"; run_id: string }
   | { type: "fatal"; message: string };

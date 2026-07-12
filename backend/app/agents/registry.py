@@ -20,6 +20,9 @@ class AgentMeta:
 
 
 ROSTER: list[AgentMeta] = [
+    # L0 — Orchestration (Intelligent Mode: the Advisory Engine pair)
+    AgentMeta("boss", "Boss", "L0", "gateway", "t3", "Conversational intake — a real dialogue distilled into the structured Brief", True),
+    AgentMeta("manager", "Manager", "L0", "gateway", "t3", "Dynamic orchestrator — plans the board from the whole pool, within the guaranteed spine", True),
     # L0 — Gateway
     AgentMeta("intake_parser", "Intake Parser", "L0", "gateway", "t1", "Turns your words into a structured brief", True),
     AgentMeta("context_profiler", "Context Profiler", "L0", "gateway", "t1", "Works out who is asking — stage, capital, risk", True),

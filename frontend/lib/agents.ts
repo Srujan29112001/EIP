@@ -28,6 +28,9 @@ export const LAYER_LABELS: Record<Layer, string> = {
 
 /** Accent families per layer (globals.css tokens), shaded per agent for identity. */
 export const AGENTS: AgentInfo[] = [
+  // L0 — Orchestration (Intelligent Mode: the Advisory Engine pair — brass)
+  { id: "boss", name: "Boss", layer: "L0", cluster: "gateway", blurb: "Conversational intake — a real dialogue distilled into the structured Brief", accent: "#d9a94a" },
+  { id: "manager", name: "Manager", layer: "L0", cluster: "gateway", blurb: "Dynamic orchestrator — plans the board from the whole pool, within the guaranteed spine", accent: "#f0cb78" },
   // L0 — Gateway (slate family)
   { id: "intake_parser", name: "Intake Parser", layer: "L0", cluster: "gateway", blurb: "Turns your words into a structured brief", accent: "#94a3b8" },
   { id: "context_profiler", name: "Context Profiler", layer: "L0", cluster: "gateway", blurb: "Works out who is asking — stage, capital, risk", accent: "#a8b6c8" },
@@ -128,6 +131,7 @@ export const AGENTS: AgentInfo[] = [
 
 /** per-agent icons (emoji render crisply inside SVG nodes too) */
 const ICONS: Record<string, string> = {
+  boss: "🎩", manager: "🎼",
   intake_parser: "📥", context_profiler: "🪪", scope_planner: "🗺️",
   web_researcher: "🔎", news_intel: "📰", market_data: "📈", macro_data: "🌐", doc_analyst: "📄",
   sentiment_analyst: "💬", pricing_strategist: "💲", supply_chain: "🚛", cap_table: "🪙",
@@ -156,6 +160,8 @@ for (const a of AGENTS) a.icon = ICONS[a.id] ?? "🤖";
 
 /** what goes in / what comes out, per agent (drives stage cards + graph nodes) */
 export const STAGE_IO: Record<string, { in: string; out: string }> = {
+  boss: { in: "Your intake conversation (multi-turn)", out: "The structured handoff Brief" },
+  manager: { in: "Brief + profile + the whole agent pool", out: "The routing plan — picks, benches, locked spine" },
   intake_parser: { in: "Your raw description", out: "Structured brief" },
   context_profiler: { in: "Brief", out: "Who is asking — capital, risk, stage" },
   scope_planner: { in: "Brief + depth + your toggles", out: "The convened board" },
@@ -260,7 +266,7 @@ const RESEARCH_SUB = "🔎 research sub-agent — runs its own live web query at
 const T0_IDS = new Set(["market_data", "macro_data", "technical_analyst", "backtest_engineer",
   "quant_signals", "risk_manager", "salary_budget", "portfolio_allocator", "fire_planner",
   "weighing_engine"]);
-const NO_RESEARCH = new Set(["intake_parser", "context_profiler", "scope_planner", "web_researcher",
+const NO_RESEARCH = new Set(["boss", "manager", "intake_parser", "context_profiler", "scope_planner", "web_researcher",
   "news_intel", "market_data", "macro_data", "doc_analyst", "finance_modeler", "technical_analyst",
   "backtest_engineer", "quant_signals", "risk_manager", "portfolio_allocator", "fire_planner",
   "salary_budget", "red_team", "fact_checker", "bias_auditor", "devils_advocate", "connecting_dots",
@@ -322,6 +328,8 @@ export const PEERS: Record<string, string[]> = {
 
 /** who reads whose output — the A2A communication map, humanized */
 const TALKS: Record<string, string[]> = {
+  boss: ["you — the only agent that converses with the client", "manager (the handoff brief)"],
+  manager: ["every agent it routes in or benches", "QA gate (re-dispatches failures)", "human reviewer (regulated content)"],
   web_researcher: ["every L2 specialist (via the evidence board)"],
   news_intel: ["every L2 specialist (via the evidence board)"],
   market_data: ["technical analyst", "quant signals", "weighing engine (Timing)"],
@@ -348,6 +356,8 @@ const TALKS: Record<string, string[]> = {
 /** Tools & data access per agent (ADDITIVE — the tech each specialist wields,
  * shown as badges in its capability card, on top of its skills). */
 const TOOLS: Record<string, string[]> = {
+  boss: ["LLM · t3", "Multi-turn dialogue", "Board · state write", "Deterministic question ladder (zero-key)"],
+  manager: ["LLM · t3", "Orchestration (dynamic routing)", "QA gate invoke", "HITL gate invoke", "Board · state R/W"],
   intake_parser: ["Regex core", "LLM · t1", "Board · state write"],
   context_profiler: ["LLM · t1", "Board · state R/W"],
   scope_planner: ["Deterministic core", "Config", "Board · state write"],

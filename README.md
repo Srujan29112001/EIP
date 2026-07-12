@@ -28,7 +28,8 @@
 4. [The pipeline — how a decision is made](#-the-pipeline--how-a-decision-is-made)
 5. [The agent roster (60+)](#-the-agent-roster)
 6. [Agent-to-agent wiring (the mesh)](#-agent-to-agent-wiring-the-mesh)
-7. [The three modes in depth](#-the-three-modes-in-depth)
+7. [The four modes in depth](#-the-four-modes-in-depth)
+   - [🎩 Intelligent Mode — the Advisory Engine](#-intelligent-mode--the-advisory-engine)
 8. [Board picker & depths](#-board-picker--depths)
 9. [The LLM gateway](#-the-llm-gateway-hybrid--multi-provider--multi-key)
 10. [Inputs you can give](#-inputs-you-can-give)
@@ -247,7 +248,12 @@ The frontend visualizes this in two places: the **Flow Map** draws the complete 
 
 ---
 
-## 🎛 The three modes in depth
+## 🎛 The four modes in depth
+
+Three modes are **forms** — you fill in the fields and pick the board. The fourth,
+🎩 **Intelligent Mode**, is a **conversation**: the Boss interviews you, *classifies*
+which of the other three (or Operator) your question really is, and routes there
+automatically. See [Intelligent Mode](#-intelligent-mode--the-advisory-engine) below.
 
 ```mermaid
 flowchart LR
@@ -260,15 +266,71 @@ flowchart LR
     subgraph W["Wealth"]
         w1["income/expenses/goals"] --> w2["budget / allocation / FIRE /<br/>debt / real-estate / schemes / life-fit"] --> w3["money-health verdict + roadmap"]
     end
+    subgraph I["🎩 Intelligent (Advisory Engine)"]
+        i1["conversation -> Boss classifies<br/>founder / trader / wealth / operator"] --> i2["Manager routes to that board +<br/>blocking QA gate + human review"] --> i3["the classified mode's verdict,<br/>QA-cleaned + reviewed"]
+    end
 ```
 
-| | 🚀 Founder | 📈 Trader | 💰 Wealth |
-|---|---|---|---|
-| **Grounds on** | web + news + macro + your docs | live OHLCV + news + macro | macro + your numbers |
-| **Deterministic core** | runway / unit economics | 40+ indicators, backtests, risk sizing | savings, allocation, FIRE math |
-| **Radar dimensions** | Market · Economics · Execution · Evidence · Timing · Regulatory · HumanFit | Trend · Momentum · Value · History · RiskFit · Psychology | Cashflow · Allocation · GoalFit · DebtHealth · Opportunity · LifeFit |
-| **Verdict** | GO / CONDITIONAL_GO / NO_GO | setup quality band | money-health band |
-| **Hard stance** | education + analytics | **never buy/sell advice, never executes** | education, not regulated advice |
+| | 🚀 Founder | 📈 Trader | 💰 Wealth | 🎩 Intelligent |
+|---|---|---|---|---|
+| **Intake** | form | form | form | **conversation (the Boss)** |
+| **Grounds on** | web + news + macro + your docs | live OHLCV + news + macro | macro + your numbers | *inherits the classified mode* |
+| **Deterministic core** | runway / unit economics | 40+ indicators, backtests, risk sizing | savings, allocation, FIRE math | *the classified mode's cores* |
+| **Radar dimensions** | Market · Economics · Execution · Evidence · Timing · Regulatory · HumanFit | Trend · Momentum · Value · History · RiskFit · Psychology | Cashflow · Allocation · GoalFit · DebtHealth · Opportunity · LifeFit | *the classified mode's dimensions* |
+| **Verdict** | GO / CONDITIONAL_GO / NO_GO | setup quality band | money-health band | *the classified mode's band* |
+| **Adds** | — | — | — | **Boss + Manager + QA gate + human-in-the-loop** |
+| **Hard stance** | education + analytics | **never buy/sell advice, never executes** | education, not regulated advice | regulated content **stops for human review** |
+
+---
+
+## 🎩 Intelligent Mode — the Advisory Engine
+
+The three modes above are **static forms**: you pick the mode, fill the fields, and a
+fixed board runs. Intelligent Mode is the blueprint's **Advisory Engine** — a
+conversational, self-routing superset that adds the exact upgrades EIP's own roadmap
+named: a **Boss**, a dynamic **Manager**, a **blocking QA gate**, and **human-in-the-loop**
+review — all on top of the same deterministic cores, two-round deliberation, honest
+degradation and glass box.
+
+```mermaid
+flowchart TD
+    U["you (a conversation, not a form)"] --> B["🎩 Boss — intake<br/>listens, clarifies, captures;<br/>CLASSIFIES the engagement"]
+    B -->|founder / operator| MV["venture board"]
+    B -->|trader| MT["trader desk (technicals · backtests · quant · risk)"]
+    B -->|wealth| MW["wealth desk (budget · allocation · FIRE)"]
+    MV --> MGR["🎼 Manager — dynamic routing<br/>within the mode's locked spine"]
+    MT --> MGR
+    MW --> MGR
+    MGR --> P["L1 grounding → L2 two waves → L3 crucible →<br/>round-2 deliberation → synthesis"]
+    P --> QA{"✅ QA gate<br/>facts · red-team · bias · verdict"}
+    QA -->|fail| RD["re-dispatch the weak agents,<br/>re-weigh, re-sign"] --> QA
+    QA -->|pass| H{"🧑‍⚖️ regulated?"}
+    H -->|legal/tax/financial| REV["pause for human review<br/>approve / reject / timeout→UNREVIEWED"]
+    H -->|no| DEL["deliver"]
+    REV --> DEL["report · verdict · 3D graph"]
+```
+
+**What each brain does**
+
+| | Role | What it does |
+|---|---|---|
+| 🎩 **Boss** | conversational intake | A real multi-turn dialogue (not a form). Digs for the *real* problem, scores completeness, and **classifies the engagement** into Founder / Trader / Wealth / Operator — because a trader question and a founder question are different jobs and must engage different boards. Captures the ticker (trader) or income/expenses (wealth) the desks need. Gives **no advice**. Works with zero keys via a deterministic question ladder + keyword classifier. |
+| 🎼 **Manager** | dynamic orchestrator | Routes **mode-aware**: takes the classified engagement's roster + deterministic cores as the base, then adds the lenses *this specific brief* needs and benches what it doesn't — always within the mode's **guaranteed spine** (defense in depth: the picker locks it *and* the Manager re-enforces it). Emits a visible task-graph plan. |
+| ✅ **QA gate** | blocking accuracy | Runs **before the reporter**, so the deliverable is always written on a QA-cleaned board. Sweeps fact-checker failures, high-severity red-team attacks, framing bias and verdict integrity into a pass/fail. On fail it **re-dispatches** the responsible agents with the specific objections, then re-checks facts and re-weighs with the *engagement's own* weighing/verdict. Nothing bad flows downstream silently; unresolved issues stay **visible on the verdict**, never hidden. |
+| 🧑‍⚖️ **Human-in-the-loop** | regulated gate | When the board produces regulated legal/tax/financial content (or the engagement is trader/wealth), the pipeline **pauses** and exposes the draft at `GET /api/review/{run_id}`. A reviewer **approves** (publish), **rejects** (report withheld — the deterministic verdict still stands), or lets the window lapse (**timeout → published, watermarked UNREVIEWED**). Every regulated run carries the disclaimer; the decision is audited in the run state. The SSE stream never dies waiting on a human. |
+
+**How it's built (a strict superset, not a rewrite):** Intelligent Mode is a thin
+**dispatcher** (`graphs/intelligent.py`) — it classifies, then delegates to the real
+`run_venture` / `run_trading` / `run_wealth` pipeline with `advisory=True`. Each pipeline,
+seeing that flag, runs the four Advisory-Engine wrappers (`boss_brief → manager_plan →
+qa_gate → hitl_checkpoint`) around its normal flow. So Trader questions run the *actual*
+trader desks, Wealth questions the *actual* money-math desks — no duplication, every
+tested pipeline reused. Operator (scaling an existing company) maps onto the venture
+scaffold with an ops-weighted Manager roster.
+
+**New agents:** 🎩 `boss` and 🎼 `manager` (L0 · orchestration) — roster **90** (87 implemented).
+**New SSE events:** `qa {status, issues[]}` · `hitl {status, decision, sections[]}` ·
+`skipped_no_llm {agent, keys_exhausted}` (the explicit "this agent never reached a model" state).
 
 ---
 
@@ -589,6 +651,7 @@ flowchart LR
 - ✅ **Phase 10 (scaffold)** — anonymous accounts + **tiers**, per-user history, persistent-DB path (`EIP_DB_PATH`), Postgres-ready.
 - ✅ **Phase 11** — **two-round golden-arc deliberation** (all-to-all re-read, round-1 vs round-2 results) + **16 keys/provider** rotation.
 - ✅ **Phase 12** — deliberation extended to **every layer (L1→L2→L3, sequential) with the TWO verdicts** + ✓✓ round badges; **RAG** (per-agent BM25-relevant evidence + past-run memory recall); reporter **prompt-compaction ladder + split-report fallback** (the actual starvation root-cause: oversized single requests); picker shows the golden mesh; arcs pulse only while agents communicate.
+- ✅ **Phase 16** — **🎩 Intelligent Mode (the Advisory Engine)**: the 4th mode. A conversational **Boss** that classifies the engagement (founder / trader / wealth / operator), a dynamic **Manager** that routes **mode-aware** to that engagement's real board + deterministic cores within a locked spine, a **blocking QA gate** that re-dispatches weak analysis before the reporter, and **human-in-the-loop** review that pauses regulated legal/tax/financial content (approve / reject / timeout→UNREVIEWED). New agents `boss` + `manager` (roster 88 → **90**); new SSE events `qa` / `hitl` / `skipped_no_llm`; new endpoints `/api/intake` (Boss) + `/api/review/{run_id}` (HITL). Built as a thin dispatcher that reuses the venture/trading/wealth pipelines via an `advisory` flag — no duplication.
 - ✅ **Phase 15** — **the full catalog build-out**: 15 new agents (roster 73 → 88) incl. RAG Memory and Outcome Tracker as visible board members; tools-&-data-access badges on every capability card; new agents wired into scopes, PEERS mesh, deliberation, weighing (Execution/Economics), and the picker in all three modes.
 - ✅ **Phase 14** — **Results v5**: 15 animated chart types (line/radial/pyramid/funnel/histogram added), Scenario Predictions + Negotiation Playbook + Comparative Analysis + Bottom-Line panels; **fresh-run guarantee** (live-fetch retries on throttle + a FRESH-RUN timestamp banner — nothing is reused between runs except claims labelled MEMORY); **Phase 8.2 OCR shipped** (scanned images OCR'd IN THE BROWSER via tesseract.js — zero backend vision deps, free-tier safe); **learned weights** (dimension weights calibrated ±15% from your graded outcomes, all three modes); deeper memory recall (past verdict reasoning included).
 - ✅ **Phase 13** — **the TRUE two-pass pipeline**: round 1 completes in full and PUBLISHES its complete results (verdict, pitch, charts, report), then L0→L1→L2→L3→L4 all re-run with the whole round-1 board visible, and the **round-2 results render under the round-1 results** — two full result sets per run. Grounding + crucible now deliberate too (✓✓ across every layer). Plus **10 new agents from the future-improvements table**, incl. a deterministic **Monte-Carlo Scenario Planner** (P10/P50/P90, P(GO), what-breaks-it chart) and a **Negotiation Coach** (BATNA/anchor/concessions).

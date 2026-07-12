@@ -4,6 +4,7 @@ import { useState } from "react";
 import { API_BASE, type EngineStatus } from "@/lib/api";
 import type { IntakeForm } from "@/lib/types";
 import { BoardPicker } from "./board-picker";
+import { BossChat } from "./boss-chat";
 import { EnginePanel } from "./engine-panel";
 
 const DEFAULTS: IntakeForm = {
@@ -36,6 +37,9 @@ const DEFAULTS: IntakeForm = {
   risk_appetite: "moderate",
   city: "",
   goals: "",
+  conversation: [],
+  engagement_mode: "",
+  hitl_timeout: 300,
   documents: [],
   agent_context: {},
   engine: {
@@ -58,6 +62,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
   const [f, setF] = useState<IntakeForm>(DEFAULTS);
   const [docBusy, setDocBusy] = useState(false);
   const [docError, setDocError] = useState("");
+  const [bossReady, setBossReady] = useState(false);
   const set = <K extends keyof IntakeForm>(k: K, v: IntakeForm[K]) => setF((p) => ({ ...p, [k]: v }));
 
   const addDocument = async (file: File) => {
@@ -89,9 +94,11 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
   };
   const trader = f.mode === "trader";
   const wealth = f.mode === "wealth";
+  const intelligent = f.mode === "intelligent";
   const founder = f.mode === "founder";
   const ready = trader ? f.symbol.trim().length >= 2
     : wealth ? f.monthly_income > 0
+    : intelligent ? (bossReady || f.situation.trim().length >= 20)
     : f.situation.trim().length >= 20;
 
   return (
@@ -104,18 +111,36 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </p>
 
       {/* mode tabs */}
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {([["founder", "🚀 Founder", "validate an idea or dilemma"],
            ["trader", "📈 Trader", "analyse any listed stock"],
-           ["wealth", "💰 Wealth", "salary, savings, FIRE, property"]] as const).map(([id, label, sub]) => (
-          <button key={id} onClick={() => set("mode", id)}
-            className={`flex-1 rounded-xl border p-3 text-left transition ${
-              f.mode === id ? "border-cyan/70 bg-cyan/10" : "border-line bg-panel hover:border-slate-500"}`}>
+           ["wealth", "💰 Wealth", "salary, savings, FIRE, property"],
+           ["intelligent", "🎩 Intelligent", "the Advisory Engine — Boss + Manager"]] as const).map(([id, label, sub]) => (
+          <button key={id} onClick={() => {
+              set("mode", id);
+              // the Advisory Engine is a full board with two-round deliberation by default
+              if (id === "intelligent" && f.depth === "pulse") set("depth", "board");
+            }}
+            className={`rounded-xl border p-3 text-left transition ${
+              f.mode === id
+                ? id === "intelligent" ? "border-brand/70 bg-brand/10" : "border-cyan/70 bg-cyan/10"
+                : "border-line bg-panel hover:border-slate-500"}`}>
             <div className="text-sm font-semibold">{label}</div>
             <div className="font-mono text-[10px] text-muted">{sub}</div>
           </button>
         ))}
       </div>
+
+      {intelligent && (
+        <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3 text-xs leading-relaxed text-slate-400">
+          <span className="font-semibold text-slate-200">Intelligent Mode</span> runs the full Advisory
+          Engine. The 🎩 <b>Boss</b> interviews you and <b>classifies the engagement</b> —
+          🚀 Founder, 📈 Trader, 💰 Wealth or ⚙️ Operator — then the 🎼 <b>Manager</b> routes to that
+          board&apos;s specialists and deterministic cores, a blocking ✅ <b>QA gate</b> re-dispatches any
+          weak analysis, and 🧑‍⚖️ <b>human review</b> guards regulated legal/tax/financial content before
+          the report publishes. You don&apos;t pick the mode — the Boss figures it out from what you say.
+        </div>
+      )}
 
       {/* step 1 — trader: the symbol IS the situation */}
       {trader && (
@@ -223,6 +248,34 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         </section>
       )}
 
+      {/* step 1 — intelligent: the 🎩 Boss conversation */}
+      {intelligent && (
+        <BossChat
+          engine={f.engine}
+          onConversation={(c) => set("conversation", c)}
+          onBrief={(b) => setF((p) => ({
+            ...p,
+            engagement_mode: (b.engagement_mode as IntakeForm["engagement_mode"]) || p.engagement_mode,
+            situation: b.situation || p.situation,
+            industry: b.industry || p.industry,
+            geography: b.geography || p.geography,
+            stage: b.stage || p.stage,
+            budget_band: b.budget_band || p.budget_band,
+            team_size: b.team_size || p.team_size,
+            uncertainty: b.uncertainty || p.uncertainty,
+            target_customer: b.target_customer || p.target_customer,
+            competitors: b.competitors || p.competitors,
+            revenue_model: b.revenue_model || p.revenue_model,
+            // mode-specific fields the trader / wealth desks need
+            symbol: b.symbol ? String(b.symbol).toUpperCase() : p.symbol,
+            trading_style: (b.trading_style as IntakeForm["trading_style"]) || p.trading_style,
+            monthly_income: b.monthly_income ? Number(String(b.monthly_income).replace(/[^\d.]/g, "")) || p.monthly_income : p.monthly_income,
+            monthly_expenses: b.monthly_expenses ? Number(String(b.monthly_expenses).replace(/[^\d.]/g, "")) || p.monthly_expenses : p.monthly_expenses,
+          }))}
+          onComplete={setBossReady}
+        />
+      )}
+
       {/* step 1 — founder: the situation */}
       {founder && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
@@ -317,11 +370,14 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
             ["pulse", "Pulse", founder ? "13 specialists · ~2 min · the fast read"
-              : trader ? "18 specialists · the core trading desk" : "14 specialists · the money desk"],
+              : trader ? "18 specialists · the core trading desk"
+              : intelligent ? "15 · Boss + Manager + the spine (single round)" : "14 specialists · the money desk"],
             ["board", "Board Meeting", founder ? "26 specialists · venture board + human layer"
-              : trader ? "26 specialists · + macro, geopolitics, psychology" : "22 specialists · + macro, funds, life-fit"],
+              : trader ? "26 specialists · + macro, geopolitics, psychology"
+              : intelligent ? "28 · dynamic board + QA gate + two rounds" : "22 specialists · + macro, funds, life-fit"],
             ["war_room", "War Room", founder ? "37 specialists · world cluster + live debates"
-              : trader ? "34 specialists · the full house" : "29 specialists · the full house"],
+              : trader ? "34 specialists · the full house"
+              : intelligent ? "39 · the full pool + debates + QA + review" : "29 specialists · the full house"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -331,14 +387,42 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
             </button>
           ))}
         </div>
+        {intelligent && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel-2 p-3">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+              🧑‍⚖️ human-review window
+            </span>
+            <select value={f.hitl_timeout} onChange={(e) => set("hitl_timeout", Number(e.target.value))}
+              className="rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs outline-none focus:border-brand/60">
+              <option value={120}>2 min</option>
+              <option value={300}>5 min</option>
+              <option value={600}>10 min</option>
+              <option value={1800}>30 min</option>
+            </select>
+            <span className="font-mono text-[10px] leading-relaxed text-slate-600">
+              if the board produces regulated legal/tax/financial content it pauses for your
+              approval; after this window it publishes marked UNREVIEWED, disclaimer attached.
+            </span>
+          </div>
+        )}
       </section>
 
       {/* your board — hand-pick and brief the employees (every mode) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           03 · Pick your board
+          {intelligent && f.engagement_mode && (
+            <span className="ml-2 rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] normal-case text-brand">
+              🎼 Manager routes the {f.engagement_mode} board — pick/brief anyone, or leave it to the Manager
+            </span>
+          )}
         </h2>
-        <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
+        <BoardPicker
+          mode={intelligent
+            ? (f.engagement_mode === "trader" ? "trader"
+               : f.engagement_mode === "wealth" ? "wealth" : "intelligent")
+            : f.mode}
+          depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)}
           agentContext={f.agent_context}
           onContext={(ctx) => set("agent_context", ctx)} />
@@ -366,18 +450,21 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
           {!ready
             ? trader ? "enter a symbol to begin"
               : wealth ? "enter your monthly income to begin"
+              : intelligent ? "finish the intake conversation with the 🎩 Boss to begin"
               : "describe your situation (≥ 20 chars) to begin"
             : `${f.agents_enabled.length > 0 ? f.agents_enabled.length
                 : { founder: { pulse: 13, board: 26, war_room: 37 },
                     trader: { pulse: 18, board: 26, war_room: 34 },
-                    wealth: { pulse: 14, board: 22, war_room: 29 } }[f.mode][f.depth]
+                    wealth: { pulse: 14, board: 22, war_room: 29 },
+                    intelligent: { pulse: 15, board: 28, war_room: 39 } }[f.mode][f.depth]
               } specialists ready · ${
                 { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]}${
                 trader ? ` · ${f.symbol}` : ""}`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
-          className="rounded-lg bg-gradient-to-r from-brand to-cyan px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">
-          ⚡ Convene the Board
+          className={`rounded-lg bg-gradient-to-r px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40 ${
+            intelligent ? "from-brand to-l5" : "from-brand to-cyan"}`}>
+          {intelligent ? "🎩 Run the Advisory Engine" : "⚡ Convene the Board"}
         </button>
       </div>
     </div>

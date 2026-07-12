@@ -7,6 +7,7 @@ import type { IntakeForm } from "@/lib/types";
 import { Boardroom } from "./boardroom";
 import { DecisionRoom } from "./decision-room";
 import { FlowMap } from "./flow-map";
+import { HitlBanner, ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
 import { IntakeWizard } from "./intake-wizard";
 import { PipelineRail } from "./pipeline-rail";
 import { StageCards } from "./stage-cards";
@@ -77,8 +78,15 @@ export function StudioClient() {
           {fatal && (
             <div className="mb-3 rounded-lg border border-err/40 bg-err/10 p-3 text-sm text-err">{fatal}</div>
           )}
+          {/* the human-review gate is a blocking action — always visible, any tab */}
+          <div className="mb-3 space-y-3 empty:mb-0">
+            <HitlBanner />
+          </div>
           {tab === "pipeline" && (
             <div className="space-y-3">
+              {/* Intelligent Mode: the Manager's plan + the blocking QA gate (null in other modes) */}
+              <ManagerPlanPanel />
+              <QaGatePanel />
               {/* the living workflow tree — click any agent to jump to its full card */}
               <FlowMap onFocus={(id) =>
                 document.getElementById(`stage-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} />

@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 15 (full catalog build-out: 88 agents incl. RAG Memory + Outcome Tracker as visible board members · tools badges on every capability card) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 16 (🎩 Intelligent Mode — the Advisory Engine: a conversational Boss that classifies the engagement, a dynamic mode-aware Manager, a blocking QA gate, and human-in-the-loop review · roster 90) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -451,6 +451,77 @@ Mechanics: each dimension = the mean of its producers' scores (missing producers
 | **Wealth** | the money core (~16): news, macro, salary_budget, allocator, fire, debt_banking, real_estate, location_scout, red_team, bias_auditor, synthesis (6) | + macroeconomist, trends, regulator, fund_analyst, market_research, banking, money_happiness, human_needs, philosophy_ethics, philanthropy_impact | + geopolitics, intl_markets, esg_impact, optimization_predictor, subsidies_schemes, the full human wave |
 
 Rules that hold everywhere: **synthesis is never benchable** (weighing, verdict, storytelling, visualizer, reporter + the mode data-spines: market_data/technical for trader, salary_budget for wealth); benched agents show `skipped` honestly; **round-2 deliberation runs at Board/War Room** (Pulse = 1 round; the `rounds` payload field overrides); the gap-detector replays degraded agents in all modes.
+
+---
+
+## 12.5 Intelligent Mode — the Advisory Engine (the 4th mode)
+
+The three modes above are **static forms**. Intelligent Mode is the blueprint's
+**Advisory Engine**: a conversational, self-routing superset that keeps everything EIP
+does well (deterministic cores, two-round deliberation, honest degradation, 16-key
+gateway, weighted dimensions, glass box, 3D graph) and adds the four things EIP's own
+roadmap named — a **Boss**, a dynamic **Manager**, a **blocking QA gate**, and
+**human-in-the-loop** review.
+
+**The defining behavior — mode classification + mode-aware routing.** A trader question
+and a founder question are different jobs, so the Boss *classifies* every intake into one
+of four engagements and the Manager routes to that engagement's real board:
+
+| Engagement | The Boss detects | Routes to | Deterministic cores that actually run |
+|---|---|---|---|
+| 🚀 **Founder** | validating / building a venture | the venture pipeline | runway / unit economics |
+| 📈 **Trader** | evaluating a stock or position | the trading pipeline | 40+ indicators, backtests, quant, risk sizing |
+| 💰 **Wealth** | growing / protecting personal money | the wealth pipeline | budget, allocation, FIRE math |
+| ⚙️ **Operator** | scaling an existing company | the venture scaffold, ops-weighted | runway / unit economics (ops roster) |
+
+**The four brains**
+
+1. **🎩 Boss** (`orchestra.boss_converse`, `boss_brief`) — a multi-turn dialogue, not a
+   form. Digs for the real problem, scores completeness, and classifies the engagement.
+   For a trader engagement it captures the ticker + style; for wealth, income + expenses.
+   Gives **no advice**. Zero-key safe: a deterministic question ladder + a keyword
+   classifier (`classify_engagement`) run when no model is reachable. Exposed at
+   `POST /api/intake` (stateless — the client resends the transcript each turn).
+2. **🎼 Manager** (`orchestra.manager_plan`) — routes **mode-aware**: the classified
+   engagement's roster + cores are the base; the Manager adds the cross-cutting lenses
+   *this brief* needs and benches what it doesn't, always within the mode's
+   **guaranteed spine** (`_spine(mode)` — founder/trader/wealth each have their own). The
+   user's hand-picked board is sovereign (the Manager only adds). Emits a visible
+   `manager_plan` partial (picks, drops, locked spine, waves).
+3. **✅ QA gate** (`orchestra.qa_gate`) — **blocking**, runs *before the reporter*. Sweeps
+   fact-checker `unsupported`/`contradicted` verdicts, red-team attacks ≥ 0.75 severity,
+   framing bias ≥ 0.75, and verdict integrity into a pass/fail. On fail it **re-dispatches**
+   the responsible agents with the specific objections, then re-checks facts and re-weighs
+   with the **engagement's own** weighing/verdict (trader ≠ wealth ≠ founder). Unresolved
+   issues stay **visible on the verdict** (`qa_flag`), never hidden. Emits `qa {status, issues[]}`.
+4. **🧑‍⚖️ Human-in-the-loop** (`orchestra.hitl_checkpoint`, `core/hitl.py`) — when the board
+   produced regulated legal/tax/financial content (or the engagement is trader/wealth), the
+   pipeline **pauses** and opens a gate. The reviewer hits `GET /api/review/{run_id}` to see
+   the draft and `POST /api/review/{run_id}` to **approve** (publish), **reject** (report
+   withheld; the deterministic verdict still stands), or lets the window lapse
+   (**timeout → published, watermarked `unreviewed_timeout`**). Every regulated run carries
+   the disclaimer; the decision is audited in `rounds.hitl`. Emits `hitl {status, decision, sections[]}`.
+
+**Architecture — a strict superset, not a rewrite.** `graphs/intelligent.py` is a thin
+**dispatcher**: it classifies, sets `advisory=True` + `mode=<classified>`, and delegates to
+`run_venture` / `run_trading` / `run_wealth`. Each pipeline, guarded by `payload["advisory"]`,
+runs the four wrappers around its normal flow:
+
+```
+boss_brief (L0 head) → intake/profile/scope → manager_plan → L1 → L2 waves → L3 →
+  round-2 deliberation → synthesis[ qa_gate → reporter ] → hitl_checkpoint → deliver
+```
+
+So Trader questions run the *actual* technical/backtest/quant/risk desks and Wealth
+questions the *actual* salary/allocation/FIRE desks — no duplicated logic, every tested
+pipeline reused. New agents: `boss` + `manager` (L0 · orchestration) → roster **90** (87
+implemented). New events: `qa`, `hitl`, `skipped_no_llm`. New endpoints: `/api/intake`,
+`/api/review/{run_id}`.
+
+**Honesty preserved.** With zero keys the Boss still classifies (keyword ladder), the
+Manager still runs the mode scope (deterministic plan), the QA gate still sweeps the
+deterministic crucible, and the HITL gate still opens — every subsystem is fail-soft and
+`skipped_no_llm` marks any agent that never reached a model.
 
 ---
 

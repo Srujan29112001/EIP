@@ -53,7 +53,7 @@ const WEALTH_MANDATORY = new Set(["salary_budget", ...SYNTH]);
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 
 export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onContext }: {
-  mode: "founder" | "trader" | "wealth";
+  mode: "founder" | "trader" | "wealth" | "intelligent";
   depth: "pulse" | "board" | "war_room";
   enabled: string[];
   onChange: (ids: string[]) => void;
@@ -74,7 +74,18 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
     const inDepth = (id: string) => depth === "war_room" ? true
       : depth === "board" ? PULSE_ONLY.has(id) || BOARD_EXTRA.has(id) || HUMAN_WAVE.includes(id)
       : PULSE_ONLY.has(id);
-    return { roster: AGENTS.filter((a) => inDepth(a.id)), mandatory: MANDATORY };
+    const base = AGENTS.filter((a) => inDepth(a.id));
+    // Intelligent Mode shares the venture roster of lenses, plus the 🎩 Boss and
+    // 🎼 Manager orchestration pair (always convened, always locked). The Manager
+    // then routes dynamically ON TOP of whatever you pick here.
+    if (mode === "intelligent") {
+      const orch = AGENTS.filter((a) => a.id === "boss" || a.id === "manager");
+      return {
+        roster: [...orch, ...base],
+        mandatory: new Set(["boss", "manager", ...MANDATORY]),
+      };
+    }
+    return { roster: base, mandatory: MANDATORY };
   }, [mode, depth]);
 
   const isOn = (id: string) => enabled.length === 0 || enabled.includes(id) || mandatory.has(id);

@@ -1,6 +1,6 @@
 /** Backend client — health probe + the SSE run consumer (Helix consumeSSE pattern). */
 
-import type { IntakeForm, RunEvent } from "./types";
+import type { BossTurn, EngineSelection, IntakeForm, RunEvent } from "./types";
 import { userHeaders } from "./user";
 
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -118,6 +118,40 @@ export async function askBoard(runId: string, question: string):
   });
   if (!r.ok) throw new Error(`ask failed: ${r.status}`);
   return r.json();
+}
+
+/** One 🎩 Boss turn (Intelligent Mode): the whole conversation in, the next
+ * question or the finished Brief out. Stateless — nothing persists server-side. */
+export async function bossIntake(
+  messages: { role: "user" | "assistant"; content: string }[],
+  engine?: Partial<EngineSelection>,
+): Promise<BossTurn> {
+  const r = await fetch(`${API_BASE}/api/intake`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, engine: engine ?? {} }),
+    signal: AbortSignal.timeout(60000),
+  });
+  if (!r.ok) throw new Error(`intake failed: ${r.status}`);
+  return r.json();
+}
+
+/** The human-in-the-loop decision — wakes a run paused at the regulated-content
+ * gate. One shot per run; the pipeline proceeds (approve) or withholds (reject). */
+export async function reviewDecision(
+  runId: string, decision: "approve" | "reject", note = "",
+): Promise<boolean> {
+  try {
+    const r = await fetch(`${API_BASE}/api/review/${runId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision, note }),
+      signal: AbortSignal.timeout(8000),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**

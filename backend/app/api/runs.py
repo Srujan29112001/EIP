@@ -11,8 +11,11 @@ from pydantic import BaseModel, Field
 
 from fastapi import Header, HTTPException, UploadFile
 
+from ..agents import orchestra
 from ..agents.registry import ROSTER
+from ..core import hitl
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
+from ..graphs.intelligent import run_intelligent
 from ..graphs.trading import run_trading
 from ..graphs.venture import run_venture
 from ..graphs.wealth import run_wealth
@@ -23,7 +26,7 @@ router = APIRouter(prefix="/api")
 
 
 class RunRequest(BaseModel):
-    mode: str = "founder"                # founder | trader | wealth (trader/wealth: later phases)
+    mode: str = "founder"                # founder | trader | wealth | intelligent
     situation: str = ""
     industry: str = ""
     geography: str = "India"
@@ -56,6 +59,11 @@ class RunRequest(BaseModel):
     dependents: int = 0
     current_debt: float = 0.0            # outstanding loans total
     monthly_sip: float = 0.0             # already-automated investing
+    # intelligent mode (Advisory Engine): the Boss intake conversation +
+    # the human-review window for regulated content
+    conversation: list[dict[str, Any]] = Field(default_factory=list)
+    hitl_timeout: int = 300              # seconds the human gate waits before UNREVIEWED
+    hitl_auto_approve: bool = False      # API callers may pre-approve (audited)
     # document intelligence (Phase 8): extracted client-side via POST /api/extract
     documents: list[dict[str, Any]] = Field(default_factory=list)
     # per-agent user briefs from the board picker ("here's what I want YOU to focus on")
@@ -72,7 +80,8 @@ async def run(req: RunRequest, x_eip_user: str | None = Header(default=None)) ->
     run_id = uuid.uuid4().hex[:12]
     emitter = Emitter()
     pipeline = (run_trading if req.mode == "trader"
-                else run_wealth if req.mode == "wealth" else run_venture)
+                else run_wealth if req.mode == "wealth"
+                else run_intelligent if req.mode == "intelligent" else run_venture)
     payload = req.model_dump()
     if x_eip_user:
         payload["user_id"] = x_eip_user.strip()[:64]
@@ -204,6 +213,45 @@ async def run_detail(run_id: str) -> dict[str, Any]:
         raise HTTPException(404, "run not found")
     rec["outcome"] = await store.get_outcome(run_id)
     return rec
+
+
+# ── Intelligent Mode: the Boss intake conversation ───────────────────────────
+
+class IntakeRequest(BaseModel):
+    messages: list[dict[str, Any]] = Field(default_factory=list)  # [{role, content}]
+    engine: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/intake")
+async def intake(req: IntakeRequest) -> dict[str, Any]:
+    """One 🎩 Boss turn: the whole transcript in, either the next clarifying
+    question or the finished Brief out. Stateless — keys are per-call, the
+    client resends the conversation each turn, nothing persists server-side."""
+    cfg = EngineConfig(**{k: v for k, v in (req.engine or {}).items()
+                          if k in EngineConfig.__dataclass_fields__})
+    return await orchestra.boss_converse(req.messages[:40], Gateway(cfg))
+
+
+# ── Intelligent Mode: human-in-the-loop review (regulated content) ────────────
+
+class ReviewRequest(BaseModel):
+    decision: str = "approve"   # approve | reject
+    note: str = ""
+
+
+@router.get("/review/{run_id}")
+async def review_state(run_id: str) -> dict[str, Any]:
+    """What the paused run is asking the human to review."""
+    g = hitl.peek(run_id)
+    return g if g is not None else {"run_id": run_id, "pending": False, "decision": None}
+
+
+@router.post("/review/{run_id}")
+async def review_decide(run_id: str, req: ReviewRequest) -> dict[str, Any]:
+    """The human decision — wakes the paused pipeline. One shot per run."""
+    if not hitl.resolve(run_id, req.decision, req.note):
+        raise HTTPException(404, "no review is pending for this run")
+    return {"ok": True, "run_id": run_id, "decision": req.decision}
 
 
 # ── Phase 9: outcome tracking ─────────────────────────────────────────────────
