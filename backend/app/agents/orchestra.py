@@ -582,7 +582,10 @@ async def qa_gate(ctx: Ctx, round_no: int = 1) -> bool:
         mode = classify_engagement(ctx.state.raw)
         if "fact_checker" in ctx.state.scope:
             await v.fact_checker(ctx)
-        if mode == "trader":
+        if ctx.state.raw.get("orchestra"):
+            from .conductor import weighing_orchestra
+            await weighing_orchestra(ctx)
+        elif mode == "trader":
             from . import markets as mk
             await mk.weighing_trader(ctx)
             await mk.verdict_trader(ctx)

@@ -166,10 +166,10 @@ export function BossChat({
       {complete && turn && (
         <div className="mt-3 rounded-lg border border-ok/40 bg-ok/5 p-3">
           <div className="mb-1.5 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-ok">
-            ✓ brief captured — the board is ready
+            ✓ brief captured — the 🎼 Manager will score the orchestra
             {turn.engagement_mode && MODE_META[turn.engagement_mode] && (
               <span className="rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-brand">
-                routing to {MODE_META[turn.engagement_mode].label} · {MODE_META[turn.engagement_mode].desk}
+                detected focus: {MODE_META[turn.engagement_mode].label}
               </span>
             )}
           </div>

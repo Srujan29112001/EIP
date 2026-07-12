@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, HitlState, LogKind, ManagerPlan, QaEvent, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, Verdict,
+  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, HitlState, InstrumentResult, LogKind, ManagerPlan, QaEvent, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, TaskGraph, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -44,6 +44,9 @@ interface RunStore {
   hitl: HitlState | null;
   /** agents that could not reach ANY model (deterministic core only) */
   noLlm: Record<string, boolean>;
+  /** Intelligent Mode = the Orchestra: the Manager's task graph + per-player instruments */
+  taskGraph: TaskGraph | null;
+  instruments: Record<string, InstrumentResult[]>;
   begin: () => void;
   apply: (e: RunEvent) => void;
   reset: () => void;
@@ -78,6 +81,8 @@ const EMPTY = {
   qa: [] as QaEvent[],
   hitl: null as HitlState | null,
   noLlm: {} as Record<string, boolean>,
+  taskGraph: null as TaskGraph | null,
+  instruments: {} as Record<string, InstrumentResult[]>,
 };
 
 export const useRun = create<RunStore>((set) => ({
@@ -134,6 +139,7 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "run_id") return { runId: e.data as string };
           if (e.section === "manager_plan") return { managerPlan: e.data as ManagerPlan };
           if (e.section === "boss_brief") return { bossBrief: e.data as Record<string, string> };
+          if (e.section === "task_graph") return { taskGraph: e.data as TaskGraph };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };
             return { agentOutputs: { ...s.agentOutputs, [d.agent]: d.output } };
@@ -149,6 +155,14 @@ export const useRun = create<RunStore>((set) => ({
                            decision: e.decision, note: e.note } };
         case "skipped_no_llm":
           return { noLlm: { ...s.noLlm, [e.agent]: true } };
+        case "instrument": {
+          const prev = s.instruments[e.player] ?? [];
+          const row: InstrumentResult = { name: e.name, skill: e.skill, finding: e.finding, status: e.status };
+          // replace-by-name so re-emits update in place, else append
+          const i = prev.findIndex((r) => r.name === e.name);
+          const next = i >= 0 ? prev.map((r, j) => (j === i ? row : r)) : [...prev, row];
+          return { instruments: { ...s.instruments, [e.player]: next } };
+        }
         case "done":
           return { phase: "done" as const, runId: e.run_id };
         case "fatal":

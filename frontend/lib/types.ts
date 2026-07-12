@@ -221,6 +221,39 @@ export interface QaEvent {
   issues: QaIssue[];
 }
 
+/** One junior instrument's streamed result (Intelligent Mode's two-tier orchestra). */
+export interface InstrumentResult {
+  name: string;
+  skill: string;
+  finding: string;
+  status: "done" | "degraded" | "active";
+}
+
+/** The 🎼 Manager's task graph — the orchestra scored into movements & players. */
+export interface TaskGraphPlayer {
+  id: string;
+  name: string;
+  emoji: string;
+  instruments: string[];
+}
+export interface TaskGraphMovement {
+  id: string;
+  name: string;
+  color: string;
+  layer: string;
+  players: TaskGraphPlayer[];
+}
+export interface TaskGraph {
+  focus: string;
+  regulated: boolean;
+  depth: string;
+  n_players: number;
+  n_instruments: number;
+  movements: TaskGraphMovement[];
+  edges: [string, string][];
+  route: string;
+}
+
 /** The human-in-the-loop review state (hitl events). */
 export interface HitlState {
   status: "pause" | "resumed";
@@ -246,5 +279,6 @@ export type RunEvent =
   | { type: "qa"; status: "started" | "passed" | "failed"; round: number; issues: QaIssue[] }
   | { type: "hitl"; status: "pause" | "resumed"; reason: string; sections: string[]; decision: string; note: string }
   | { type: "skipped_no_llm"; agent: string; keys_exhausted: boolean }
+  | { type: "instrument"; player: string; name: string; skill: string; finding: string; status: "done" | "degraded" | "active" }
   | { type: "done"; run_id: string }
   | { type: "fatal"; message: string };

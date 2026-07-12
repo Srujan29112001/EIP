@@ -8,6 +8,7 @@ import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AskBoard } from "./ask-board";
 import { ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
+import { OrchestraView } from "./orchestra-view";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
 import { AgentTable, DegradedNotice, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
 import { Disagreements } from "./disagreements";
@@ -22,9 +23,9 @@ const BAND_STYLE: Record<string, { label: string; cls: string }> = {
 };
 
 export function DecisionRoom() {
-  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds, resultSets, managerPlan, qa, hitl, noLlm } = useRun();
+  const { verdict, radar, tokens, routes, board, brief, agentOutputs, collabs, story, crossInsights, compliance, rounds, resultSets, managerPlan, qa, hitl, noLlm, taskGraph } = useRun();
   const twoRounds = Boolean(resultSets[1] && resultSets[2]);
-  const intelligent = Boolean(managerPlan || qa.length || hitl);
+  const intelligent = Boolean(managerPlan || qa.length || hitl || taskGraph);
   const noLlmCount = Object.keys(noLlm).length;
 
   const exportMd = () =>
@@ -72,6 +73,16 @@ export function DecisionRoom() {
           <ManagerPlanPanel />
           <QaGatePanel />
         </div>
+      )}
+
+      {/* the two-tier orchestra — players & the instruments each one played */}
+      {taskGraph && (
+        <details className="rounded-xl border border-brand/30 bg-brand/[0.02] p-1">
+          <summary className="cursor-pointer px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-brand">
+            🎼 the orchestra that played — {taskGraph.n_players} players · {taskGraph.n_instruments} instruments
+          </summary>
+          <div className="p-2"><OrchestraView /></div>
+        </details>
       )}
 
       {/* ═══ THE TWO RESULT SETS — round 1 in full, then round 2 under it ═══ */}

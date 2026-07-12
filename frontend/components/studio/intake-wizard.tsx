@@ -133,12 +133,12 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {intelligent && (
         <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3 text-xs leading-relaxed text-slate-400">
-          <span className="font-semibold text-slate-200">Intelligent Mode</span> runs the full Advisory
-          Engine. The 🎩 <b>Boss</b> interviews you and <b>classifies the engagement</b> —
-          🚀 Founder, 📈 Trader, 💰 Wealth or ⚙️ Operator — then the 🎼 <b>Manager</b> routes to that
-          board&apos;s specialists and deterministic cores, a blocking ✅ <b>QA gate</b> re-dispatches any
-          weak analysis, and 🧑‍⚖️ <b>human review</b> guards regulated legal/tax/financial content before
-          the report publishes. You don&apos;t pick the mode — the Boss figures it out from what you say.
+          <span className="font-semibold text-slate-200">Intelligent Mode is the Orchestra</span> — one
+          general advisory ensemble for <i>any</i> business or life brief. The 🎩 <b>Boss</b> interviews
+          you; the 🎼 <b>Manager</b> scores the brief into a task graph and puts <b>every player AND every
+          junior instrument</b> to work (each expert conducts its own 4–5 specialists); a blocking
+          ✅ <b>QA gate</b> re-dispatches weak analysis, and 🧑‍⚖️ <b>human review</b> guards regulated
+          content. You watch all ~280 instruments light up as they play.
         </div>
       )}
 
@@ -371,13 +371,13 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
           {([
             ["pulse", "Pulse", founder ? "13 specialists · ~2 min · the fast read"
               : trader ? "18 specialists · the core trading desk"
-              : intelligent ? "15 · Boss + Manager + the spine (single round)" : "14 specialists · the money desk"],
+              : intelligent ? "~34 players · ~170 instruments · core sections" : "14 specialists · the money desk"],
             ["board", "Board Meeting", founder ? "26 specialists · venture board + human layer"
               : trader ? "26 specialists · + macro, geopolitics, psychology"
-              : intelligent ? "28 · dynamic board + QA gate + two rounds" : "22 specialists · + macro, funds, life-fit"],
+              : intelligent ? "~56 players · ~280 instruments · + legal, commercial, human" : "22 specialists · + macro, funds, life-fit"],
             ["war_room", "War Room", founder ? "37 specialists · world cluster + live debates"
               : trader ? "34 specialists · the full house"
-              : intelligent ? "39 · the full pool + debates + QA + review" : "29 specialists · the full house"],
+              : intelligent ? "62 players · 310 instruments · the whole orchestra" : "29 specialists · the full house"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -407,26 +407,33 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         )}
       </section>
 
-      {/* your board — hand-pick and brief the employees (every mode) */}
+      {/* your board — hand-pick and brief the employees (form modes only) */}
+      {!intelligent && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           03 · Pick your board
-          {intelligent && f.engagement_mode && (
-            <span className="ml-2 rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] normal-case text-brand">
-              🎼 Manager routes the {f.engagement_mode} board — pick/brief anyone, or leave it to the Manager
-            </span>
-          )}
         </h2>
-        <BoardPicker
-          mode={intelligent
-            ? (f.engagement_mode === "trader" ? "trader"
-               : f.engagement_mode === "wealth" ? "wealth" : "intelligent")
-            : f.mode}
-          depth={f.depth} enabled={f.agents_enabled}
+        <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)}
           agentContext={f.agent_context}
           onContext={(ctx) => set("agent_context", ctx)} />
       </section>
+      )}
+
+      {/* Intelligent Mode: the Manager casts the orchestra — no manual picker */}
+      {intelligent && (
+      <section className="mt-4 rounded-xl border border-brand/30 bg-brand/[0.03] p-5">
+        <h2 className="mb-2 font-mono text-xs uppercase tracking-widest text-brand">
+          03 · The Manager casts the orchestra
+        </h2>
+        <p className="text-xs leading-relaxed text-slate-400">
+          You don&apos;t hand-pick here — the 🎼 <b>Manager</b> scores your brief into a task graph and
+          decides which of the <b>62 players</b> (and their <b>310 junior instruments</b>) to convene,
+          movement by movement. Watch the whole ensemble light up live once you convene it. Deeper
+          depth = more sections of the orchestra join.
+        </p>
+      </section>
+      )}
 
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">

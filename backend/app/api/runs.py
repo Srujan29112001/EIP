@@ -15,7 +15,7 @@ from ..agents import orchestra
 from ..agents.registry import ROSTER
 from ..core import hitl
 from ..core.llm_gateway import EngineConfig, Gateway, local_models
-from ..graphs.intelligent import run_intelligent
+from ..graphs.orchestra import run_orchestra
 from ..graphs.trading import run_trading
 from ..graphs.venture import run_venture
 from ..graphs.wealth import run_wealth
@@ -81,7 +81,7 @@ async def run(req: RunRequest, x_eip_user: str | None = Header(default=None)) ->
     emitter = Emitter()
     pipeline = (run_trading if req.mode == "trader"
                 else run_wealth if req.mode == "wealth"
-                else run_intelligent if req.mode == "intelligent" else run_venture)
+                else run_orchestra if req.mode == "intelligent" else run_venture)
     payload = req.model_dump()
     if x_eip_user:
         payload["user_id"] = x_eip_user.strip()[:64]

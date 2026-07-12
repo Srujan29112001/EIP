@@ -251,9 +251,9 @@ The frontend visualizes this in two places: the **Flow Map** draws the complete 
 ## 🎛 The four modes in depth
 
 Three modes are **forms** — you fill in the fields and pick the board. The fourth,
-🎩 **Intelligent Mode**, is a **conversation**: the Boss interviews you, *classifies*
-which of the other three (or Operator) your question really is, and routes there
-automatically. See [Intelligent Mode](#-intelligent-mode--the-advisory-engine) below.
+🎩 **Intelligent Mode**, is a **conversation that convenes the whole Orchestra**: one
+general ensemble where every expert runs its own junior specialists. See
+[Intelligent Mode](#-intelligent-mode--the-advisory-engine) below.
 
 ```mermaid
 flowchart LR
@@ -271,66 +271,72 @@ flowchart LR
     end
 ```
 
-| | 🚀 Founder | 📈 Trader | 💰 Wealth | 🎩 Intelligent |
+| | 🚀 Founder | 📈 Trader | 💰 Wealth | 🎩 Intelligent (Orchestra) |
 |---|---|---|---|---|
 | **Intake** | form | form | form | **conversation (the Boss)** |
-| **Grounds on** | web + news + macro + your docs | live OHLCV + news + macro | macro + your numbers | *inherits the classified mode* |
-| **Deterministic core** | runway / unit economics | 40+ indicators, backtests, risk sizing | savings, allocation, FIRE math | *the classified mode's cores* |
-| **Radar dimensions** | Market · Economics · Execution · Evidence · Timing · Regulatory · HumanFit | Trend · Momentum · Value · History · RiskFit · Psychology | Cashflow · Allocation · GoalFit · DebtHealth · Opportunity · LifeFit | *the classified mode's dimensions* |
-| **Verdict** | GO / CONDITIONAL_GO / NO_GO | setup quality band | money-health band | *the classified mode's band* |
-| **Adds** | — | — | — | **Boss + Manager + QA gate + human-in-the-loop** |
+| **Roster** | ~40 flat agents | ~30 markets desk | ~25 wealth desk | **62 players, each running 4–5 junior instruments (310 total)** |
+| **Scope** | founder board | trader desk | wealth desk | **one general ensemble — any business/life brief** |
+| **Radar dimensions** | Market · Economics · Execution · Evidence · Timing · Regulatory · HumanFit | Trend · Momentum · Value · History · RiskFit · Psychology | Cashflow · Allocation · GoalFit · DebtHealth · Opportunity · LifeFit | Opportunity · Economics · Strategy · Feasibility · LegalRisk · Human (general MCDA) |
+| **Adds** | — | — | — | **Boss + task-graph Manager + two-tier players/instruments + QA gate + human-in-the-loop** |
 | **Hard stance** | education + analytics | **never buy/sell advice, never executes** | education, not regulated advice | regulated content **stops for human review** |
 
 ---
 
 ## 🎩 Intelligent Mode — the Advisory Engine
 
-The three modes above are **static forms**: you pick the mode, fill the fields, and a
-fixed board runs. Intelligent Mode is the blueprint's **Advisory Engine** — a
-conversational, self-routing superset that adds the exact upgrades EIP's own roadmap
-named: a **Boss**, a dynamic **Manager**, a **blocking QA gate**, and **human-in-the-loop**
-review — all on top of the same deterministic cores, two-round deliberation, honest
-degradation and glass box.
+Intelligent Mode is the blueprint's **Orchestra** (`expert-orchestra-map`): **the composition
+engine**. Not a flat list of agents and not a router — it's **one general advisory ensemble**
+for *any* business or life brief, where every main expert (a **player**) conducts its own
+**4–5 junior specialists** (its **instruments**), and a task-graph **Manager** puts every
+player *and* every instrument to work. It keeps everything EIP does well — deterministic
+cores, honest degradation, the 16-key gateway, the glass box, the 3D graph — and adds the
+Boss, the dynamic Manager, a blocking QA gate and human-in-the-loop review.
 
 ```mermaid
 flowchart TD
-    U["you (a conversation, not a form)"] --> B["🎩 Boss — intake<br/>listens, clarifies, captures;<br/>CLASSIFIES the engagement"]
-    B -->|founder / operator| MV["venture board"]
-    B -->|trader| MT["trader desk (technicals · backtests · quant · risk)"]
-    B -->|wealth| MW["wealth desk (budget · allocation · FIRE)"]
-    MV --> MGR["🎼 Manager — dynamic routing<br/>within the mode's locked spine"]
-    MT --> MGR
-    MW --> MGR
-    MGR --> P["L1 grounding → L2 two waves → L3 crucible →<br/>round-2 deliberation → synthesis"]
-    P --> QA{"✅ QA gate<br/>facts · red-team · bias · verdict"}
-    QA -->|fail| RD["re-dispatch the weak agents,<br/>re-weigh, re-sign"] --> QA
+    U["you (a conversation, not a form)"] --> B["🎩 Boss — general intake<br/>listens, clarifies, captures the real brief"]
+    B --> MGR["🎼 Manager — scores the brief into a TASK GRAPH<br/>across 62 players + 310 instruments"]
+    MGR --> M["movements (families), in DAG order:<br/>Framing → Research → Analysis → Strategy →<br/>Legal → Technology → Commercial → Human"]
+    M --> PL["every PLAYER conducts its INSTRUMENTS<br/>(Finance Modeler → Unit-Economics · 3-Statement · DCF · Scenario · Cap-Table)"]
+    PL --> C["Red Team · Fact Checker · Bias Auditor · Devil's Advocate"]
+    C --> W["⚖️ general MCDA weighing → verdict"]
+    W --> QA{"✅ QA gate"}
+    QA -->|fail| RD["re-dispatch + re-weigh"] --> QA
     QA -->|pass| H{"🧑‍⚖️ regulated?"}
-    H -->|legal/tax/financial| REV["pause for human review<br/>approve / reject / timeout→UNREVIEWED"]
-    H -->|no| DEL["deliver"]
-    REV --> DEL["report · verdict · 3D graph"]
+    H -->|yes| REV["pause for human review"]
+    H -->|no| DEL["deliver — report · verdict · 3D graph"]
+    REV --> DEL
 ```
+
+**The two tiers — players & instruments.** Every one of the 62 players runs a structured
+call that produces a distinct finding for **each** of its named junior instruments, then
+synthesizes them into an integrated take + a 0–10 score. Each instrument is streamed as an
+`instrument` event, so the glass box shows **both tiers** — a movement of player cards, each
+expanding to its instruments lighting up as they report (e.g. **Web Researcher** → *Search
+Strategist · Source-Credibility Grader · Deep-Dive Extractor · Citation Tracker · Academic &
+Patent Search*). Grounding, crucible and delivery reuse EIP's proven agents, with their
+instruments overlaid so every player shows both tiers.
 
 **What each brain does**
 
 | | Role | What it does |
 |---|---|---|
-| 🎩 **Boss** | conversational intake | A real multi-turn dialogue (not a form). Digs for the *real* problem, scores completeness, and **classifies the engagement** into Founder / Trader / Wealth / Operator — because a trader question and a founder question are different jobs and must engage different boards. Captures the ticker (trader) or income/expenses (wealth) the desks need. Gives **no advice**. Works with zero keys via a deterministic question ladder + keyword classifier. |
-| 🎼 **Manager** | dynamic orchestrator | Routes **mode-aware**: takes the classified engagement's roster + deterministic cores as the base, then adds the lenses *this specific brief* needs and benches what it doesn't — always within the mode's **guaranteed spine** (defense in depth: the picker locks it *and* the Manager re-enforces it). Emits a visible task-graph plan. |
-| ✅ **QA gate** | blocking accuracy | Runs **before the reporter**, so the deliverable is always written on a QA-cleaned board. Sweeps fact-checker failures, high-severity red-team attacks, framing bias and verdict integrity into a pass/fail. On fail it **re-dispatches** the responsible agents with the specific objections, then re-checks facts and re-weighs with the *engagement's own* weighing/verdict. Nothing bad flows downstream silently; unresolved issues stay **visible on the verdict**, never hidden. |
-| 🧑‍⚖️ **Human-in-the-loop** | regulated gate | When the board produces regulated legal/tax/financial content (or the engagement is trader/wealth), the pipeline **pauses** and exposes the draft at `GET /api/review/{run_id}`. A reviewer **approves** (publish), **rejects** (report withheld — the deterministic verdict still stands), or lets the window lapse (**timeout → published, watermarked UNREVIEWED**). Every regulated run carries the disclaimer; the decision is audited in the run state. The SSE stream never dies waiting on a human. |
+| 🎩 **Boss** | conversational intake | A real multi-turn dialogue (not a form). Digs for the *real* problem behind the ask, scores completeness, and hands the Manager a clean brief. Gives **no advice**. Zero-key safe via a deterministic question ladder. |
+| 🎼 **Manager** | task-graph conductor | Decomposes the brief into a **task graph** (movements → players), casts which of the 62 players convene at this depth, honours the board picker, and emits the visible `task_graph`. It puts *every player and every instrument to work*. |
+| 🎛️ **Players → instruments** | two-tier execution | Every expert runs its 4–5 junior instruments as **real sub-tasks** — distinct findings, streamed and visible — then synthesizes + scores. The heart of the orchestra. |
+| ✅ **QA gate** | blocking accuracy | Runs **before the reporter**. Sweeps fact-checker failures, severe red-team attacks, framing bias and verdict integrity → pass/fail; on fail **re-dispatches** the responsible players and re-weighs. Unresolved issues stay **visible on the verdict**. |
+| 🧑‍⚖️ **Human-in-the-loop** | regulated gate | When legal/tax/financial content is present the pipeline **pauses** at `GET/POST /api/review/{run_id}` — approve (publish) / reject (withhold) / timeout (→ UNREVIEWED). Disclaimer + audit trail always attached. |
+| ⚖️ **Weighing** | general verdict | A deterministic MCDA over six general dimensions (Opportunity · Economics · Strategy · Feasibility · LegalRisk · Human) minus crucible penalties → PROCEED / PROCEED-WITH-CONDITIONS / RECONSIDER. |
 
-**How it's built (a strict superset, not a rewrite):** Intelligent Mode is a thin
-**dispatcher** (`graphs/intelligent.py`) — it classifies, then delegates to the real
-`run_venture` / `run_trading` / `run_wealth` pipeline with `advisory=True`. Each pipeline,
-seeing that flag, runs the four Advisory-Engine wrappers (`boss_brief → manager_plan →
-qa_gate → hitl_checkpoint`) around its normal flow. So Trader questions run the *actual*
-trader desks, Wealth questions the *actual* money-math desks — no duplication, every
-tested pipeline reused. Operator (scaling an existing company) maps onto the venture
-scaffold with an ops-weighted Manager roster.
+**Depth:** Pulse ≈ 34 players / 170 instruments · Board ≈ 56 / 280 · War Room = **62 players /
+310 instruments** — the whole orchestra.
 
-**New agents:** 🎩 `boss` and 🎼 `manager` (L0 · orchestration) — roster **90** (87 implemented).
-**New SSE events:** `qa {status, issues[]}` · `hitl {status, decision, sections[]}` ·
-`skipped_no_llm {agent, keys_exhausted}` (the explicit "this agent never reached a model" state).
+**How it's built:** `graphs/orchestra.py` runs the general ensemble; `agents/score.py` is the
+roster (62 players + 310 instruments, transcribed from the orchestra map); `agents/conductor.py`
+holds the two-tier `play()` executor, the `manager_score()` task-graph, and the MCDA weighing.
+Grounding/crucible/delivery reuse EIP's agents with an instrument overlay. New agents 🎩 `boss` +
+🎼 `manager` (roster **91**); new events `qa` · `hitl` · `skipped_no_llm` · **`instrument`**;
+new endpoints `/api/intake` (Boss) + `/api/review/{run_id}` (HITL).
 
 ---
 
@@ -651,7 +657,7 @@ flowchart LR
 - ✅ **Phase 10 (scaffold)** — anonymous accounts + **tiers**, per-user history, persistent-DB path (`EIP_DB_PATH`), Postgres-ready.
 - ✅ **Phase 11** — **two-round golden-arc deliberation** (all-to-all re-read, round-1 vs round-2 results) + **16 keys/provider** rotation.
 - ✅ **Phase 12** — deliberation extended to **every layer (L1→L2→L3, sequential) with the TWO verdicts** + ✓✓ round badges; **RAG** (per-agent BM25-relevant evidence + past-run memory recall); reporter **prompt-compaction ladder + split-report fallback** (the actual starvation root-cause: oversized single requests); picker shows the golden mesh; arcs pulse only while agents communicate.
-- ✅ **Phase 16** — **🎩 Intelligent Mode (the Advisory Engine)**: the 4th mode. A conversational **Boss** that classifies the engagement (founder / trader / wealth / operator), a dynamic **Manager** that routes **mode-aware** to that engagement's real board + deterministic cores within a locked spine, a **blocking QA gate** that re-dispatches weak analysis before the reporter, and **human-in-the-loop** review that pauses regulated legal/tax/financial content (approve / reject / timeout→UNREVIEWED). New agents `boss` + `manager` (roster 88 → **90**); new SSE events `qa` / `hitl` / `skipped_no_llm`; new endpoints `/api/intake` (Boss) + `/api/review/{run_id}` (HITL). Built as a thin dispatcher that reuses the venture/trading/wealth pipelines via an `advisory` flag — no duplication.
+- ✅ **Phase 16** — **🎩 Intelligent Mode = the Orchestra** (the composition engine): the 4th mode. One **general advisory ensemble** for any brief — **62 players, each conducting its 4–5 junior "instruments" (310 total) as real streamed sub-tasks** (`agents/score.py` roster + `agents/conductor.py` two-tier `play()` executor). A conversational 🎩 **Boss** captures the brief; a 🎼 **Manager** decomposes it into a **task graph** (movements → players → instruments) and puts every player *and* every instrument to work; a blocking ✅ **QA gate** re-dispatches weak analysis; 🧑‍⚖️ **human-in-the-loop** guards regulated content; a general **MCDA weighing** (Opportunity · Economics · Strategy · Feasibility · LegalRisk · Human) → the verdict. The glass box shows **both tiers** — player cards expanding to their instruments lighting up. New agents `boss` + `manager` (roster **91**); new events `qa` / `hitl` / `skipped_no_llm` / **`instrument`**; new endpoints `/api/intake` + `/api/review/{run_id}`; `graphs/orchestra.py` reuses EIP's grounding/crucible/delivery with an instrument overlay so every player shows both tiers.
 - ✅ **Phase 15** — **the full catalog build-out**: 15 new agents (roster 73 → 88) incl. RAG Memory and Outcome Tracker as visible board members; tools-&-data-access badges on every capability card; new agents wired into scopes, PEERS mesh, deliberation, weighing (Execution/Economics), and the picker in all three modes.
 - ✅ **Phase 14** — **Results v5**: 15 animated chart types (line/radial/pyramid/funnel/histogram added), Scenario Predictions + Negotiation Playbook + Comparative Analysis + Bottom-Line panels; **fresh-run guarantee** (live-fetch retries on throttle + a FRESH-RUN timestamp banner — nothing is reused between runs except claims labelled MEMORY); **Phase 8.2 OCR shipped** (scanned images OCR'd IN THE BROWSER via tesseract.js — zero backend vision deps, free-tier safe); **learned weights** (dimension weights calibrated ±15% from your graded outcomes, all three modes); deeper memory recall (past verdict reasoning included).
 - ✅ **Phase 13** — **the TRUE two-pass pipeline**: round 1 completes in full and PUBLISHES its complete results (verdict, pitch, charts, report), then L0→L1→L2→L3→L4 all re-run with the whole round-1 board visible, and the **round-2 results render under the round-1 results** — two full result sets per run. Grounding + crucible now deliberate too (✓✓ across every layer). Plus **10 new agents from the future-improvements table**, incl. a deterministic **Monte-Carlo Scenario Planner** (P10/P50/P90, P(GO), what-breaks-it chart) and a **Negotiation Coach** (BATNA/anchor/concessions).

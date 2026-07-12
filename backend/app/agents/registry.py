@@ -62,6 +62,7 @@ ROSTER: list[AgentMeta] = [
     AgentMeta("fundraising_capital", "Fundraising & Capital", "L2", "venture", "t2", "Round strategy, investor match, terms to never sign", True),
     AgentMeta("sales_revops", "Sales & Revenue Ops", "L2", "venture", "t2", "Sales motion, pipeline math, comp that doesn't backfire", True),
     AgentMeta("partnerships_bd", "Partnerships & BD", "L2", "venture", "t2", "Alliances, deal structures, what never to exclusivity away", True),
+    AgentMeta("community_ecosystem", "Community & Ecosystem", "L2", "venture", "t2", "Turns users into a compounding network and moat (Orchestra player)", True),
     AgentMeta("brand_creative", "Brand & Creative", "L2", "venture", "t2", "Identity, naming, the positioning territory to own", True),
     AgentMeta("pr_communications", "PR & Communications", "L2", "venture", "t2", "Media angles, the outlets that matter, crisis comms", True),
     AgentMeta("industry_expert", "Industry Expert", "L2", "venture", "t2", "Sector-specific dynamics and benchmarks", True),

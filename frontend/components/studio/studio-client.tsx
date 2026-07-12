@@ -8,6 +8,7 @@ import { Boardroom } from "./boardroom";
 import { DecisionRoom } from "./decision-room";
 import { FlowMap } from "./flow-map";
 import { HitlBanner, ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
+import { OrchestraView } from "./orchestra-view";
 import { IntakeWizard } from "./intake-wizard";
 import { PipelineRail } from "./pipeline-rail";
 import { StageCards } from "./stage-cards";
@@ -84,7 +85,10 @@ export function StudioClient() {
           </div>
           {tab === "pipeline" && (
             <div className="space-y-3">
-              {/* Intelligent Mode: the Manager's plan + the blocking QA gate (null in other modes) */}
+              {/* Intelligent Mode = the Orchestra: the Manager's task graph with every
+                  player expanding to its junior instruments lighting up (null otherwise) */}
+              <OrchestraView />
+              {/* Mode-aware Intelligent runs: the Manager's plan + the blocking QA gate */}
               <ManagerPlanPanel />
               <QaGatePanel />
               {/* the living workflow tree — click any agent to jump to its full card */}

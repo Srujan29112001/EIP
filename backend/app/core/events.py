@@ -87,6 +87,13 @@ class Emitter:
         await self.queue.put({"type": "skipped_no_llm", "agent": agent,
                               "keys_exhausted": keys_exhausted})
 
+    async def instrument(self, player: str, name: str, skill: str, finding: str,
+                         status: str = "done") -> None:
+        """One junior 'instrument' under a player finished its sub-task
+        (Intelligent Mode's two-tier orchestra) — lights up a sub-node."""
+        await self.queue.put({"type": "instrument", "player": player, "name": name,
+                              "skill": skill[:120], "finding": finding[:240], "status": status})
+
     async def usage(self, agent: str, tokens: int, route: str) -> None:
         await self.queue.put({"type": "usage", "agent": agent, "tokens": tokens, "route": route})
 
