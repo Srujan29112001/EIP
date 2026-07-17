@@ -133,12 +133,12 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {intelligent && (
         <div className="mt-3 rounded-lg border border-brand/30 bg-brand/5 p-3 text-xs leading-relaxed text-slate-400">
-          <span className="font-semibold text-slate-200">Intelligent Mode is the Orchestra</span> — one
-          general advisory ensemble for <i>any</i> business or life brief. The 🎩 <b>Boss</b> interviews
-          you; the 🎼 <b>Manager</b> scores the brief into a task graph and puts <b>every player AND every
-          junior instrument</b> to work (each expert conducts its own 4–5 specialists); a blocking
-          ✅ <b>QA gate</b> re-dispatches weak analysis, and 🧑‍⚖️ <b>human review</b> guards regulated
-          content. You watch all ~280 instruments light up as they play.
+          <span className="font-semibold text-slate-200">Intelligent Mode is the Orchestra</span> — no
+          forms, no board picking, no depth choosing. The 🎩 <b>Boss</b> is the intelligent chatbot that
+          talks to you and retrieves everything the board needs; the 🎼 <b>Manager</b> then composes the
+          <b> entire dynamic pipeline</b> — which experts work, which sit out (with reasons), the
+          communication lines between them, and how deep each one goes. A blocking ✅ <b>QA gate</b>{" "}
+          re-dispatches weak analysis and 🧑‍⚖️ <b>human review</b> guards regulated content.
         </div>
       )}
 
@@ -364,20 +364,18 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </section>
       )}
 
-      {/* step 2 — depth (every mode: deeper = more specialists convened) */}
+      {/* step 2 — depth (form modes; in Intelligent Mode the Manager sets depth) */}
+      {!intelligent && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
             ["pulse", "Pulse", founder ? "13 specialists · ~2 min · the fast read"
-              : trader ? "18 specialists · the core trading desk"
-              : intelligent ? "~34 players · ~170 instruments · core sections" : "14 specialists · the money desk"],
+              : trader ? "18 specialists · the core trading desk" : "14 specialists · the money desk"],
             ["board", "Board Meeting", founder ? "26 specialists · venture board + human layer"
-              : trader ? "26 specialists · + macro, geopolitics, psychology"
-              : intelligent ? "~56 players · ~280 instruments · + legal, commercial, human" : "22 specialists · + macro, funds, life-fit"],
+              : trader ? "26 specialists · + macro, geopolitics, psychology" : "22 specialists · + macro, funds, life-fit"],
             ["war_room", "War Room", founder ? "37 specialists · world cluster + live debates"
-              : trader ? "34 specialists · the full house"
-              : intelligent ? "62 players · 310 instruments · the whole orchestra" : "29 specialists · the full house"],
+              : trader ? "34 specialists · the full house" : "29 specialists · the full house"],
           ] as const).map(([id, label, sub]) => (
             <button key={id} onClick={() => set("depth", id)}
               className={`rounded-lg border p-3 text-left transition ${
@@ -387,46 +385,27 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
             </button>
           ))}
         </div>
-        {intelligent && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel-2 p-3">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-              🧑‍⚖️ human-review window
-            </span>
-            <select value={f.hitl_timeout} onChange={(e) => set("hitl_timeout", Number(e.target.value))}
-              className="rounded-md border border-line bg-panel px-2.5 py-1.5 text-xs outline-none focus:border-brand/60">
-              <option value={120}>2 min</option>
-              <option value={300}>5 min</option>
-              <option value={600}>10 min</option>
-              <option value={1800}>30 min</option>
-            </select>
-            <span className="font-mono text-[10px] leading-relaxed text-slate-600">
-              if the board produces regulated legal/tax/financial content it pauses for your
-              approval; after this window it publishes marked UNREVIEWED, disclaimer attached.
-            </span>
-          </div>
-        )}
       </section>
+      )}
 
-      {/* your board — hand-pick and brief the players (every mode, orchestra included) */}
+      {/* your board — hand-pick and brief the employees (form modes; in
+          Intelligent Mode casting is the 🎼 Manager's job, not a picker) */}
+      {!intelligent && (
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           03 · Pick your board
-          {intelligent && (
-            <span className="ml-2 rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] normal-case text-brand">
-              🎼 the Manager casts depth on top — bench or brief any player; the spine stays locked
-            </span>
-          )}
         </h2>
         <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)}
           agentContext={f.agent_context}
           onContext={(ctx) => set("agent_context", ctx)} />
       </section>
+      )}
 
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
-          04 · Choose the engine
+          {intelligent ? "02" : "04"} · Choose the engine
         </h2>
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
@@ -447,11 +426,13 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
               : wealth ? "enter your monthly income to begin"
               : intelligent ? "finish the intake conversation with the 🎩 Boss to begin"
               : "describe your situation (≥ 20 chars) to begin"
+            : intelligent
+            ? "🎩 brief captured — the 🎼 Manager composes the cast, the lines and the depth"
             : `${f.agents_enabled.length > 0 ? f.agents_enabled.length
                 : { founder: { pulse: 13, board: 26, war_room: 37 },
                     trader: { pulse: 18, board: 26, war_room: 34 },
-                    wealth: { pulse: 14, board: 22, war_room: 29 },
-                    intelligent: { pulse: 15, board: 28, war_room: 39 } }[f.mode][f.depth]
+                    wealth: { pulse: 14, board: 22, war_room: 29 } }[
+                    f.mode as "founder" | "trader" | "wealth"][f.depth]
               } specialists ready · ${
                 { pulse: "Pulse", board: "Board Meeting", war_room: "War Room" }[f.depth]}${
                 trader ? ` · ${f.symbol}` : ""}`}

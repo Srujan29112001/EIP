@@ -2,7 +2,7 @@
 
 **The Entrepreneurship / Money Intelligence OS — full engineering & product reference**
 
-*Version: Phase 16 (🎩 Intelligent Mode = the Orchestra: one general ensemble of 62 players each conducting its 4–5 junior instruments (310 total) as real streamed sub-tasks, a task-graph Manager, a blocking QA gate, and human-in-the-loop review · roster 91) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
+*Version: Phase 15 (full catalog build-out: 88 agents incl. RAG Memory + Outcome Tracker as visible board members · tools badges on every capability card) · Live at [eip-cbkt.vercel.app](https://eip-cbkt.vercel.app) · Backend Space: `Srujan29/eip-backend`*
 
 > This is the deep companion to the [README](../README.md). It documents **everything**: every code file and its functions, every agent's logic/prompt/wiring, every mode × depth × engine combination, the exact SSE contract, the accuracy model, a complete testing guide, and the future-improvement roadmap — with diagrams throughout. Printed, it runs ~50 pages.
 
@@ -451,112 +451,6 @@ Mechanics: each dimension = the mean of its producers' scores (missing producers
 | **Wealth** | the money core (~16): news, macro, salary_budget, allocator, fire, debt_banking, real_estate, location_scout, red_team, bias_auditor, synthesis (6) | + macroeconomist, trends, regulator, fund_analyst, market_research, banking, money_happiness, human_needs, philosophy_ethics, philanthropy_impact | + geopolitics, intl_markets, esg_impact, optimization_predictor, subsidies_schemes, the full human wave |
 
 Rules that hold everywhere: **synthesis is never benchable** (weighing, verdict, storytelling, visualizer, reporter + the mode data-spines: market_data/technical for trader, salary_budget for wealth); benched agents show `skipped` honestly; **round-2 deliberation runs at Board/War Room** (Pulse = 1 round; the `rounds` payload field overrides); the gap-detector replays degraded agents in all modes.
-
----
-
-## 12.5 Intelligent Mode — THE ORCHESTRA (the 4th mode)
-
-Intelligent Mode is the blueprint's **Orchestra** (`expert-orchestra-map`) — *the
-composition engine*. It is **not** a fourth board and **not** a router over the other
-three. It is **one general advisory ensemble** for any business/life brief, built as a
-**two-tier hierarchy**: every main expert is a **player** (musician) that conducts its own
-**4–5 junior specialists — the instruments** — and a task-graph **Manager** puts every
-player *and* every instrument to work. It keeps everything EIP does well (deterministic
-cores, honest degradation, 16-key gateway, glass box, 3D graph) and adds the Boss, the
-dynamic Manager, a blocking QA gate and human-in-the-loop.
-
-**The two tiers.** The roster (`agents/score.py`) is **62 players × 5 instruments = 310
-instruments** across 11 movements (families): Framing · Research · Analysis · Strategy ·
-Legal/Fiscal · Technology · Commercial · Human · Adversarial/QA · Delivery. Every player
-runs a single structured call that produces a distinct finding for **each** of its named
-instruments (e.g. Finance Modeler → *Unit-Economics Analyst · 3-Statement Modeler ·
-Valuation & DCF Specialist · Scenario & Sensitivity Analyst · Cap-Table Modeler*), then
-synthesizes them into an integrated take + a 0–10 score. Each instrument is streamed as an
-`instrument {player, name, skill, finding}` event so the glass box lights up **both tiers**.
-
-**The pipeline** (`graphs/orchestra.py`, `agents/conductor.py`):
-
-```
-🎩 Boss (general intake) → L0 framing (real parser/profiler) →
-🎼 Manager scores the TASK GRAPH (movements → players → instruments) →
-L1 grounding (real evidence) → play() every convened player TWO-TIER, movement by movement →
-L3 crucible (Red Team · Fact Checker · Bias Auditor · Devil's Advocate) →
-⚖️ general MCDA weighing → scenario · negotiation · story · charts →
-✅ QA gate (blocking, re-dispatch) → 🖋️ reporter → 🧑‍⚖️ human review → deliver
-```
-
-**The brains**
-
-1. **🎩 Boss** (`_boss_intro` + `orchestra.boss_converse` at `/api/intake`) — a multi-turn
-   dialogue; digs for the real problem, scores completeness, hands the Manager a clean
-   brief. No advice. Zero-key safe via a deterministic question ladder.
-2. **🎼 Manager** (`conductor.manager_score`) — decomposes the brief into a **task graph**:
-   which of the 62 players convene at this depth (honouring the picker), grouped into
-   movements with the DAG edges. Emits the `task_graph` partial the glass box draws. It
-   "puts every player and every instrument to work."
-3. **🎛️ Players → instruments** (`conductor.play`) — the two-tier executor. Every convened
-   player runs its instruments as real sub-tasks (streamed, visible) then scores. Grounding,
-   crucible and delivery reuse EIP's proven agents with `conductor.overlay_instruments` so
-   they *also* show both tiers.
-4. **✅ QA gate** (`orchestra.qa_gate`) — blocking, before the reporter; re-dispatches weak
-   players and re-weighs with the orchestra's MCDA. Issues stay visible on the verdict.
-5. **🧑‍⚖️ Human-in-the-loop** (`orchestra.hitl_checkpoint`, `core/hitl.py`) — pauses regulated
-   legal/tax/financial content at `GET/POST /api/review/{run_id}`; approve / reject / timeout
-   → UNREVIEWED, disclaimer + audit always attached.
-6. **⚖️ Weighing** (`conductor.weighing_orchestra`) — a deterministic t0 MCDA: each of six
-   general dimensions (Opportunity · Economics · Strategy · Feasibility · LegalRisk · Human)
-   is the mean of its producing players' scores; missing renormalize; crucible penalties
-   subtract → verdict band (PROCEED ≥ 7 · PROCEED-WITH-CONDITIONS 4.5–7 · RECONSIDER < 4.5).
-
-**Depth:** Pulse ≈ 34 players / 170 instruments · Board ≈ 56 / 280 · War Room = 62 / 310.
-
-**New:** agents `boss` + `manager` → roster **91**; events `qa` · `hitl` · `skipped_no_llm`
-· **`instrument`**; endpoints `/api/intake` + `/api/review/{run_id}`. **Honesty preserved:**
-with zero keys the play()'d instruments carry deterministic placeholders (amber), the
-overlay instruments still show, the MCDA still computes, and `skipped_no_llm` marks every
-player that never reached a model — the SSE stream never dies.
-
-### 12.5.1 The Advisory Engine's brains (Phase 16.5 — the full blueprint)
-
-The Orchestra's intelligence layer, implementing the source conversation's Manager
-contract verbatim:
-
-1. **The Manager truly scores** (`conductor.manager_score`): one t3 call plans the
-   engagement — the 👑 **team lead** (whose section carries the thesis; plays at t3 with a
-   bigger budget), **per-player depth** (*"cast, then set depth"* — deep 1000 tokens /
-   standard 760 / light 520, so "everyone contributes" doesn't mean "everyone writes a
-   novel"), **hand-off questions** (the DAG contracts — each assigned player must answer
-   its question explicitly, injected into its prompt), the plan's focus, the regulated
-   flag, and a `beyond_hint`. Deterministic fallback: lead = market_analyst, all standard.
-2. **Two-round deliberation** — the round-1 results publish in full (`result_set 1`), then
-   `refine_gateway` + `deliberation_round` re-run every LLM-tier player against the FULL
-   board (✓✓ ticks; refined outputs keep their `instruments`), the closing movement re-runs,
-   and `result_set 2` publishes under round 1 with verdict v1→v2 + per-player deltas.
-3. **Coverage & Completeness Auditor** (`conductor.coverage_audit`, t0) — the Manager
-   junior that "guarantees no relevant dimension was skipped": dimensions produced vs
-   missing, degraded players, instruments played vs total → `coverage` partial, shown in
-   the score header. Runs after each round's synthesis.
-4. **Manager rulings** (`conductor.manager_rulings`) — the conflict protocol: red-team
-   attacks + cross-pollination tensions are weighed (deterministic MCDA), stressed
-   (crucible), then the Manager **rules on the record** → `rulings` partial + ⚡ panel.
-   Deterministic fallback: the weighed number is the tie-breaker.
-5. **🌟 Above & Beyond** (`conductor.above_and_beyond`) — *"you didn't ask, but you should
-   know"*, in every deliverable: Trends + Connecting Dots + Coverage Auditor (+ red-team
-   kill risk, Monte-Carlo breaks-it, the steel-manned no-case when zero-key) → `beyond`
-   partial + the gold panel at the top of Results. Always ships (fail-soft).
-6. **Orchestra-native replay** (`conductor.replay_players`) — degraded players are
-   re-PLAYED through their instruments after the quota refresh; the flat
-   `replay_degraded` is restricted to the crucible (`only={red_team, fact_checker,
-   devils_advocate}`) because the flat rerun was stomping two-tier outputs. Crucible
-   instrument overlays now apply after replay so they survive it.
-7. **Deterministic baseline for degraded players** — rule 11 honored: a player no model
-   reached still ships a t0 score (5.0 nudged by evidence coverage, confidence 0.3,
-   amber), so the MCDA answers with zero keys.
-8. **Guardrails** — Loophole Predictor findings route through Legal + Philosophy & Ethics
-   (logged); War-Room depth runs open debate rounds; the QA gate blocks BOTH rounds.
-9. **Picker restored** — the 62-player roster by movement (Pulse: framing+research+
-   analysis · Board: +legal+commercial+human · War Room: +technology), spine locked,
-   per-player briefs injected verbatim into `play()`.
 
 ---
 

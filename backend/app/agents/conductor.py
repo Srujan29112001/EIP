@@ -197,80 +197,114 @@ async def play_family(ctx: Ctx, family_id: str, cast: list[str], brief_note: str
 # player; select the engagement lead; write the hand-off questions (the DAG's
 # contracts); the Whiplash standard — every player and every instrument works.
 
-_SCORE_SCHEMA = ('{"team_lead": str (ONE player id from the cast — the expert whose dimension '
-                 'carries this specific brief), '
+_SCORE_SCHEMA = ('{"team_lead": str (ONE player id — the expert whose dimension carries this '
+                 'specific brief), '
                  '"focus": str (<=30 words — the plan\'s centre of gravity), '
                  '"regulated": bool (legal/tax/financial/investment advice present), '
-                 '"deep": [str x3-6 (player ids whose dimension is LOAD-BEARING for this brief '
-                 '— they go deep)], '
-                 '"light": [str x0-8 (player ids peripheral to this brief — they stay crisp)], '
-                 '"key_questions": [{"assign": str (player id), "q": str (<=20 words — the '
+                 '"convene": [str (ONLY the analytical player ids THIS brief actually needs — '
+                 'typically 12-35; leave out everything peripheral)], '
+                 '"bench": [{"id": str (a player you deliberately did NOT convene), '
+                 '"reason": str (<=14 words — why this brief does not need them)} x3-10], '
+                 '"deep": [str x3-6 (convened ids whose dimension is LOAD-BEARING — they go deep)], '
+                 '"light": [str x0-8 (convened ids kept crisp)], '
+                 '"key_questions": [{"assign": str (convened id), "q": str (<=20 words — the '
                  'hand-off question that player MUST answer for the thesis)} x4-7], '
+                 '"rounds": int (1 = simple brief, one pass · 2 = full two-round deliberation), '
+                 '"debate": bool (open live debate rounds — only for high-stakes/contested briefs), '
                  '"beyond_hint": str (<=20 words — the direction the client did NOT ask about '
                  'but should hear)}')
 
+# the unbenchable spine: framing (02), adversarial QA (10), delivery (11) —
+# someone always parses, someone always attacks, someone always signs
+_SPINE_FAMILIES = ("02", "10", "11")
+_ANALYTICAL_FAMILIES = ("03", "04", "05", "06", "07", "08", "09")
+# zero-key fallback cast: the proven general board (tech joins only when the
+# Manager can actually reason about whether the brief needs it)
+_FALLBACK_FAMILIES = ("03", "04", "05", "06", "08", "09")
 
-async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
-    """Cast the orchestra for this brief and emit the task graph (the DAG the
-    glass box draws): the movements, the engagement lead, per-player depth
-    ("cast, then set depth"), and the hand-off questions. Returns
-    {family_id: [player_ids]} — the movements."""
+
+async def manager_score(ctx: Ctx) -> dict[str, list[str]]:
+    """The Manager owns the ENTIRE dynamic pipeline: from the whole ensemble it
+    chooses which players to put to work and which to bench (with reasons),
+    picks the engagement lead, sets each player's depth, writes the hand-off
+    questions (the communication lines), and decides how many deliberation
+    rounds the brief warrants. The client never picks a board or a depth —
+    that is the Manager's job. Returns {family_id: [player_ids]}."""
     aid, layer = "manager", "L0"
     await ctx.emit.stage(aid, "queued", layer)
     await ctx.start(aid, layer)
-    fams = list(DEPTH_FAMILIES.get(depth, DEPTH_FAMILIES["board"]))
-    active = ["02"] + fams + ["10", "11"]
-    cast: dict[str, list[str]] = {f: [p.id for p in players_in(f)] for f in active}
+    analytical_all = [p.id for f in _ANALYTICAL_FAMILIES for p in players_in(f)]
 
-    # honour the board picker: benched players drop out (mandatory spine stays)
-    enabled = set(ctx.state.raw.get("agents_enabled") or [])
-    mandatory = {"intake_parser", "context_profiler", "scope_planner", "weighing_engine",
-                 "red_team", "fact_checker", "bias_auditor", "connecting_dots",
-                 "verdict_composer", "storytelling", "visualizer", "reporter"}
-    if enabled:
-        for f in cast:
-            cast[f] = [p for p in cast[f] if p in enabled or p in mandatory]
-    cast_ids = [p for ps in cast.values() for p in ps]
-    analytical = [p for p in cast_ids if PLAYER_BY_ID.get(p)
-                  and PLAYER_BY_ID[p].family in ("03", "04", "05", "06", "07", "08", "09")]
-
-    # the Manager truly SCORES: lead + per-player depth + hand-off questions
     focus, regulated, lead, beyond_hint = "", False, "", ""
+    convened: list[str] = []
+    bench_reasons: dict[str, str] = {}
     depths: dict[str, str] = {}
     key_questions: list[dict[str, str]] = []
-    candidates = "\n".join(f"- {p}: {PLAYER_BY_ID[p].role}" for p in analytical if p in PLAYER_BY_ID)
-    data, res = await ctx.llm.structured(
-        "t3",
-        "You are the Manager 🎼 conducting an advisory orchestra — the Whiplash standard: you do "
-        "not analyse, you PLAN, and you demand excellence. Every player will work; your job is to "
-        "CAST THEN SET DEPTH: pick the ONE engagement lead whose dimension carries this brief, "
-        "mark which players go deep (load-bearing) and which stay light (peripheral), and write "
-        "the hand-off questions the key players must answer. Also name the direction the client "
-        "didn't ask about but needs to hear.",
-        f"BRIEF: {str(ctx.state.brief)[:600]}\nPROFILE: {str(ctx.state.profile)[:240]}\n"
-        f"DEPTH: {depth}\n\nTHE CAST (analytical players):\n{candidates}\n\n"
-        "TASK: score this engagement.",
-        _SCORE_SCHEMA, max_tokens=700, agent=aid)
+    n_rounds, debate = 2, False
+    candidates = "\n".join(f"- {p}: {PLAYER_BY_ID[p].role}" for p in analytical_all)
+    system = ("You are the Manager 🎼 conducting an advisory orchestra — the Whiplash standard: "
+              "you do not analyse, you PLAN, and you demand excellence. The Boss handed you the "
+              "client's brief; now compose the engagement like a new piece of music: CHOOSE from "
+              "the full ensemble exactly which players this brief needs (convene) and which it "
+              "does not (bench, with the reason), pick the ONE engagement lead, set each convened "
+              "player's depth, write the hand-off questions that wire the players together, and "
+              "decide whether this brief needs one pass or the full two-round deliberation. "
+              "Framing, adversarial QA and delivery always run — everything else is your call.")
+    user = (f"BRIEF: {str(ctx.state.brief)[:600]}\nPROFILE: {str(ctx.state.profile)[:240]}\n\n"
+            f"THE FULL ENSEMBLE (choose from these):\n{candidates}\n\n"
+            "TASK: compose the engagement.")
+    await ctx.emit.prompt(aid, system, user)
+    data, res = await ctx.llm.structured("t3", system, user, _SCORE_SCHEMA,
+                                         max_tokens=900, agent=aid)
     if data:
         focus = str(data.get("focus") or "")[:200]
         regulated = bool(data.get("regulated"))
         beyond_hint = str(data.get("beyond_hint") or "")[:160]
-        if str(data.get("team_lead") or "") in analytical:
+        convened = [str(p) for p in (data.get("convene") or []) if str(p) in analytical_all]
+        for b in (data.get("bench") or [])[:12]:
+            if isinstance(b, dict) and str(b.get("id") or "") in analytical_all:
+                bench_reasons[str(b["id"])] = str(b.get("reason") or "")[:120]
+        if str(data.get("team_lead") or "") in analytical_all:
             lead = str(data["team_lead"])
         for p in (data.get("deep") or [])[:6]:
-            if str(p) in analytical:
+            if str(p) in analytical_all:
                 depths[str(p)] = "deep"
         for p in (data.get("light") or [])[:8]:
-            if str(p) in analytical and str(p) not in depths:
+            if str(p) in analytical_all and str(p) not in depths:
                 depths[str(p)] = "light"
         for k in (data.get("key_questions") or [])[:7]:
-            if isinstance(k, dict) and str(k.get("assign") or "") in analytical and k.get("q"):
+            if isinstance(k, dict) and k.get("q") and str(k.get("assign") or "") in analytical_all:
                 key_questions.append({"assign": str(k["assign"]), "q": str(k["q"])[:160]})
+        try:
+            n_rounds = 2 if int(data.get("rounds") or 2) >= 2 else 1
+        except Exception:
+            n_rounds = 2
+        debate = bool(data.get("debate"))
         await ctx.emit.usage(aid, res.tokens, res.route)
-    if not lead and analytical:
-        lead = "market_analyst" if "market_analyst" in analytical else analytical[0]
-    if lead:
-        depths[lead] = "deep"
+
+    # a cast too thin to cover the thesis falls back to the proven general board
+    if len(convened) < 8:
+        convened = [p.id for f in _FALLBACK_FAMILIES for p in players_in(f)]
+        if not data:
+            focus = "No model reachable — the general board convenes (deterministic cast)."
+    if lead and lead not in convened:
+        convened.append(lead)
+    if not lead:
+        lead = "market_analyst" if "market_analyst" in convened else convened[0]
+    depths[lead] = "deep"
+    # API callers may still pass agents_enabled — intersect, lead protected
+    enabled = set(ctx.state.raw.get("agents_enabled") or [])
+    if enabled:
+        convened = [p for p in convened if p in enabled or p == lead]
+
+    benched = [p for p in analytical_all if p not in convened]
+    cast: dict[str, list[str]] = {}
+    for f in ("02", *_ANALYTICAL_FAMILIES, "10", "11"):
+        ids = ([p.id for p in players_in(f)] if f in _SPINE_FAMILIES
+               else [p.id for p in players_in(f) if p.id in convened])
+        if ids:
+            cast[f] = ids
+    active = list(cast.keys())
 
     n_players = sum(len(v) for v in cast.values())
     n_inst = sum(len(PLAYER_BY_ID[p].instruments) for ps in cast.values() for p in ps if p in PLAYER_BY_ID)
@@ -280,10 +314,12 @@ async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
         "players": [{"id": p, "name": PLAYER_BY_ID[p].name, "emoji": PLAYER_BY_ID[p].emoji,
                      "instruments": [i.name for i in PLAYER_BY_ID[p].instruments]}
                     for p in cast[f] if p in PLAYER_BY_ID],
-    } for f in active if cast.get(f)]
-    graph = {"focus": focus, "regulated": regulated, "depth": depth,
+    } for f in active]
+    graph = {"focus": focus, "regulated": regulated,
              "team_lead": lead, "depths": depths, "key_questions": key_questions,
-             "beyond_hint": beyond_hint,
+             "rounds": n_rounds, "debate": debate, "beyond_hint": beyond_hint,
+             "benched": [{"id": p, "reason": bench_reasons.get(p, "not needed for this brief")}
+                         for p in benched],
              "n_players": n_players, "n_instruments": n_inst, "movements": movements,
              "edges": [[active[i], active[i + 1]] for i in range(len(active) - 1)],
              "route": res.route if data else "deterministic"}
@@ -291,17 +327,22 @@ async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
     await ctx.emit.partial("task_graph", graph)
     n_deep = sum(1 for d in depths.values() if d == "deep")
     n_light = sum(1 for d in depths.values() if d == "light")
-    await ctx.emit.log(aid, f"scored the brief: {n_players} players · {n_inst} instruments across "
-                            f"{len(movements)} movements · lead: {lead or '—'} · {n_deep} deep / "
-                            f"{n_light} light · {len(key_questions)} hand-off question(s)"
+    await ctx.emit.log(aid, f"composed the engagement: {n_players} players convened · "
+                            f"{len(benched)} benched · lead: {lead} · {n_deep} deep / {n_light} "
+                            f"light · {len(key_questions)} hand-off line(s) · "
+                            f"{n_rounds} round(s){' · open debates' if debate else ''}"
                             + (f" · {focus}" if focus else ""), "info")
+    for p in benched:
+        await ctx.emit.stage(p, "skipped", "")
+        if p in bench_reasons:
+            await ctx.emit.log(aid, f"benched {p} — {bench_reasons[p]}", "muted")
     for k in key_questions:
         await ctx.emit.log(aid, f"hand-off → {k['assign']}: {k['q']}", "muted")
-    if lead:
-        await ctx.emit.collab(aid, [lead])
+    await ctx.emit.collab(aid, [lead])
     await ctx.finish(aid, layer, {
-        "verdict_line": f"Orchestra scored — lead {lead or '—'} · {n_players} players · "
-                        f"{n_inst} instruments · {len(key_questions)} hand-offs",
+        "verdict_line": f"Engagement composed — lead {lead} · {n_players} convened · "
+                        f"{len(benched)} benched · {len(key_questions)} hand-offs · "
+                        f"{n_rounds} round(s)",
         "focus": focus, "regulated": regulated, "team_lead": lead,
         "degraded": not bool(data)}, res.route if data else "", res.tokens if data else 0)
     return cast
@@ -349,9 +390,13 @@ async def coverage_audit(ctx: Ctx) -> dict[str, Any]:
     a deterministic sweep — dimensions produced, players degraded, instruments
     actually played — surfaced honestly, never hidden."""
     o = ctx.state.outputs
-    produced, missing = [], []
+    scope = set(ctx.state.scope)
+    produced, missing, out_of_scope = [], [], []
     for dim, producers in ORCHESTRA_DIMENSIONS.items():
-        if any(p in o and isinstance(o[p].get("score"), (int, float)) for p in producers):
+        convened = [p for p in producers if p in scope]
+        if not convened:
+            out_of_scope.append(dim)     # the Manager's cast — a choice, not a gap
+        elif any(p in o and isinstance(o[p].get("score"), (int, float)) for p in convened):
             produced.append(dim)
         else:
             missing.append(dim)
@@ -366,17 +411,19 @@ async def coverage_audit(ctx: Ctx) -> dict[str, Any]:
             if i.get("finding") and not str(i["finding"]).startswith("(no model"):
                 inst_played += 1
     report = {"dims_produced": produced, "dims_missing": missing,
+              "dims_out_of_scope": out_of_scope,
               "players": len(players), "degraded": len(degraded),
               "instruments_played": inst_played, "instruments_total": inst_total}
     ctx.state.rounds["coverage"] = report
     await ctx.emit.partial("coverage", report)
     kind = "ok" if not missing and not degraded else "warn"
     await ctx.emit.log("manager",
-                       f"coverage audit: {len(produced)}/{len(ORCHESTRA_DIMENSIONS)} dimensions "
-                       f"produced · {inst_played}/{inst_total} instruments played · "
+                       f"coverage audit: {len(produced)}/{len(produced) + len(missing)} in-scope "
+                       f"dimensions produced · {inst_played}/{inst_total} instruments played · "
                        f"{len(degraded)} player(s) degraded"
-                       + (f" · MISSING: {', '.join(missing)} — raise the depth to convene "
-                          "those sections" if missing else " — no dimension skipped"), kind)
+                       + (f" · MISSING: {', '.join(missing)}" if missing else " — no in-scope dimension skipped")
+                       + (f" · out of scope by the Manager's cast: {', '.join(out_of_scope)}"
+                          if out_of_scope else ""), kind)
     return report
 
 

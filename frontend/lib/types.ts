@@ -252,6 +252,11 @@ export interface TaskGraph {
   team_lead?: string;
   depths?: Record<string, "deep" | "standard" | "light">;
   key_questions?: { assign: string; q: string }[];
+  /** the players the Manager deliberately did NOT convene, with reasons */
+  benched?: { id: string; reason: string }[];
+  /** how many deliberation rounds the Manager judged this brief warrants */
+  rounds?: number;
+  debate?: boolean;
   beyond_hint?: string;
   n_players: number;
   n_instruments: number;
@@ -278,6 +283,8 @@ export interface ManagerRuling {
 export interface CoverageReport {
   dims_produced: string[];
   dims_missing: string[];
+  /** dimensions with no convened producer — the Manager's cast, not a gap */
+  dims_out_of_scope?: string[];
   players: number;
   degraded: number;
   instruments_played: number;

@@ -67,6 +67,12 @@ export function OrchestraView() {
               {nLight} cast light
             </span>
           )}
+          {taskGraph.rounds != null && (
+            <span className="rounded border border-brand/30 bg-brand/5 px-1.5 py-0.5 text-slate-400">
+              {taskGraph.rounds} round{taskGraph.rounds > 1 ? "s" : ""}
+              {taskGraph.debate ? " + debates" : ""} — the Manager&apos;s call
+            </span>
+          )}
           {coverage && (
             <span className={`rounded border px-1.5 py-0.5 ${coverage.dims_missing.length
               ? "border-warn/40 bg-warn/10 text-warn" : "border-ok/40 bg-ok/10 text-ok"}`}>
@@ -78,7 +84,7 @@ export function OrchestraView() {
         {(taskGraph.key_questions?.length ?? 0) > 0 && (
           <div className="mt-2 space-y-0.5">
             <div className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-              the Manager&apos;s hand-off questions (the DAG contracts)
+              the Manager&apos;s hand-off questions (the communication lines)
             </div>
             {taskGraph.key_questions!.slice(0, 7).map((k, i) => (
               <div key={i} className="text-[11px] leading-snug text-slate-400">
@@ -87,6 +93,21 @@ export function OrchestraView() {
               </div>
             ))}
           </div>
+        )}
+        {(taskGraph.benched?.length ?? 0) > 0 && (
+          <details className="mt-2">
+            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-slate-500">
+              benched by the Manager — {taskGraph.benched!.length} player(s) this brief doesn&apos;t need
+            </summary>
+            <div className="mt-1 space-y-0.5">
+              {taskGraph.benched!.map((b) => (
+                <div key={b.id} className="text-[11px] leading-snug text-slate-500">
+                  <span className="text-slate-400">{b.id.replace(/_/g, " ")}</span>
+                  <span className="text-slate-600"> — {b.reason}</span>
+                </div>
+              ))}
+            </div>
+          </details>
         )}
       </div>
 

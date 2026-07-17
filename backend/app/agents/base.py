@@ -58,9 +58,10 @@ class Ctx:
             await self.emit.usage(agent_id, tokens, route)
         # honest status: a fallback-only run is "degraded" (amber), not "done"
         degraded = bool(isinstance(result, dict) and result.get("degraded"))
-        if degraded:
-            # Advisory-Engine contract: say EXPLICITLY that no model was
-            # reached — the deterministic core answered alone.
+        if degraded and self.state.raw.get("mode") == "intelligent":
+            # Advisory-Engine contract (Intelligent Mode ONLY — other modes'
+            # event streams stay exactly as they were): say EXPLICITLY that
+            # no model was reached — the deterministic core answered alone.
             await self.emit.skipped_no_llm(agent_id)
         await self.emit.stage(agent_id, "degraded" if degraded else "done", layer)
 

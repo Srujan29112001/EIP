@@ -113,7 +113,11 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
       const list = depth === "war_room" ? WEALTH_WAR : depth === "board" ? WEALTH_BOARD : WEALTH_CORE;
       return { roster: AGENTS.filter((a) => list.includes(a.id)), mandatory: WEALTH_MANDATORY };
     }
-    const inDepth = (id: string) => depth === "war_room" ? true
+    // Orchestra-only ids never appear in the founder/trader/wealth boards —
+    // they belong exclusively to Intelligent Mode
+    const ORCH_ONLY = new Set(["boss", "manager", "community_ecosystem"]);
+    const inDepth = (id: string) => ORCH_ONLY.has(id) ? false
+      : depth === "war_room" ? true
       : depth === "board" ? PULSE_ONLY.has(id) || BOARD_EXTRA.has(id) || HUMAN_WAVE.includes(id)
       : PULSE_ONLY.has(id);
     const base = AGENTS.filter((a) => inDepth(a.id));

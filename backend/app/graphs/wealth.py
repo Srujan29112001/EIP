@@ -9,7 +9,6 @@ import traceback
 from ..agents import board
 from ..agents import catalog
 from ..agents import meta
-from ..agents import orchestra
 from ..agents import scenario
 from ..agents import studio
 from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
@@ -43,13 +42,6 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
                           f"FRESH RUN {run_id} · all grounding fetched LIVE at "
                           f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC — nothing reused "
                           "from history except claims explicitly labelled MEMORY", "info")
-
-        # Intelligent Mode: the 🎩 Boss distils the conversation (and lifts the
-        # income/expense figures) into the payload BEFORE the wealth intake
-        advisory = bool(payload.get("advisory"))
-        if advisory:
-            await emitter.partial("run_id", run_id)
-            await orchestra.boss_brief(ctx)
 
         # L0 — deterministic wealth intake
         city = payload.get("city") or "India"
@@ -93,9 +85,7 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         await emitter.partial("brief", ctx.state.brief)
         await emitter.partial("scope", scope)
         await emitter.stage("scope_planner", "done", "L0")
-        if advisory:
-            await orchestra.manager_plan(ctx)   # 🎼 mode-aware dynamic routing
-        on = set(ctx.state.scope)
+        on = set(scope)
 
         def wave(pairs):
             return [f(ctx) for a, f in pairs if a in on]
@@ -125,7 +115,7 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
         await replay_degraded(ctx)
 
         # ═══ ROUND 1 — the complete first pass, results and all ═══
-        async def synthesis(round_no: int = 1) -> None:
+        async def synthesis() -> None:
             await board.cross_pollinate(ctx)
             await board.compliance_scan(ctx)
             await wl.weighing_wealth(ctx)
@@ -133,14 +123,10 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
             await scenario.scenario_planner(ctx)
             await asyncio.gather(board.negotiation_coach(ctx),
                                  board.storytelling(ctx), studio.visualizer(ctx))
-            if advisory:
-                await orchestra.qa_gate(ctx, round_no)   # ✅ blocking, before the report
             await studio.reporter(ctx)   # last & alone, input-shrinking ladder
 
-        await synthesis(1)
+        await synthesis()
         n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
-        if advisory and n_rounds < 2:
-            await orchestra.hitl_checkpoint(ctx)   # 🧑‍⚖️ guard the only deliverable
         await emit_result_set(ctx, 1)
 
         # ═══ ROUND 2 — the whole pipeline re-runs, L0 → L4 ═══
@@ -149,7 +135,7 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
                                             "recommendation": ctx.state.verdict.get("recommendation")}
             await refine_gateway(ctx)
             await deliberation_round(ctx)
-            await synthesis(2)
+            await synthesis()
             for aid in ("cross_pollinate", "compliance_scan", "weighing_engine",
                         "verdict_composer", "scenario_planner", "negotiation_coach",
                         "storytelling", "visualizer", "reporter"):
@@ -157,8 +143,6 @@ async def run_wealth(run_id: str, payload: dict, emitter: Emitter) -> None:
             ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
                                             "recommendation": ctx.state.verdict.get("recommendation")}
             await emitter.partial("rounds", dict(ctx.state.rounds))
-            if advisory:
-                await orchestra.hitl_checkpoint(ctx)   # 🧑‍⚖️ guard the final deliverable
             await emit_result_set(ctx, 2)
 
         await save_run(ctx.state)

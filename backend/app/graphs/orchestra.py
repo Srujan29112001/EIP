@@ -17,7 +17,6 @@ from ..agents import board, conductor, meta, orchestra as orch, scenario, studio
 from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
-from ..agents.score import DEPTH_FAMILIES
 from ..core.events import Emitter
 from ..core.llm_gateway import EngineConfig, Gateway
 from ..memory.store import save_run
@@ -69,7 +68,6 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
                           f"🎼 THE ORCHESTRA · FRESH RUN {run_id} · grounding fetched LIVE at "
                           f"{datetime.now(timezone.utc).strftime('%H:%M:%S')} UTC — every player runs "
                           "its junior instruments; nothing reused except claims labelled MEMORY", "info")
-        depth = str(payload.get("depth") or "board").lower()
 
         # ── 🎩 Boss + L0 framing (real parser/profiler set brief & profile) ──
         await _boss_intro(ctx)
@@ -86,9 +84,11 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
             f"risk capacity: {ctx.state.profile.get('risk_capacity')}",
             f"geography: {ctx.state.profile.get('geography')}", "precedent recalled from memory"])
 
-        # ── 🎼 Manager — score the brief into the task graph (the DAG) ──
-        cast = await conductor.manager_score(ctx, depth)
-        note = str((ctx.state.rounds.get("task_graph") or {}).get("focus") or "")
+        # ── 🎼 Manager — compose the ENTIRE dynamic pipeline: who works, who
+        # doesn't, the communication lines, and how many rounds ──
+        cast = await conductor.manager_score(ctx)
+        graph_plan = ctx.state.rounds.get("task_graph") or {}
+        note = str(graph_plan.get("focus") or "")
         ctx.state.scope = [p for ps in cast.values() for p in ps]
         for p in ctx.state.scope:
             await emitter.stage(p, "queued", "")
@@ -109,7 +109,7 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
         # family 03's grounding four already ran; play the rest of research + all
         # of analysis/strategy/legal/tech/commercial/human, movement by movement
         GROUNDED = {"web_researcher", "news_intel", "market_data", "macro_data"}
-        for fam in DEPTH_FAMILIES.get(depth, DEPTH_FAMILIES["board"]):
+        for fam in ("03", "04", "05", "06", "07", "08", "09"):
             fam_cast = [p for p in cast.get(fam, []) if p not in GROUNDED]
             await conductor.play_family(ctx, fam, fam_cast, note)
 
@@ -127,8 +127,8 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
         # ── L3 crucible (real EIP agents) ──
         await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx),
                              v.bias_auditor(ctx), board.devils_advocate(ctx))
-        # War Room: attacked players defend themselves in the open
-        if depth == "war_room":
+        # open debates — when the Manager judged the brief contested enough
+        if graph_plan.get("debate"):
             await board.debate_rounds(ctx)
         # flat replay ONLY for the crucible (the players were re-played above)
         await replay_degraded(ctx, only={"red_team", "fact_checker", "devils_advocate"})
@@ -182,7 +182,8 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
         # ═══ ROUND 1 — the complete first pass, published in full ═══
         await synthesis(1)
         await conductor.coverage_audit(ctx)              # 🧾 no dimension skipped — verified
-        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        # how many rounds is the MANAGER's decision (payload may override)
+        n_rounds = int(payload.get("rounds") or graph_plan.get("rounds") or 2)
         if n_rounds < 2:
             await orch.hitl_checkpoint(ctx)              # 🧑‍⚖️ guard the only deliverable
         await emit_result_set(ctx, 1)
