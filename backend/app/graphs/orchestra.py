@@ -14,7 +14,7 @@ import asyncio
 import traceback
 
 from ..agents import board, conductor, meta, orchestra as orch, scenario, studio, venture as v
-from ..agents.deliberate import emit_result_set
+from ..agents.deliberate import deliberation_round, emit_result_set, refine_gateway
 from ..agents.replay import replay_degraded
 from ..agents.base import Ctx, RunState
 from ..agents.score import DEPTH_FAMILIES
@@ -113,9 +113,26 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
             fam_cast = [p for p in cast.get(fam, []) if p not in GROUNDED]
             await conductor.play_family(ctx, fam, fam_cast, note)
 
-        # ── L3 crucible (real EIP agents) + instrument overlays ──
+        # ♻️ gap-detector for the two-tier players: re-PLAY the degraded ones
+        # (never the flat agents — that would stomp their instruments)
+        await conductor.replay_players(ctx)
+
+        # guardrail from the blueprint: the Loophole Predictor's aggressive-but-
+        # legal findings ALWAYS route through Legal + Philosophy & Ethics
+        if "optimization_predictor" in ctx.state.outputs:
+            await emitter.log("manager", "guardrail: Loophole Predictor findings routed through "
+                                         "Legal + Philosophy & Ethics review (aggressive stays "
+                                         "legal — never over the line)", "muted")
+
+        # ── L3 crucible (real EIP agents) ──
         await asyncio.gather(v.red_team(ctx), v.fact_checker(ctx),
                              v.bias_auditor(ctx), board.devils_advocate(ctx))
+        # War Room: attacked players defend themselves in the open
+        if depth == "war_room":
+            await board.debate_rounds(ctx)
+        # flat replay ONLY for the crucible (the players were re-played above)
+        await replay_degraded(ctx, only={"red_team", "fact_checker", "devils_advocate"})
+        # crucible instrument overlays — after replay, so they survive it
         rt = ctx.state.outputs.get("red_team") or {}
         await conductor.overlay_instruments(ctx, "red_team",
             [a.get("attack", "") for a in (rt.get("attacks") or [])] + [f"kill risk: {rt.get('kill_risk', '')}"])
@@ -127,42 +144,68 @@ async def run_orchestra(run_id: str, payload: dict, emitter: Emitter) -> None:
             [f"{b.get('bias')}: {b.get('note', '')}" for b in (ba.get("findings") or [])])
         da = ctx.state.outputs.get("devils_advocate") or {}
         await conductor.overlay_instruments(ctx, "devils_advocate", [str(da.get("no_case") or "")])
-        await replay_degraded(ctx)
 
-        # ── L4 synthesis + delivery (reuse EIP's rich synthesis) ──
-        await board.cross_pollinate(ctx)
-        await board.compliance_scan(ctx)
-        if "connecting_dots" in ctx.state.scope:
-            await board.connecting_dots(ctx)
-        await conductor.weighing_orchestra(ctx)          # ⚖️ general MCDA verdict
-        await scenario.scenario_planner(ctx)
-        await asyncio.gather(board.negotiation_coach(ctx),
-                             board.storytelling(ctx), studio.visualizer(ctx))
-        await orch.qa_gate(ctx, 1)                       # ✅ blocking, before the report
-        await studio.reporter(ctx)
+        # ── L4 synthesis + delivery (the closing movement, both rounds) ──
+        async def synthesis(round_no: int) -> None:
+            await board.cross_pollinate(ctx)
+            await board.compliance_scan(ctx)
+            if "connecting_dots" in ctx.state.scope:
+                await board.connecting_dots(ctx)
+            await conductor.weighing_orchestra(ctx)      # ⚖️ general MCDA verdict
+            await conductor.manager_rulings(ctx)         # ⚡ conflicts → the Manager rules
+            await scenario.scenario_planner(ctx)
+            await asyncio.gather(board.negotiation_coach(ctx),
+                                 board.storytelling(ctx), studio.visualizer(ctx))
+            await conductor.above_and_beyond(ctx)        # 🌟 "you didn't ask, but should know"
+            await orch.qa_gate(ctx, round_no)            # ✅ blocking, before the report
+            await studio.reporter(ctx)
 
-        # delivery instrument overlays
-        cp = ctx.state.outputs.get("connecting_dots") or {}
-        await conductor.overlay_instruments(ctx, "connecting_dots",
-            [str(x) for x in (cp.get("patterns") or cp.get("insights") or [])])
-        st = ctx.state.outputs.get("storytelling") or {}
-        await conductor.overlay_instruments(ctx, "storytelling",
-            [st.get("hook", ""), st.get("narrative", ""), st.get("one_liner", "")]
-            + [str(b) for b in (st.get("three_beats") or [])])
-        vz = ctx.state.outputs.get("visualizer") or {}
-        await conductor.overlay_instruments(ctx, "visualizer",
-            [f"chart: {c.get('title', c.get('kind', ''))}" for c in (vz.get("charts") or [])])
-        vd = ctx.state.verdict
-        await conductor.overlay_instruments(ctx, "verdict_composer", [
-            f"recommendation: {vd.get('recommendation')}", f"score: {vd.get('score')}/10",
-            vd.get("reasoning", ""), *(vd.get("next_steps") or [])])
-        rp = ctx.state.outputs.get("reporter") or {}
-        await conductor.overlay_instruments(ctx, "reporter",
-            [f"report assembled ({len(str(rp.get('report_md') or ''))} chars)"])
+            # delivery instrument overlays (the two-tier glass box, every round)
+            cp = ctx.state.outputs.get("connecting_dots") or {}
+            await conductor.overlay_instruments(ctx, "connecting_dots",
+                [str(x) for x in (cp.get("patterns") or cp.get("insights") or [])])
+            st = ctx.state.outputs.get("storytelling") or {}
+            await conductor.overlay_instruments(ctx, "storytelling",
+                [st.get("hook", ""), st.get("narrative", ""), st.get("one_liner", "")]
+                + [str(b) for b in (st.get("three_beats") or [])])
+            vz = ctx.state.outputs.get("visualizer") or {}
+            await conductor.overlay_instruments(ctx, "visualizer",
+                [f"chart: {c.get('title', c.get('kind', ''))}" for c in (vz.get("charts") or [])])
+            vd = ctx.state.verdict
+            await conductor.overlay_instruments(ctx, "verdict_composer", [
+                f"recommendation: {vd.get('recommendation')}", f"score: {vd.get('score')}/10",
+                vd.get("reasoning", ""), *(vd.get("next_steps") or [])])
+            rp = ctx.state.outputs.get("reporter") or {}
+            await conductor.overlay_instruments(ctx, "reporter",
+                [f"report assembled ({len(str(rp.get('report_md') or ''))} chars)"])
 
-        # ── 🧑‍⚖️ human review of regulated content, then publish ──
-        await orch.hitl_checkpoint(ctx)
+        # ═══ ROUND 1 — the complete first pass, published in full ═══
+        await synthesis(1)
+        await conductor.coverage_audit(ctx)              # 🧾 no dimension skipped — verified
+        n_rounds = int(payload.get("rounds") or (1 if depth == "pulse" else 2))
+        if n_rounds < 2:
+            await orch.hitl_checkpoint(ctx)              # 🧑‍⚖️ guard the only deliverable
         await emit_result_set(ctx, 1)
+
+        # ═══ ROUND 2 — the deliberation: every player re-reads the FULL board
+        # (the blueprint's centrepiece — verdicts calibrated, not first-guess) ═══
+        if n_rounds >= 2:
+            ctx.state.rounds["verdict1"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await refine_gateway(ctx)                    # L0 re-reads its framing ✓✓
+            await deliberation_round(ctx)                # L1→L2→L3 re-read the board ✓✓
+            await synthesis(2)                           # the closing movement, re-run in full
+            for aid2 in ("cross_pollinate", "compliance_scan",
+                         *(["connecting_dots"] if "connecting_dots" in ctx.state.scope else []),
+                         "weighing_engine", "verdict_composer", "scenario_planner",
+                         "negotiation_coach", "storytelling", "visualizer", "reporter"):
+                await emitter.round(aid2, 2)             # L4 ✓✓
+            ctx.state.rounds["verdict2"] = {"score": ctx.state.verdict.get("score"),
+                                            "recommendation": ctx.state.verdict.get("recommendation")}
+            await emitter.partial("rounds", dict(ctx.state.rounds))
+            await conductor.coverage_audit(ctx)          # 🧾 re-audit the deliberated board
+            await orch.hitl_checkpoint(ctx)              # 🧑‍⚖️ guard the final deliverable
+            await emit_result_set(ctx, 2)
 
         await save_run(ctx.state)
         await meta.outcome_tracker(ctx)

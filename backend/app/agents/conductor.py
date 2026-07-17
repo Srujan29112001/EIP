@@ -37,8 +37,10 @@ def layer_of(player: Player) -> str:
     return _LAYER_OF.get(player.family, "L2")
 
 
-def _peer_headlines(ctx: Ctx, exclude: str, limit: int = 12) -> str:
-    lines = []
+def _peer_headlines(ctx: Ctx, exclude: str, limit: int = 12) -> tuple[str, list[str]]:
+    """(headline block, the peer ids injected) — the ids drive the gold collab arcs."""
+    lines: list[str] = []
+    ids: list[str] = []
     for pid, out in ctx.state.outputs.items():
         if pid == exclude or not isinstance(out, dict):
             continue
@@ -47,36 +49,64 @@ def _peer_headlines(ctx: Ctx, exclude: str, limit: int = 12) -> str:
             s = out.get("score")
             tag = f" ({s}/10)" if isinstance(s, (int, float)) else ""
             lines.append(f"- {pid}: {str(vl)[:100]}{tag}")
+            ids.append(pid)
         if len(lines) >= limit:
             break
-    return "\n".join(lines) if lines else "(you are among the first to report)"
+    return ("\n".join(lines) if lines else "(you are among the first to report)"), ids
+
+
+# per-player depth (the Manager's "cast, then set depth" — everyone contributes,
+# the Scope Planner decides who writes a novel and who writes a memo)
+_DEPTH_TOKENS = {"deep": 1000, "standard": 760, "light": 520}
+_DEPTH_NOTE = {
+    "deep": "The Manager cast you DEEP on this engagement — this dimension is load-bearing. "
+            "Each instrument finding must be specific and evidenced; go past the obvious.",
+    "light": "The Manager cast you LIGHT — cover your dimension crisply, one sharp finding "
+             "per instrument, no padding.",
+}
 
 
 async def play(ctx: Ctx, player: Player, brief_note: str = "") -> dict[str, Any]:
-    """Run one player as a LEAD conducting its instruments (the two-tier unit)."""
+    """Run one player as a LEAD conducting its instruments (the two-tier unit).
+    Honours the Manager's score: team-lead casting, per-player depth, and the
+    hand-off question assigned to this player."""
     aid, layer = player.id, layer_of(player)
     fam = FAMILY_BY_ID.get(player.family)
+    plan = ctx.state.rounds.get("task_graph") or {}
+    is_lead = plan.get("team_lead") == aid
+    depth = str((plan.get("depths") or {}).get(aid) or "standard")
+    handoff = next((str(k.get("q") or "") for k in (plan.get("key_questions") or [])
+                    if isinstance(k, dict) and k.get("assign") == aid), "")
     async with _SEM:
         await ctx.start(aid, layer)
         insts = player.instruments
         inst_list = "\n".join(f"  · {i.name} — {i.skill}" for i in insts)
         user_brief = str(ctx.state.raw.get("agent_context", {}).get(aid) or "").strip()
+        peers_block, peer_ids = _peer_headlines(ctx, aid)
         system = (f"You are {player.name} {player.emoji}, a LEAD expert in an advisory orchestra "
-                  f"({fam.name if fam else ''}). Your role: {player.role} You conduct "
-                  f"{len(insts)} junior specialists (your instruments). For EACH instrument, produce "
-                  "its specific finding for THIS brief — concrete, grounded in the evidence, never "
-                  "generic. Then synthesize all of them into your integrated take and a defensible "
-                  "0–10 score. Never invent numbers; cite the evidence or tag ESTIMATE.")
+                  f"({fam.name if fam else ''}). Your role: {player.role} "
+                  + ("You are also THE ENGAGEMENT LEAD the Manager cast for this brief — your "
+                     "section carries the thesis; colleagues will calibrate against you. " if is_lead else "")
+                  + f"You conduct {len(insts)} junior specialists (your instruments). For EACH "
+                  "instrument, produce its specific finding for THIS brief — concrete, grounded in "
+                  "the evidence, never generic. Then synthesize all of them into your integrated "
+                  "take and a defensible 0–10 score. Never invent numbers; cite the evidence or "
+                  "tag ESTIMATE." + (" " + _DEPTH_NOTE[depth] if depth in _DEPTH_NOTE else ""))
         user = (f"BRIEF: {str(ctx.state.brief)[:600]}\nPROFILE: {str(ctx.state.profile)[:240]}\n"
                 + (f"USER'S DIRECT BRIEF TO YOU: {user_brief}\n" if user_brief else "")
+                + (f"MANAGER'S HAND-OFF QUESTION TO YOU (answer it explicitly): {handoff}\n" if handoff else "")
                 + (f"MANAGER'S NOTE: {brief_note}\n" if brief_note else "")
                 + f"\nYOUR INSTRUMENTS (produce a finding for each, by exact name):\n{inst_list}\n\n"
-                + f"WHAT COLLEAGUES HAVE FOUND SO FAR:\n{_peer_headlines(ctx, aid)}\n\n"
-                + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(12, player.name)}\n\n"
+                + f"WHAT COLLEAGUES HAVE FOUND SO FAR:\n{peers_block}\n\n"
+                + f"EVIDENCE BOARD:\n{ctx.state.evidence_digest(14 if depth == 'deep' else 10, player.name)}\n\n"
                 + "TASK: conduct your instruments, then give your integrated take + score.")
         await ctx.emit.prompt(aid, system, user)
-        data, res = await ctx.llm.structured("t2", system, user, _PLAY_SCHEMA,
-                                             max_tokens=760, agent=aid)
+        data, res = await ctx.llm.structured(
+            "t3" if is_lead else "t2", system, user, _PLAY_SCHEMA,
+            max_tokens=_DEPTH_TOKENS.get(depth, 760) + (240 if is_lead else 0), agent=aid)
+        if peer_ids:
+            # A2A: this player audibly built on these colleagues — light the gold arcs
+            await ctx.emit.collab(aid, peer_ids[:10])
 
     findings = {}
     if data and isinstance(data.get("instruments"), list):
@@ -108,14 +138,20 @@ async def play(ctx: Ctx, player: Player, brief_note: str = "") -> dict[str, Any]
         await ctx.emit.claim(aid, out["verdict_line"], confidence=out["confidence"])
         await ctx.emit.usage(aid, res.tokens, res.route)
     else:
-        # honest degradation — the instruments still show, deterministically
+        # honest degradation — but the deterministic core still ANSWERS
+        # (Constitution rule 11: a score exists at every node, even zero-key);
+        # neutral 5.0 nudged by how much evidence this player's dimension has
+        ev_hits = len([e for e in ctx.state.evidence
+                       if player.name.split(" ")[0].lower() in str(e.get("text", "")).lower()])
+        det_score = round(min(6.5, 5.0 + 0.25 * min(ev_hits, 6)), 2)
         out.update({
-            "verdict_line": f"{player.name}: no model reached — {len(insts)} instruments "
-                            "carry deterministic placeholders",
+            "verdict_line": f"{player.name}: no model reached — deterministic baseline "
+                            f"{det_score}/10, {len(insts)} instruments carry placeholders",
             "analysis": player.role, "instruments": inst_out, "degraded": True,
-            "key_insights": [], "what_would_change": "",
+            "score": det_score, "confidence": 0.3,
+            "key_insights": [], "what_would_change": "a reachable model would narrate this section",
         })
-        await ctx.emit.log(aid, "no model reached — instruments ran deterministic only", "warn")
+        await ctx.emit.log(aid, "no model reached — deterministic baseline shipped (amber)", "warn")
     ctx.state.outputs[aid] = out
     await ctx.finish(aid, layer, out, res.route, res.tokens)
     return out
@@ -129,6 +165,12 @@ async def overlay_instruments(ctx: Ctx, player_id: str, findings: list[str]) -> 
     if p is None:
         return
     out = ctx.state.outputs.get(player_id)
+    # intake_parser/context_profiler store the brief/profile dict ITSELF as
+    # their output — overlaying onto the shared object would pollute every
+    # downstream prompt with instruments; detach onto a copy first
+    if out is ctx.state.brief or out is ctx.state.profile:
+        out = dict(out)
+        ctx.state.outputs[player_id] = out
     findings = [str(f)[:240] for f in findings if str(f).strip()]
     inst_out = []
     for idx, i in enumerate(p.instruments):
@@ -150,11 +192,29 @@ async def play_family(ctx: Ctx, family_id: str, cast: list[str], brief_note: str
                              return_exceptions=True)
 
 
-# ── 🎼 Manager — decompose the brief into a task graph over the players ───────
+# ── 🎼 Manager — SCORE the brief into a task graph over the players ───────────
+# The conversation's contract: cast every player (coverage), then SET DEPTH per
+# player; select the engagement lead; write the hand-off questions (the DAG's
+# contracts); the Whiplash standard — every player and every instrument works.
+
+_SCORE_SCHEMA = ('{"team_lead": str (ONE player id from the cast — the expert whose dimension '
+                 'carries this specific brief), '
+                 '"focus": str (<=30 words — the plan\'s centre of gravity), '
+                 '"regulated": bool (legal/tax/financial/investment advice present), '
+                 '"deep": [str x3-6 (player ids whose dimension is LOAD-BEARING for this brief '
+                 '— they go deep)], '
+                 '"light": [str x0-8 (player ids peripheral to this brief — they stay crisp)], '
+                 '"key_questions": [{"assign": str (player id), "q": str (<=20 words — the '
+                 'hand-off question that player MUST answer for the thesis)} x4-7], '
+                 '"beyond_hint": str (<=20 words — the direction the client did NOT ask about '
+                 'but should hear)}')
+
 
 async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
     """Cast the orchestra for this brief and emit the task graph (the DAG the
-    glass box draws). Returns {family_id: [player_ids]} — the movements."""
+    glass box draws): the movements, the engagement lead, per-player depth
+    ("cast, then set depth"), and the hand-off questions. Returns
+    {family_id: [player_ids]} — the movements."""
     aid, layer = "manager", "L0"
     await ctx.emit.stage(aid, "queued", layer)
     await ctx.start(aid, layer)
@@ -170,23 +230,47 @@ async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
     if enabled:
         for f in cast:
             cast[f] = [p for p in cast[f] if p in enabled or p in mandatory]
+    cast_ids = [p for ps in cast.values() for p in ps]
+    analytical = [p for p in cast_ids if PLAYER_BY_ID.get(p)
+                  and PLAYER_BY_ID[p].family in ("03", "04", "05", "06", "07", "08", "09")]
 
-    # a light LLM pass names the plan's focus + flags regulated content
-    focus, regulated = "", False
-    schema = ('{"focus": str (<=30 words — the plan\'s centre of gravity for this brief), '
-              '"regulated": bool (legal/tax/financial/investment advice present)}')
+    # the Manager truly SCORES: lead + per-player depth + hand-off questions
+    focus, regulated, lead, beyond_hint = "", False, "", ""
+    depths: dict[str, str] = {}
+    key_questions: list[dict[str, str]] = []
+    candidates = "\n".join(f"- {p}: {PLAYER_BY_ID[p].role}" for p in analytical if p in PLAYER_BY_ID)
     data, res = await ctx.llm.structured(
         "t3",
-        "You are the Manager 🎼 conducting an advisory orchestra. You do not analyse; you PLAN. "
-        "Given the brief and the cast, state the plan's focus and whether it touches regulated "
-        "legal/tax/financial content.",
-        f"BRIEF: {str(ctx.state.brief)[:600]}\nCAST: "
-        + ", ".join(p for ps in cast.values() for p in ps),
-        schema, max_tokens=200, agent=aid)
+        "You are the Manager 🎼 conducting an advisory orchestra — the Whiplash standard: you do "
+        "not analyse, you PLAN, and you demand excellence. Every player will work; your job is to "
+        "CAST THEN SET DEPTH: pick the ONE engagement lead whose dimension carries this brief, "
+        "mark which players go deep (load-bearing) and which stay light (peripheral), and write "
+        "the hand-off questions the key players must answer. Also name the direction the client "
+        "didn't ask about but needs to hear.",
+        f"BRIEF: {str(ctx.state.brief)[:600]}\nPROFILE: {str(ctx.state.profile)[:240]}\n"
+        f"DEPTH: {depth}\n\nTHE CAST (analytical players):\n{candidates}\n\n"
+        "TASK: score this engagement.",
+        _SCORE_SCHEMA, max_tokens=700, agent=aid)
     if data:
         focus = str(data.get("focus") or "")[:200]
         regulated = bool(data.get("regulated"))
+        beyond_hint = str(data.get("beyond_hint") or "")[:160]
+        if str(data.get("team_lead") or "") in analytical:
+            lead = str(data["team_lead"])
+        for p in (data.get("deep") or [])[:6]:
+            if str(p) in analytical:
+                depths[str(p)] = "deep"
+        for p in (data.get("light") or [])[:8]:
+            if str(p) in analytical and str(p) not in depths:
+                depths[str(p)] = "light"
+        for k in (data.get("key_questions") or [])[:7]:
+            if isinstance(k, dict) and str(k.get("assign") or "") in analytical and k.get("q"):
+                key_questions.append({"assign": str(k["assign"]), "q": str(k["q"])[:160]})
         await ctx.emit.usage(aid, res.tokens, res.route)
+    if not lead and analytical:
+        lead = "market_analyst" if "market_analyst" in analytical else analytical[0]
+    if lead:
+        depths[lead] = "deep"
 
     n_players = sum(len(v) for v in cast.values())
     n_inst = sum(len(PLAYER_BY_ID[p].instruments) for ps in cast.values() for p in ps if p in PLAYER_BY_ID)
@@ -198,18 +282,222 @@ async def manager_score(ctx: Ctx, depth: str) -> dict[str, list[str]]:
                     for p in cast[f] if p in PLAYER_BY_ID],
     } for f in active if cast.get(f)]
     graph = {"focus": focus, "regulated": regulated, "depth": depth,
+             "team_lead": lead, "depths": depths, "key_questions": key_questions,
+             "beyond_hint": beyond_hint,
              "n_players": n_players, "n_instruments": n_inst, "movements": movements,
              "edges": [[active[i], active[i + 1]] for i in range(len(active) - 1)],
              "route": res.route if data else "deterministic"}
     ctx.state.rounds["task_graph"] = graph
     await ctx.emit.partial("task_graph", graph)
+    n_deep = sum(1 for d in depths.values() if d == "deep")
+    n_light = sum(1 for d in depths.values() if d == "light")
     await ctx.emit.log(aid, f"scored the brief: {n_players} players · {n_inst} instruments across "
-                            f"{len(movements)} movements" + (f" · {focus}" if focus else ""), "info")
+                            f"{len(movements)} movements · lead: {lead or '—'} · {n_deep} deep / "
+                            f"{n_light} light · {len(key_questions)} hand-off question(s)"
+                            + (f" · {focus}" if focus else ""), "info")
+    for k in key_questions:
+        await ctx.emit.log(aid, f"hand-off → {k['assign']}: {k['q']}", "muted")
+    if lead:
+        await ctx.emit.collab(aid, [lead])
     await ctx.finish(aid, layer, {
-        "verdict_line": f"Orchestra scored — {n_players} players, {n_inst} instruments, "
-                        f"{len(movements)} movements", "focus": focus, "regulated": regulated,
+        "verdict_line": f"Orchestra scored — lead {lead or '—'} · {n_players} players · "
+                        f"{n_inst} instruments · {len(key_questions)} hand-offs",
+        "focus": focus, "regulated": regulated, "team_lead": lead,
         "degraded": not bool(data)}, res.route if data else "", res.tokens if data else 0)
     return cast
+
+
+# ── ♻️ Orchestra replay — rescue degraded players WITHOUT losing their tiers ──
+
+async def replay_players(ctx: Ctx, cooldown: float = 22.0) -> int:
+    """The gap-detector for the two-tier orchestra: degraded players are
+    re-PLAYED (through the same instruments executor) after a quota-refresh
+    cooldown — never through the flat agents, which would stomp their
+    instruments. Returns how many were rescued."""
+    degraded = [pid for pid, out in ctx.state.outputs.items()
+                if isinstance(out, dict) and out.get("degraded")
+                and out.get("player") and out.get("instruments") and pid in PLAYER_BY_ID]
+    if not degraded:
+        return 0
+    status = await ctx.llm.status()
+    if not status.get("cloud") and not status.get("local"):
+        await ctx.emit.log("manager",
+                           f"gap-detector: {len(degraded)} player(s) reduced-depth, but no LLM "
+                           "configured — add API keys to narrate their instruments", "warn")
+        return 0
+    await ctx.emit.log("manager",
+                       f"gap-detector: re-playing {len(degraded)} reduced-depth player(s) after a "
+                       f"{int(cooldown)}s cooldown (quota refresh) — instruments preserved", "warn")
+    await asyncio.sleep(cooldown)
+    rescued = 0
+    for pid in degraded:
+        try:
+            out = await play(ctx, PLAYER_BY_ID[pid])
+            if not out.get("degraded"):
+                rescued += 1
+        except Exception:
+            pass
+    await ctx.emit.log("manager", f"gap-detector: rescued {rescued}/{len(degraded)} player(s)",
+                       "ok" if rescued else "muted")
+    return rescued
+
+
+# ── 🧾 Coverage & Completeness Auditor (a Manager junior · t0) ────────────────
+
+async def coverage_audit(ctx: Ctx) -> dict[str, Any]:
+    """The Manager junior that 'guarantees no relevant dimension was skipped':
+    a deterministic sweep — dimensions produced, players degraded, instruments
+    actually played — surfaced honestly, never hidden."""
+    o = ctx.state.outputs
+    produced, missing = [], []
+    for dim, producers in ORCHESTRA_DIMENSIONS.items():
+        if any(p in o and isinstance(o[p].get("score"), (int, float)) for p in producers):
+            produced.append(dim)
+        else:
+            missing.append(dim)
+    players = [pid for pid, out in o.items()
+               if isinstance(out, dict) and pid in PLAYER_BY_ID
+               and (out.get("player") or out.get("instruments"))]
+    degraded = [pid for pid in players if o[pid].get("degraded")]
+    inst_total = inst_played = 0
+    for pid in players:
+        for i in (o[pid].get("instruments") or []):
+            inst_total += 1
+            if i.get("finding") and not str(i["finding"]).startswith("(no model"):
+                inst_played += 1
+    report = {"dims_produced": produced, "dims_missing": missing,
+              "players": len(players), "degraded": len(degraded),
+              "instruments_played": inst_played, "instruments_total": inst_total}
+    ctx.state.rounds["coverage"] = report
+    await ctx.emit.partial("coverage", report)
+    kind = "ok" if not missing and not degraded else "warn"
+    await ctx.emit.log("manager",
+                       f"coverage audit: {len(produced)}/{len(ORCHESTRA_DIMENSIONS)} dimensions "
+                       f"produced · {inst_played}/{inst_total} instruments played · "
+                       f"{len(degraded)} player(s) degraded"
+                       + (f" · MISSING: {', '.join(missing)} — raise the depth to convene "
+                          "those sections" if missing else " — no dimension skipped"), kind)
+    return report
+
+
+# ── ⚡ Conflict rulings — Weighing + Devil's stress it, the Manager decides ────
+
+async def manager_rulings(ctx: Ctx) -> None:
+    """The conversation's conflict protocol: when experts disagree, score it
+    (Weighing) and stress it (Red Team / Devil's Advocate), then the MANAGER
+    rules and records the rationale in the ledger."""
+    conflicts: list[str] = []
+    for atk in (ctx.state.outputs.get("red_team") or {}).get("attacks") or []:
+        if isinstance(atk, dict) and atk.get("attack"):
+            conflicts.append(f"[red_team vs {atk.get('target_agent', '?')}] {str(atk['attack'])[:140]}")
+    for c in (ctx.state.outputs.get("cross_pollinate") or {}).get("connections") or []:
+        if isinstance(c, dict) and str(c.get("type")) == "tension":
+            conflicts.append(f"[{c.get('a', '?')} × {c.get('b', '?')}] {str(c.get('insight') or '')[:140]}")
+    if not conflicts:
+        ctx.state.rounds["rulings"] = []
+        return
+    aid = "manager"
+    await ctx.emit.log(aid, f"resolving {min(len(conflicts), 3)} open conflict(s) — weighed, "
+                            "stressed by the crucible, now the Manager rules", "info")
+    schema = ('{"rulings": [{"topic": str (<=12 words), "ruling": str (<=25 words — the decision), '
+              '"rationale": str (<=25 words — why, citing the evidence side that won)} x1-3]}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are the Manager 🎼. Experts on your board disagree. The Weighing Engine has scored "
+        "the board and the crucible has stressed both sides — now YOU rule on each conflict and "
+        "record the rationale. Decisive, evidence-first, no fence-sitting.",
+        f"BOARD VERDICT: {str(ctx.state.verdict.get('score'))}/10 "
+        f"({ctx.state.verdict.get('recommendation')})\nDIMENSIONS: {ctx.state.dimensions}\n"
+        "OPEN CONFLICTS:\n" + "\n".join(f"- {c}" for c in conflicts[:3]),
+        schema, max_tokens=450, agent=aid)
+    rulings = []
+    if data and isinstance(data.get("rulings"), list):
+        rulings = [{k: str(r.get(k) or "")[:200] for k in ("topic", "ruling", "rationale")}
+                   for r in data["rulings"] if isinstance(r, dict) and r.get("ruling")][:3]
+        await ctx.emit.usage(aid, res.tokens, res.route)
+    if not rulings:
+        # deterministic ruling: the weighed number IS the decision record
+        rulings = [{"topic": c.split("]")[0].strip("["),
+                    "ruling": f"Stands as weighed — board score {ctx.state.verdict.get('score')}/10 "
+                              f"({ctx.state.verdict.get('recommendation')}).",
+                    "rationale": "No model reachable — the deterministic weighing is the tie-breaker."}
+                   for c in conflicts[:2]]
+    ctx.state.rounds["rulings"] = rulings
+    await ctx.emit.partial("rulings", rulings)
+    for r in rulings:
+        await ctx.emit.log(aid, f"⚖ RULING · {r['topic']}: {r['ruling']}", "info")
+
+
+# ── 🌟 Above & Beyond — "you didn't ask, but you should know" ─────────────────
+
+async def above_and_beyond(ctx: Ctx) -> None:
+    """The conversation's mechanism, verbatim: Trends & Weak Signals +
+    Connecting Dots + the Coverage Auditor produce the 'you didn't ask, but
+    you should know' section of EVERY deliverable. Fail-soft: assembles
+    deterministically when no model is reachable."""
+    aid = "manager"
+    o = ctx.state.outputs
+    trends = o.get("trends") or {}
+    dots = o.get("connecting_dots") or {}
+    cross = o.get("cross_pollinate") or {}
+    coverage = ctx.state.rounds.get("coverage") or {}
+    hint = str((ctx.state.rounds.get("task_graph") or {}).get("beyond_hint") or "")
+    raw_signals = ([str(x) for x in (trends.get("key_insights") or [])]
+                   + [str(x) for x in (dots.get("key_insights") or dots.get("insights") or [])]
+                   + [str(x) for x in (cross.get("emergent") or [])])[:8]
+
+    schema = ('{"items": [{"insight": str (<=28 words — something the client did NOT ask about '
+              'but materially needs to know), "why": str (<=18 words — why it matters to THIS '
+              'decision), "source": str (the player id it came from)} x3-5]}')
+    data, res = await ctx.llm.structured(
+        "t3",
+        "You are the Manager 🎼 assembling the ABOVE-AND-BEYOND section — the things the client "
+        "did not ask about but must hear (the whole point of a great advisory board). Draw from "
+        "the weak signals, cross-domain patterns and emergent insights. Never restate what the "
+        "client already asked; each item must be genuinely additive.",
+        f"BRIEF: {str(ctx.state.brief)[:400]}\n"
+        + (f"MANAGER'S HINT: {hint}\n" if hint else "")
+        + "SIGNALS FROM THE BOARD:\n" + "\n".join(f"- {s[:140]}" for s in raw_signals)
+        + f"\nUNCOVERED DIMENSIONS: {', '.join(coverage.get('dims_missing') or []) or 'none'}",
+        schema, max_tokens=500, agent=aid)
+    items = []
+    if data and isinstance(data.get("items"), list):
+        items = [{"insight": str(i.get("insight") or "")[:220],
+                  "why": str(i.get("why") or "")[:160],
+                  "source": str(i.get("source") or "")[:40]}
+                 for i in data["items"] if isinstance(i, dict) and i.get("insight")][:5]
+        await ctx.emit.usage(aid, res.tokens, res.route)
+    if not items:
+        # deterministic assembly — the section ALWAYS ships (fail-soft), drawing
+        # from every honest signal the board produced without a model
+        srcs = ["trends", "connecting_dots", "cross_pollinate"]
+        items = [{"insight": s[:220], "why": "surfaced by the board beyond the brief's framing",
+                  "source": srcs[min(idx, 2)]}
+                 for idx, s in enumerate(raw_signals[:3])]
+        kill = str((o.get("red_team") or {}).get("kill_risk") or "")
+        if kill:
+            items.append({"insight": f"The single most likely kill risk: {kill[:170]}",
+                          "why": "you asked about the upside; this is the downside that decides it",
+                          "source": "red_team"})
+        breaks = str((o.get("scenario_planner") or {}).get("breaks_it") or "")
+        if breaks:
+            items.append({"insight": f"What breaks the plan under uncertainty: {breaks[:170]}",
+                          "why": "the Monte-Carlo tail matters more than the median",
+                          "source": "scenario_planner"})
+        no_case = str((o.get("devils_advocate") or {}).get("no_case") or "")
+        if no_case and len(items) < 4:
+            items.append({"insight": f"The steel-manned case against: {no_case[:170]}",
+                          "why": "the strongest opposing view, argued on purpose",
+                          "source": "devils_advocate"})
+        for dim in (coverage.get("dims_missing") or [])[:1]:
+            items.append({"insight": f"The {dim} dimension was not covered at this depth — "
+                                     "a deeper run would convene those specialists.",
+                          "why": "an unexamined dimension is an unpriced risk", "source": "manager"})
+        items = items[:5]
+    ctx.state.rounds["beyond"] = items
+    await ctx.emit.partial("beyond", items)
+    await ctx.emit.log(aid, f"🌟 above & beyond — {len(items)} thing(s) you didn't ask about "
+                            "but should know", "ok")
 
 
 # ── ⚖️ Weighing Engine — general MCDA verdict (deterministic t0) ──────────────

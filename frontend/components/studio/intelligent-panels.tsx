@@ -156,6 +156,67 @@ export function QaGatePanel() {
   );
 }
 
+/** 🌟 Above & Beyond — "you didn't ask, but you should know" (the conversation's
+ * mechanism: Trends + Connecting Dots + the Coverage Auditor, in every deliverable). */
+export function AboveBeyondPanel() {
+  const beyond = useRun((s) => s.beyond);
+  if (!beyond.length) return null;
+  return (
+    <div className="rounded-xl border border-brand/50 bg-gradient-to-b from-brand/10 to-panel p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-lg">🌟</span>
+        <h3 className="font-display text-sm font-bold text-slate-100">
+          You didn&apos;t ask, but you should know
+        </h3>
+        <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+          above &amp; beyond · trends + connecting dots + coverage auditor
+        </span>
+      </div>
+      <div className="space-y-2">
+        {beyond.map((b, i) => (
+          <div key={i} className="rounded-lg border border-line bg-panel-2 p-2.5">
+            <div className="text-[13px] leading-snug text-slate-200">{b.insight}</div>
+            <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[10px]">
+              <span className="text-slate-500">why it matters: <span className="text-slate-400">{b.why}</span></span>
+              {b.source && (
+                <span className="ml-auto rounded border border-line px-1.5 py-0.5 text-slate-500">
+                  {agentById(b.source).icon} {agentById(b.source).name}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** ⚡ The Manager's rulings — conflicts weighed, stressed, then decided on the record. */
+export function RulingsPanel() {
+  const rulings = useRun((s) => s.rulings);
+  if (!rulings.length) return null;
+  return (
+    <div className="rounded-xl border border-line bg-panel p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-lg">⚡</span>
+        <h3 className="font-display text-sm font-bold text-slate-100">The Manager&apos;s rulings</h3>
+        <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+          conflicts → weighed · stressed by the crucible · decided on the record
+        </span>
+      </div>
+      <div className="space-y-2">
+        {rulings.map((r, i) => (
+          <div key={i} className="rounded-lg border border-line bg-panel-2 p-2.5">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-warn">⚔ {r.topic}</div>
+            <div className="mt-1 text-[13px] leading-snug text-slate-200">🎼 {r.ruling}</div>
+            <div className="mt-0.5 text-[11px] leading-snug text-slate-500">{r.rationale}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** 🧑‍⚖️ The human-in-the-loop review gate for regulated content. */
 export function HitlBanner() {
   const hitl = useRun((s) => s.hitl);

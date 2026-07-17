@@ -7,7 +7,7 @@ import type { IntakeForm } from "@/lib/types";
 import { Boardroom } from "./boardroom";
 import { DecisionRoom } from "./decision-room";
 import { FlowMap } from "./flow-map";
-import { HitlBanner, ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
+import { HitlBanner, ManagerPlanPanel, QaGatePanel, RulingsPanel } from "./intelligent-panels";
 import { OrchestraView } from "./orchestra-view";
 import { IntakeWizard } from "./intake-wizard";
 import { PipelineRail } from "./pipeline-rail";
@@ -91,6 +91,7 @@ export function StudioClient() {
               {/* Mode-aware Intelligent runs: the Manager's plan + the blocking QA gate */}
               <ManagerPlanPanel />
               <QaGatePanel />
+              <RulingsPanel />
               {/* the living workflow tree — click any agent to jump to its full card */}
               <FlowMap onFocus={(id) =>
                 document.getElementById(`stage-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} />

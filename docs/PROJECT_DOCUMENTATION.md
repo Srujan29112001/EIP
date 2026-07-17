@@ -516,6 +516,48 @@ with zero keys the play()'d instruments carry deterministic placeholders (amber)
 overlay instruments still show, the MCDA still computes, and `skipped_no_llm` marks every
 player that never reached a model — the SSE stream never dies.
 
+### 12.5.1 The Advisory Engine's brains (Phase 16.5 — the full blueprint)
+
+The Orchestra's intelligence layer, implementing the source conversation's Manager
+contract verbatim:
+
+1. **The Manager truly scores** (`conductor.manager_score`): one t3 call plans the
+   engagement — the 👑 **team lead** (whose section carries the thesis; plays at t3 with a
+   bigger budget), **per-player depth** (*"cast, then set depth"* — deep 1000 tokens /
+   standard 760 / light 520, so "everyone contributes" doesn't mean "everyone writes a
+   novel"), **hand-off questions** (the DAG contracts — each assigned player must answer
+   its question explicitly, injected into its prompt), the plan's focus, the regulated
+   flag, and a `beyond_hint`. Deterministic fallback: lead = market_analyst, all standard.
+2. **Two-round deliberation** — the round-1 results publish in full (`result_set 1`), then
+   `refine_gateway` + `deliberation_round` re-run every LLM-tier player against the FULL
+   board (✓✓ ticks; refined outputs keep their `instruments`), the closing movement re-runs,
+   and `result_set 2` publishes under round 1 with verdict v1→v2 + per-player deltas.
+3. **Coverage & Completeness Auditor** (`conductor.coverage_audit`, t0) — the Manager
+   junior that "guarantees no relevant dimension was skipped": dimensions produced vs
+   missing, degraded players, instruments played vs total → `coverage` partial, shown in
+   the score header. Runs after each round's synthesis.
+4. **Manager rulings** (`conductor.manager_rulings`) — the conflict protocol: red-team
+   attacks + cross-pollination tensions are weighed (deterministic MCDA), stressed
+   (crucible), then the Manager **rules on the record** → `rulings` partial + ⚡ panel.
+   Deterministic fallback: the weighed number is the tie-breaker.
+5. **🌟 Above & Beyond** (`conductor.above_and_beyond`) — *"you didn't ask, but you should
+   know"*, in every deliverable: Trends + Connecting Dots + Coverage Auditor (+ red-team
+   kill risk, Monte-Carlo breaks-it, the steel-manned no-case when zero-key) → `beyond`
+   partial + the gold panel at the top of Results. Always ships (fail-soft).
+6. **Orchestra-native replay** (`conductor.replay_players`) — degraded players are
+   re-PLAYED through their instruments after the quota refresh; the flat
+   `replay_degraded` is restricted to the crucible (`only={red_team, fact_checker,
+   devils_advocate}`) because the flat rerun was stomping two-tier outputs. Crucible
+   instrument overlays now apply after replay so they survive it.
+7. **Deterministic baseline for degraded players** — rule 11 honored: a player no model
+   reached still ships a t0 score (5.0 nudged by evidence coverage, confidence 0.3,
+   amber), so the MCDA answers with zero keys.
+8. **Guardrails** — Loophole Predictor findings route through Legal + Philosophy & Ethics
+   (logged); War-Room depth runs open debate rounds; the QA gate blocks BOTH rounds.
+9. **Picker restored** — the 62-player roster by movement (Pulse: framing+research+
+   analysis · Board: +legal+commercial+human · War Room: +technology), spine locked,
+   per-player briefs injected verbatim into `play()`.
+
 ---
 
 # Part III — Frontend, Usage & Beyond

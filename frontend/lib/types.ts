@@ -247,11 +247,41 @@ export interface TaskGraph {
   focus: string;
   regulated: boolean;
   depth: string;
+  /** the Manager's true score: the engagement lead, per-player depth
+   * ("cast, then set depth"), and the hand-off questions (the DAG contracts) */
+  team_lead?: string;
+  depths?: Record<string, "deep" | "standard" | "light">;
+  key_questions?: { assign: string; q: string }[];
+  beyond_hint?: string;
   n_players: number;
   n_instruments: number;
   movements: TaskGraphMovement[];
   edges: [string, string][];
   route: string;
+}
+
+/** 🌟 Above & Beyond — "you didn't ask, but you should know" (partial:beyond). */
+export interface BeyondItem {
+  insight: string;
+  why: string;
+  source: string;
+}
+
+/** ⚡ A Manager ruling on an open conflict (partial:rulings). */
+export interface ManagerRuling {
+  topic: string;
+  ruling: string;
+  rationale: string;
+}
+
+/** 🧾 The Coverage & Completeness Auditor's sweep (partial:coverage). */
+export interface CoverageReport {
+  dims_produced: string[];
+  dims_missing: string[];
+  players: number;
+  degraded: number;
+  instruments_played: number;
+  instruments_total: number;
 }
 
 /** The human-in-the-loop review state (hitl events). */

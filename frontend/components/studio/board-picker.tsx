@@ -50,6 +50,48 @@ const WEALTH_WAR = [...WEALTH_CORE, "macroeconomist", "trends", "regulator", "fu
   "esg_impact", "optimization_predictor", "subsidies_schemes", ...HUMAN_WAVE];
 const WEALTH_MANDATORY = new Set(["salary_budget", ...SYNTH]);
 
+/* ── the Orchestra (Intelligent Mode) — mirror of backend agents/score.py ──
+ * 62 players across 11 movements; depth gates which analytical families join
+ * (Pulse: Framing+Research+Analysis · Board: +Legal+Commercial+Human ·
+ * War Room: +Technology = everything). QA + Delivery always run. */
+const ORCH_ALL = new Set([
+  // 02 framing · 03 research · 04 analysis (always convened)
+  "intake_parser", "context_profiler", "scope_planner",
+  "web_researcher", "news_intel", "market_data", "macro_data", "competitor_intel",
+  "regulator", "trends", "intl_markets", "geopolitics",
+  "market_analyst", "finance_modeler", "macroeconomist", "consumer_analysis", "weighing_engine",
+  // 05 strategy
+  "industry_expert", "business_model", "gtm_distribution", "marketing_strategy",
+  "production_ops", "hr_talent", "banking", "supply_chain",
+  // 06 legal & fiscal
+  "legal", "tax", "policy_compliance", "subsidies_schemes", "optimization_predictor",
+  "patent_ip", "insurance_risk",
+  // 07 technology (war room)
+  "ai_ml_strategist", "data_analytics", "software_architecture", "product_ux",
+  "cybersecurity_privacy", "deep_tech",
+  // 08 commercial & growth
+  "fundraising_capital", "sales_revops", "pricing_strategist", "customer_success",
+  "partnerships_bd", "brand_creative", "pr_communications", "community_ecosystem",
+  // 09 human & meaning
+  "human_behaviour", "human_needs", "philosophy_ethics", "money_happiness",
+  "philanthropy_impact", "esg_impact", "founder_coaching",
+  // 10 adversarial QA · 11 delivery (always convened)
+  "red_team", "fact_checker", "bias_auditor", "devils_advocate",
+  "connecting_dots", "storytelling", "visualizer", "reporter", "verdict_composer",
+]);
+const ORCH_BOARD_ONLY = new Set([
+  "legal", "tax", "policy_compliance", "subsidies_schemes", "optimization_predictor",
+  "patent_ip", "insurance_risk", "fundraising_capital", "sales_revops", "pricing_strategist",
+  "customer_success", "partnerships_bd", "brand_creative", "pr_communications",
+  "community_ecosystem", "human_behaviour", "human_needs", "philosophy_ethics",
+  "money_happiness", "philanthropy_impact", "esg_impact", "founder_coaching",
+]);
+const ORCH_WAR_ONLY = new Set(["ai_ml_strategist", "data_analytics", "software_architecture",
+  "product_ux", "cybersecurity_privacy", "deep_tech"]);
+const ORCH_MANDATORY = ["intake_parser", "context_profiler", "scope_planner", "weighing_engine",
+  "red_team", "fact_checker", "bias_auditor", "connecting_dots", "verdict_composer",
+  "storytelling", "visualizer", "reporter"];
+
 const LAYERS: Layer[] = ["L0", "L1", "L2", "L3", "L4"];
 
 export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onContext }: {
@@ -75,14 +117,18 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
       : depth === "board" ? PULSE_ONLY.has(id) || BOARD_EXTRA.has(id) || HUMAN_WAVE.includes(id)
       : PULSE_ONLY.has(id);
     const base = AGENTS.filter((a) => inDepth(a.id));
-    // Intelligent Mode shares the venture roster of lenses, plus the 🎩 Boss and
-    // 🎼 Manager orchestration pair (always convened, always locked). The Manager
-    // then routes dynamically ON TOP of whatever you pick here.
+    // Intelligent Mode = the Orchestra: the 62 players (each conducting its
+    // junior instruments) + the 🎩 Boss / 🎼 Manager pair, always locked. You can
+    // bench or brief any non-mandatory player; the Manager casts depth on top.
     if (mode === "intelligent") {
+      const orchDepth = (id: string) =>
+        depth === "war_room" ? ORCH_ALL.has(id)
+        : depth === "board" ? ORCH_ALL.has(id) && !ORCH_WAR_ONLY.has(id)
+        : ORCH_ALL.has(id) && !ORCH_WAR_ONLY.has(id) && !ORCH_BOARD_ONLY.has(id);
       const orch = AGENTS.filter((a) => a.id === "boss" || a.id === "manager");
       return {
-        roster: [...orch, ...base],
-        mandatory: new Set(["boss", "manager", ...MANDATORY]),
+        roster: [...orch, ...AGENTS.filter((a) => orchDepth(a.id))],
+        mandatory: new Set(["boss", "manager", ...ORCH_MANDATORY]),
       };
     }
     return { roster: base, mandatory: MANDATORY };

@@ -407,33 +407,21 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         )}
       </section>
 
-      {/* your board — hand-pick and brief the employees (form modes only) */}
-      {!intelligent && (
+      {/* your board — hand-pick and brief the players (every mode, orchestra included) */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           03 · Pick your board
+          {intelligent && (
+            <span className="ml-2 rounded border border-brand/40 bg-brand/10 px-1.5 py-0.5 text-[10px] normal-case text-brand">
+              🎼 the Manager casts depth on top — bench or brief any player; the spine stays locked
+            </span>
+          )}
         </h2>
         <BoardPicker mode={f.mode} depth={f.depth} enabled={f.agents_enabled}
           onChange={(ids) => set("agents_enabled", ids)}
           agentContext={f.agent_context}
           onContext={(ctx) => set("agent_context", ctx)} />
       </section>
-      )}
-
-      {/* Intelligent Mode: the Manager casts the orchestra — no manual picker */}
-      {intelligent && (
-      <section className="mt-4 rounded-xl border border-brand/30 bg-brand/[0.03] p-5">
-        <h2 className="mb-2 font-mono text-xs uppercase tracking-widest text-brand">
-          03 · The Manager casts the orchestra
-        </h2>
-        <p className="text-xs leading-relaxed text-slate-400">
-          You don&apos;t hand-pick here — the 🎼 <b>Manager</b> scores your brief into a task graph and
-          decides which of the <b>62 players</b> (and their <b>310 junior instruments</b>) to convene,
-          movement by movement. Watch the whole ensemble light up live once you convene it. Deeper
-          depth = more sections of the orchestra join.
-        </p>
-      </section>
-      )}
 
       {/* engine */}
       <section className="mt-4 rounded-xl border border-line bg-panel p-5">

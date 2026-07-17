@@ -7,7 +7,7 @@ import { buildMarkdown, download, printPdf } from "@/lib/export";
 import { buildGraph } from "@/lib/graph-data";
 import { useRun } from "@/lib/store";
 import { AskBoard } from "./ask-board";
-import { ManagerPlanPanel, QaGatePanel } from "./intelligent-panels";
+import { AboveBeyondPanel, ManagerPlanPanel, QaGatePanel, RulingsPanel } from "./intelligent-panels";
 import { OrchestraView } from "./orchestra-view";
 import { ChartGallery, ReportSection, SmartInsights } from "./insights";
 import { AgentTable, DegradedNotice, DomainScreens, InsightBullets, KeyFindings, KpiTiles, QualityBanner } from "./results-v4";
@@ -74,6 +74,10 @@ export function DecisionRoom() {
           <QaGatePanel />
         </div>
       )}
+
+      {/* 🌟 the Advisory Engine's signature deliverable sections */}
+      <AboveBeyondPanel />
+      <RulingsPanel />
 
       {/* the two-tier orchestra — players & the instruments each one played */}
       {taskGraph && (

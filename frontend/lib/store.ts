@@ -4,7 +4,7 @@
 
 import { create } from "zustand";
 import type {
-  AgentOutput, BoardItem, ComplianceAlerts, CrossInsights, FinanceCore, HitlState, InstrumentResult, LogKind, ManagerPlan, QaEvent, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, TaskGraph, Verdict,
+  AgentOutput, BeyondItem, BoardItem, ComplianceAlerts, CoverageReport, CrossInsights, FinanceCore, HitlState, InstrumentResult, LogKind, ManagerPlan, ManagerRuling, QaEvent, RadarData, ResultSetData, RoundsData, RunEvent, StageStatus, Story, TaskGraph, Verdict,
 } from "./types";
 
 export type RunPhase = "intake" | "running" | "done";
@@ -47,6 +47,10 @@ interface RunStore {
   /** Intelligent Mode = the Orchestra: the Manager's task graph + per-player instruments */
   taskGraph: TaskGraph | null;
   instruments: Record<string, InstrumentResult[]>;
+  /** the Advisory Engine's visible intelligence */
+  beyond: BeyondItem[];
+  rulings: ManagerRuling[];
+  coverage: CoverageReport | null;
   begin: () => void;
   apply: (e: RunEvent) => void;
   reset: () => void;
@@ -83,6 +87,9 @@ const EMPTY = {
   noLlm: {} as Record<string, boolean>,
   taskGraph: null as TaskGraph | null,
   instruments: {} as Record<string, InstrumentResult[]>,
+  beyond: [] as BeyondItem[],
+  rulings: [] as ManagerRuling[],
+  coverage: null as CoverageReport | null,
 };
 
 export const useRun = create<RunStore>((set) => ({
@@ -140,6 +147,9 @@ export const useRun = create<RunStore>((set) => ({
           if (e.section === "manager_plan") return { managerPlan: e.data as ManagerPlan };
           if (e.section === "boss_brief") return { bossBrief: e.data as Record<string, string> };
           if (e.section === "task_graph") return { taskGraph: e.data as TaskGraph };
+          if (e.section === "beyond") return { beyond: e.data as BeyondItem[] };
+          if (e.section === "rulings") return { rulings: e.data as ManagerRuling[] };
+          if (e.section === "coverage") return { coverage: e.data as CoverageReport };
           if (e.section === "agent_output") {
             const d = e.data as { agent: string; output: AgentOutput };
             return { agentOutputs: { ...s.agentOutputs, [d.agent]: d.output } };

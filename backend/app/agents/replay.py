@@ -31,13 +31,17 @@ RERUNNABLE = {
 }
 
 
-async def replay_degraded(ctx: Ctx, passes: int = 2, cooldown: float = 22.0) -> bool:
+async def replay_degraded(ctx: Ctx, passes: int = 2, cooldown: float = 22.0,
+                          only: set[str] | None = None) -> bool:
     """Retry reduced-depth agents after a cooldown. Returns True if any were
-    rescued (so the caller can refresh the synthesis layer)."""
+    rescued (so the caller can refresh the synthesis layer). `only` restricts
+    the sweep (the orchestra replays its two-tier players separately — this
+    flat rerun would stomp their instruments)."""
     rescued_any = False
     for p in range(passes):
         degraded = [aid for aid, out in ctx.state.outputs.items()
-                    if isinstance(out, dict) and out.get("degraded") and aid in RERUNNABLE]
+                    if isinstance(out, dict) and out.get("degraded") and aid in RERUNNABLE
+                    and (only is None or aid in only)]
         if not degraded:
             break
         # only worth retrying if a live route exists at all
