@@ -347,3 +347,49 @@ html {
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
   .tilt { transform: none !important; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   DAYLIGHT — the deliverable theme. The pipeline is the dark engine room;
+   the Decision Room renders as the board's PRINTED REPORT: white panels,
+   ink text, saturated charts. Scoped remap of the app's utility classes —
+   components stay untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+.daylight {
+  background: #f4f6fb;
+  color: #1c2740;
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 70px -30px rgba(10, 18, 45, 0.55), 0 0 0 1px #e2e7f2;
+}
+.daylight .glass {
+  background: #ffffff;
+  border: 1px solid #e2e7f2;
+  box-shadow: 0 10px 30px -18px rgba(23, 32, 64, 0.18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.daylight .bg-panel { background-color: #ffffff; }
+.daylight .bg-panel-2 { background-color: #eef1f9; }
+.daylight [class*="bg-panel-2/"] { background-color: #eef1f9; }
+.daylight [class*="bg-panel/"] { background-color: #ffffff; }
+.daylight .border-line { border-color: #dfe4f0; }
+.daylight .text-slate-100, .daylight .text-slate-200, .daylight .text-white { color: #101a33; }
+.daylight .text-slate-300 { color: #2b3a5c; }
+.daylight .text-slate-400 { color: #5b6a8c; }
+.daylight .text-muted { color: #5b6a8c; }
+.daylight .text-cyan { color: #0e7d97; }
+.daylight .text-ok { color: #3d7d0e; }
+.daylight .text-warn { color: #9a6a00; }
+.daylight .text-err { color: #c22a4e; }
+.daylight .bg-slate-800, .daylight [class*="bg-slate-800"] { background-color: #e3e8f3; color: #5b6a8c; }
+.daylight .gauge-ring {
+  background:
+    radial-gradient(closest-side, #ffffff 78%, transparent 79% 100%),
+    conic-gradient(from 220deg, #06b6d4 0deg, #7c5ce0 calc(var(--pct, 50) * 2.8deg), #e2e7f2 0deg);
+}
+.daylight details > summary:hover { background: #eef1f9; }
+.daylight svg text { fill: #44517a; }
+.daylight ::-webkit-scrollbar-thumb { background: #c6cede; }
+/* the terminal stays a terminal — dark log panes inside the white report */
+.daylight [class*="bg-ink"] { background-color: #0d1428; }
+.daylight [class*="bg-ink"] .text-slate-300 { color: #cbd5e1; }
+.daylight [class*="bg-ink"] .text-slate-400 { color: #94a3b8; }
