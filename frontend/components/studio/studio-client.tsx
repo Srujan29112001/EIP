@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { consumeRun, backendHealth, type EngineStatus } from "@/lib/api";
 import { useRun } from "@/lib/store";
@@ -52,15 +53,15 @@ export function StudioClient() {
   if (phase === "intake") {
     return (
       <>
-        <BackendBadge state={backend} />
+        <StudioNav state={backend} />
         <IntakeWizard onRun={start} engine={engine} />
       </>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
-      <BackendBadge state={backend} />
+    <div className="mx-auto max-w-7xl px-4 pb-6">
+      <StudioNav state={backend} />
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
         <PipelineRail />
         <main className="min-w-0">
@@ -111,16 +112,37 @@ export function StudioClient() {
   );
 }
 
-function BackendBadge({ state }: { state: "checking" | "live" | "offline" }) {
+/** The studio's top navigation — home, studio, graph, history + live backend dot.
+ *  Present on every studio view (intake AND the run screens). */
+function StudioNav({ state }: { state: "checking" | "live" | "offline" }) {
   const cfg = {
     checking: ["bg-slate-600", "checking backend…"],
     live: ["bg-ok", "backend live"],
     offline: ["bg-warn", "backend offline — start uvicorn :8000"],
   }[state];
   return (
-    <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 pt-4 font-mono text-[10px] uppercase tracking-wider text-slate-400">
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg[0]} ${state === "live" ? "pulse-ring" : ""}`}
-        style={state === "live" ? ({ "--ring": "#34d399" } as React.CSSProperties) : undefined} /> {cfg[1]}
-    </div>
+    <nav className="sticky top-0 z-40 border-b border-line bg-panel">
+      <div className="mx-auto flex max-w-7xl items-center gap-1 px-4 py-2.5">
+        <Link href="/" className="mr-2 font-display text-base font-bold tracking-tight text-slate-100 transition hover:text-cyan">
+          EIP<span className="text-cyan">.</span>
+        </Link>
+        <Link href="/" className="rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-400 transition hover:bg-panel-2 hover:text-slate-100">
+          Home
+        </Link>
+        <span className="rounded-lg bg-panel-2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-cyan">
+          Studio
+        </span>
+        <Link href="/graph" className="rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-400 transition hover:bg-panel-2 hover:text-slate-100">
+          Graph
+        </Link>
+        <Link href="/history" className="rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-400 transition hover:bg-panel-2 hover:text-slate-100">
+          History
+        </Link>
+        <span className="ml-auto flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+          <span className={`h-1.5 w-1.5 rounded-full ${cfg[0]} ${state === "live" ? "pulse-ring" : ""}`}
+            style={state === "live" ? ({ "--ring": "#34d399" } as React.CSSProperties) : undefined} /> {cfg[1]}
+        </span>
+      </div>
+    </nav>
   );
 }

@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrains.variable} ${syne.variable}`}>
-      <body className="texture min-h-screen bg-ink antialiased">
+      <body className="min-h-screen bg-ink antialiased">
         <div className="aurora" aria-hidden />
         <CursorGlow />
         {children}

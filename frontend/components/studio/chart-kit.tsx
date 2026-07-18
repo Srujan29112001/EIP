@@ -29,14 +29,16 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
   const [mult, setMult] = useState(1);
   const a = agentById(spec.source_agent);
   return (
-    <div className="panel-hover card-in rounded-2xl border border-line bg-panel p-4">
+    <div className="panel-hover card-in flex flex-col rounded-2xl border border-line bg-panel p-4">
       <div className="mb-1 flex items-center gap-2">
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.accent }} />
-        <h4 className="text-sm font-semibold text-slate-200">{spec.title}</h4>
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-slate-400">{a.name}</span>
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: a.accent }} />
+        <h4 className="min-w-0 truncate font-mono text-[11px] uppercase tracking-widest text-muted">{spec.title}</h4>
+        <span className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-400">{a.name}</span>
       </div>
       <p className="mb-2 text-xs leading-relaxed text-slate-400">{spec.insight}</p>
-      <ChartBody spec={spec} mult={mult} />
+      <div className="flex min-h-[190px] flex-1 flex-col justify-center">
+        <ChartBody spec={spec} mult={mult} />
+      </div>
       {spec.whatif && (
         <div className="mt-2">
           <SimSlider label={spec.whatif.label} value={mult} min={spec.whatif.min}
@@ -85,26 +87,27 @@ function AnimStyle() {
 
 /* ── gauge (speedometer) ─────────────────────────────────────────────────── */
 function Gauge({ d }: { d: { value: number; min: number; max: number; bands?: number[] } }) {
-  const pct = (d.value - d.min) / (d.max - d.min || 1);
-  const ang = -90 + pct * 180;
-  const arc = (from: number, to: number, color: string) => {
+  const pct = Math.max(0, Math.min(1, (d.value - d.min) / (d.max - d.min || 1)));
+  const arc = (from: number, to: number, color: string, w = 16, cap: "round" | "butt" = "round") => {
     const a0 = ((from - 90) * Math.PI) / 180, a1 = ((to - 90) * Math.PI) / 180;
-    const x0 = 110 + 80 * Math.sin(a0), y0 = 100 - 80 * Math.cos(a0);
-    const x1 = 110 + 80 * Math.sin(a1), y1 = 100 - 80 * Math.cos(a1);
-    return <path d={`M${x0},${y0} A80,80 0 0 1 ${x1},${y1}`} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />;
+    const x0 = 110 + 82 * Math.sin(a0), y0 = 104 - 82 * Math.cos(a0);
+    const x1 = 110 + 82 * Math.sin(a1), y1 = 104 - 82 * Math.cos(a1);
+    return <path d={`M${x0},${y0} A82,82 0 ${to - from > 180 ? 1 : 0} 1 ${x1},${y1}`}
+      fill="none" stroke={color} strokeWidth={w} strokeLinecap={cap} />;
   };
-  const [b1, b2] = d.bands ?? [d.max * 0.45, d.max * 0.7];
-  const toDeg = (v: number) => -90 + ((v - d.min) / (d.max - d.min || 1)) * 180;
+  const color = scoreColor(d.value, d.max);
+  const ang = -90 + pct * 180;
   return (
-    <svg viewBox="0 0 220 120" className="mx-auto w-full max-w-[260px]">
-      {arc(-90, toDeg(b1), `${ERR}55`)}{arc(toDeg(b1), toDeg(b2), `${WARN}55`)}{arc(toDeg(b2), 90, `${OK}55`)}
-      <line x1="110" y1="100" x2={110 + 62 * Math.sin((ang * Math.PI) / 180)} y2={100 - 62 * Math.cos((ang * Math.PI) / 180)}
-        stroke="#e2e8f0" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="110" cy="100" r="5" fill={scoreColor(d.value, d.max)} />
-      <text x="110" y="80" textAnchor="middle" style={{ font: "700 20px var(--font-jetbrains)", fill: scoreColor(d.value, d.max) }}>
+    <svg viewBox="0 0 220 132" className="mx-auto w-full max-w-[300px]">
+      {arc(-90, 90, "rgba(148,163,184,0.16)")}
+      {pct > 0.005 && arc(-90, Math.max(-89, ang), color)}
+      <line x1="110" y1="104" x2={110 + 58 * Math.sin((ang * Math.PI) / 180)} y2={104 - 58 * Math.cos((ang * Math.PI) / 180)}
+        stroke="#e2e8f0" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+      <circle cx="110" cy="104" r="5" fill={color} />
+      <text x="110" y="78" textAnchor="middle" style={{ font: "700 26px var(--font-jetbrains)", fill: color }}>
         {d.value}
       </text>
-      <text x="110" y="115" textAnchor="middle" className="fill-slate-500" style={{ font: "9px var(--font-jetbrains)" }}>
+      <text x="110" y="126" textAnchor="middle" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>
         of {d.max}
       </text>
     </svg>
@@ -120,7 +123,7 @@ function Waterfall({ d, mult }: { d: { base: number; steps: { label: string; val
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
       <line x1="30" x2={W - 10} y1="90" y2="90" stroke="rgba(148,163,184,0.25)" strokeDasharray="3 3" />
-      <text x="26" y="93" textAnchor="end" className="fill-slate-500" style={{ font: "9px var(--font-jetbrains)" }}>{d.base}</text>
+      <text x="26" y="93" textAnchor="end" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>{d.base}</text>
       {vals.map((v, i) => {
         const x = 45 + i * ((W - 80) / n);
         const up = v.delta >= 0;
@@ -129,11 +132,11 @@ function Waterfall({ d, mult }: { d: { base: number; steps: { label: string; val
             <title>{`${v.label}: ${v.value} (${up ? "+" : ""}${v.delta.toFixed(1)} vs base)`}</title>
             <rect x={x} width={bw} y={up ? sy(v.delta) : 90} height={Math.max(2, Math.abs(sy(v.delta) - 90))}
               rx="3" fill={up ? OK : ERR} opacity="0.85" className="transition-all hover:opacity-100" />
-            <text x={x + bw / 2} y={H - 28} textAnchor="middle" className="fill-slate-400" style={{ font: "8.5px var(--font-jetbrains)" }}>
+            <text x={x + bw / 2} y={H - 28} textAnchor="middle" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>
               {v.label.slice(0, 11)}
             </text>
             <text x={x + bw / 2} y={up ? sy(v.delta) - 4 : sy(v.delta) + 12} textAnchor="middle"
-              style={{ font: "9px var(--font-jetbrains)", fill: up ? OK : ERR }}>{v.value}</text>
+              style={{ font: "10px var(--font-jetbrains)", fill: up ? OK : ERR }}>{v.value}</text>
           </g>
         );
       })}
@@ -148,21 +151,22 @@ function Bars({ d, horizontal = false, mult }: {
   const vals = d.values.map((v) => v * mult);
   const maxV = d.max ?? Math.max(...vals.map(Math.abs), 1);
   if (horizontal) {
-    const rowH = 20, H = d.labels.length * rowH + 8;
+    const rowH = 28, H = d.labels.length * rowH + 10, BARX = 168, BARW = 350;
     return (
       <svg viewBox={`0 0 560 ${H}`} className="w-full">
         {d.labels.map((l, i) => {
           const name = agentById(l).name !== "Board" || !l.includes("_") ? agentById(l).name : l;
-          const w = (Math.abs(vals[i]) / maxV) * 360;
+          const w = (Math.abs(vals[i]) / maxV) * BARW;
           return (
             <g key={i}>
               <title>{`${name}: ${vals[i].toFixed(1)}`}</title>
-              <text x="150" y={i * rowH + 14} textAnchor="end" className="fill-slate-400" style={{ font: "9.5px var(--font-jetbrains)" }}>
-                {name.slice(0, 22)}
+              <text x={BARX - 10} y={i * rowH + 18} textAnchor="end" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>
+                {name.slice(0, 24)}
               </text>
-              <rect x="158" y={i * rowH + 5} width={Math.max(2, w)} height={rowH - 9} rx="3"
-                fill={agentById(l).accent} opacity="0.85" className="transition-all hover:opacity-100" />
-              <text x={162 + w} y={i * rowH + 14} style={{ font: "9px var(--font-jetbrains)", fill: "#94a3b8" }}>
+              <rect x={BARX} y={i * rowH + 7} width={BARW} height={rowH - 13} rx="4" fill="rgba(148,163,184,0.1)" />
+              <rect x={BARX} y={i * rowH + 7} width={Math.max(3, w)} height={rowH - 13} rx="4"
+                fill={agentById(l).accent} opacity="0.9" className="transition-all hover:opacity-100" />
+              <text x={BARX + BARW + 8} y={i * rowH + 18} style={{ font: "10px var(--font-jetbrains)", fill: "#cbd5e1" }}>
                 {vals[i].toFixed(1)}
               </text>
             </g>
@@ -171,25 +175,32 @@ function Bars({ d, horizontal = false, mult }: {
       </svg>
     );
   }
-  const n = d.labels.length, W = 560, bw = Math.min(64, (W - 60) / n - 8);
+  const n = d.labels.length, W = 560;
+  const bw = Math.max(36, Math.min(88, (W - 120) / n - 18));
+  const gap = Math.min(46, bw * 0.5);
+  const total = n * bw + (n - 1) * gap;
+  const startX = (W - total) / 2;
   const lo = Math.min(0, ...vals), span = Math.max(...vals, 0) - lo || 1;
-  const sy = (v: number) => 150 - ((v - lo) / span) * 130;
+  const sy = (v: number) => 150 - ((v - lo) / span) * 126;
   return (
-    <svg viewBox={`0 0 ${W} 185`} className="w-full">
-      {lo < 0 && <line x1="20" x2={W - 10} y1={sy(0)} y2={sy(0)} stroke="rgba(148,163,184,0.25)" />}
+    <svg viewBox={`0 0 ${W} 188`} className="w-full">
+      {[0.25, 0.5, 0.75, 1].map((f) => (
+        <line key={f} x1="24" x2={W - 24} y1={sy(lo + f * span)} y2={sy(lo + f * span)} stroke="rgba(148,163,184,0.09)" />
+      ))}
+      <line x1="24" x2={W - 24} y1={sy(Math.max(0, lo))} y2={sy(Math.max(0, lo))} stroke="rgba(148,163,184,0.3)" />
       {d.labels.map((l, i) => {
-        const x = 34 + i * ((W - 60) / n);
+        const x = startX + i * (bw + gap);
         const up = vals[i] >= 0;
         return (
           <g key={i}>
             <title>{`${l}: ${vals[i].toFixed(1)}`}</title>
             <rect x={x} width={bw} y={Math.min(sy(vals[i]), sy(0))} height={Math.max(3, Math.abs(sy(vals[i]) - sy(0)))}
-              rx="3" fill={up ? CYAN : ERR} opacity="0.85" className="transition-all hover:opacity-100" />
-            <text x={x + bw / 2} y={172} textAnchor="middle" className="fill-slate-400" style={{ font: "8.5px var(--font-jetbrains)" }}>
+              rx="4" fill={up ? CYAN : ERR} opacity="0.9" className="transition-all hover:opacity-100" />
+            <text x={x + bw / 2} y={174} textAnchor="middle" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>
               {String(l).slice(0, 12)}
             </text>
-            <text x={x + bw / 2} y={sy(vals[i]) + (up ? -4 : 11)} textAnchor="middle"
-              style={{ font: "9px var(--font-jetbrains)", fill: up ? CYAN : ERR }}>{vals[i].toFixed(1)}</text>
+            <text x={x + bw / 2} y={sy(vals[i]) + (up ? -6 : 13)} textAnchor="middle"
+              style={{ font: "600 10.5px var(--font-jetbrains)", fill: up ? CYAN : ERR }}>{vals[i].toFixed(1)}</text>
           </g>
         );
       })}
@@ -246,8 +257,8 @@ function Scatter({ d }: { d: { points: { x: number; y: number; label: string }[]
     <svg viewBox="0 0 560 190" className="w-full">
       <line x1="40" x2="520" y1="160" y2="160" stroke="rgba(148,163,184,0.2)" />
       <line x1="40" x2="40" y1="20" y2="160" stroke="rgba(148,163,184,0.2)" />
-      <text x="280" y="184" textAnchor="middle" className="fill-slate-500" style={{ font: "9px var(--font-jetbrains)" }}>{d.x_label}</text>
-      <text x="14" y="90" className="fill-slate-500" style={{ font: "9px var(--font-jetbrains)" }} transform="rotate(-90 14 90)">{d.y_label}</text>
+      <text x="280" y="184" textAnchor="middle" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>{d.x_label}</text>
+      <text x="14" y="90" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }} transform="rotate(-90 14 90)">{d.y_label}</text>
       {d.points.map((p, i) => {
         const a = agentById(p.label);
         return (
@@ -292,7 +303,7 @@ function Candles({ d, mult }: { d: { ohlc: [string, number, number, number, numb
       {[lo, (lo + hi) / 2, hi].map((v, i) => (
         <g key={i}>
           <line x1="40" x2={W - 6} y1={sy(v)} y2={sy(v)} stroke="rgba(148,163,184,0.09)" />
-          <text x="36" y={sy(v) + 3} textAnchor="end" className="fill-slate-500" style={{ font: "8px var(--font-jetbrains)" }}>
+          <text x="36" y={sy(v) + 3} textAnchor="end" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>
             {v.toFixed(0)}
           </text>
         </g>
@@ -329,12 +340,12 @@ function Area({ d, mult }: { d: { points: { x: number; y: number }[]; x_label: s
       {d.target && (
         <g>
           <line x1="46" x2="536" y1={sy(d.target)} y2={sy(d.target)} stroke={OK} strokeDasharray="5 4" strokeOpacity="0.6" />
-          <text x="532" y={sy(d.target) - 4} textAnchor="end" style={{ font: "9px var(--font-jetbrains)", fill: OK }}>
+          <text x="532" y={sy(d.target) - 4} textAnchor="end" style={{ font: "10px var(--font-jetbrains)", fill: OK }}>
             target{hitYear != null ? ` · hit ~yr ${hitYear}` : " · not hit in 30y"}
           </text>
         </g>
       )}
-      <text x="290" y="184" textAnchor="middle" className="fill-slate-500" style={{ font: "9px var(--font-jetbrains)" }}>{d.x_label}</text>
+      <text x="290" y="184" textAnchor="middle" className="fill-slate-400" style={{ font: "10px var(--font-jetbrains)" }}>{d.x_label}</text>
     </svg>
   );
 }
@@ -353,7 +364,7 @@ function Bullet({ d }: { d: { value: number; target: number; bands: number[]; ma
       <line x1={`${sx(d.target)}%`} x2={`${sx(d.target)}%`} y1="12" y2="46" stroke="#e2e8f0" strokeWidth="2">
         <title>{`target: ${d.target}`}</title>
       </line>
-      <text x={`${sx(d.value)}%`} y="58" style={{ font: "9px var(--font-jetbrains)", fill: "#94a3b8" }}>you: {d.value}</text>
+      <text x={`${sx(d.value)}%`} y="58" style={{ font: "10px var(--font-jetbrains)", fill: "#94a3b8" }}>you: {d.value}</text>
     </svg>
   );
 }
@@ -411,12 +422,12 @@ function MultiLine({ d, mult }: {
       ))}
       {d.labels.map((l, i) => (
         <text key={i} x={sx(i)} y={H - 10} textAnchor="middle" className="fill-slate-400"
-          style={{ font: "8.5px var(--font-jetbrains)" }}>{String(l).slice(0, 10)}</text>
+          style={{ font: "10px var(--font-jetbrains)" }}>{String(l).slice(0, 10)}</text>
       ))}
       {series.map((s, si) => (
         <g key={`lg${si}`} className="ck-a" style={{ animationDelay: `${0.2 + si * 0.1}s` }}>
           <rect x={PADL + si * 130} y={4} width="10" height="3" fill={s.color} rx="1.5" />
-          <text x={PADL + si * 130 + 14} y={9} style={{ font: "9px var(--font-jetbrains)", fill: "#94a3b8" }}>{s.name}</text>
+          <text x={PADL + si * 130 + 14} y={9} style={{ font: "10px var(--font-jetbrains)", fill: "#94a3b8" }}>{s.name}</text>
         </g>
       ))}
     </svg>
@@ -524,17 +535,17 @@ function Histogram({ d, mult }: {
       {typeof d.marker === "number" && (
         <g className="ck-a" style={{ animationDelay: "0.5s" }}>
           <line x1={sx(d.marker)} x2={sx(d.marker)} y1="14" y2="142" stroke={WARN} strokeWidth="2" strokeDasharray="4 3" />
-          <text x={sx(d.marker) + 4} y="22" style={{ font: "9px var(--font-jetbrains)", fill: WARN }}>
+          <text x={sx(d.marker) + 4} y="22" style={{ font: "10px var(--font-jetbrains)", fill: WARN }}>
             {d.marker_label ?? `P50 ${d.marker}`}
           </text>
         </g>
       )}
       {[0, Math.floor(bins.length / 2), bins.length - 1].map((i) => (
         <text key={i} x={30 + i * bw + bw / 2} y={H - 12} textAnchor="middle" className="fill-slate-400"
-          style={{ font: "8.5px var(--font-jetbrains)" }}>{(d.start + i * d.step).toFixed(1)}</text>
+          style={{ font: "10px var(--font-jetbrains)" }}>{(d.start + i * d.step).toFixed(1)}</text>
       ))}
-      {d.x_label && <text x={W / 2} y={H - 1} textAnchor="middle" className="fill-slate-500"
-        style={{ font: "8.5px var(--font-jetbrains)" }}>{d.x_label}</text>}
+      {d.x_label && <text x={W / 2} y={H - 1} textAnchor="middle" className="fill-slate-400"
+        style={{ font: "10px var(--font-jetbrains)" }}>{d.x_label}</text>}
     </svg>
   );
 }

@@ -35,7 +35,7 @@ export function OrchestraView() {
 
   return (
     <div className="space-y-3">
-      <div className="card-in rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-4 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="card-in rounded-2xl border border-brand/40 bg-panel p-4 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-lg">🎼</span>
           <h3 className="font-display text-sm font-bold text-slate-100">The Orchestra — the Manager&apos;s score</h3>

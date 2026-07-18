@@ -78,7 +78,6 @@ export default function Landing() {
       {/* ── THE OBSERVATORY — full-viewport 3D hero ── */}
       <header className="relative flex min-h-[92vh] flex-col items-center justify-center px-6 text-center">
         <Hero3D />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,transparent_30%,#070b18_100%)]" />
 
         <div className="relative z-10">
           <p className="rise-in mb-5 font-mono text-[11px] uppercase tracking-[0.4em] text-cyan">
@@ -130,7 +129,7 @@ export default function Landing() {
       </header>
 
       {/* ── FOUR WAYS IN ── */}
-      <section className="grid-bg relative mx-auto max-w-6xl px-6 py-24">
+      <section className="relative mx-auto max-w-6xl px-6 py-24">
         <Reveal dir="up">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.35em] text-muted">Choose your door</p>
           <h2 className="mt-3 text-center font-hero text-4xl font-bold md:text-5xl">
@@ -221,7 +220,7 @@ export default function Landing() {
       </section>
 
       {/* ── THE ORCHESTRA — intelligent mode ── */}
-      <section className="grid-bg relative mx-auto max-w-6xl px-6 py-24">
+      <section className="relative mx-auto max-w-6xl px-6 py-24">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal dir="left" className="order-2 lg:order-1">
             <div className="glass relative overflow-hidden rounded-3xl p-8">

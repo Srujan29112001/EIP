@@ -81,7 +81,7 @@ export function BossChat({
   };
 
   return (
-    <section className="mt-4 rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
+    <section className="mt-4 rounded-2xl border border-brand/40 bg-panel p-5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-xs uppercase tracking-widest text-brand">
           01 · 🎩 Intake conversation

@@ -132,7 +132,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 on ? "-translate-y-0.5" : "border-line bg-panel hover:-translate-y-0.5 hover:border-slate-500"}`}
               style={on ? {
                 borderColor: `${accent}b0`,
-                background: `linear-gradient(160deg, ${accent}1f, transparent 65%)`,
+                background: `${accent}14`,
                 boxShadow: `0 0 32px -10px ${accent}90, inset 0 1px 0 rgba(255,255,255,0.06)`,
               } : undefined}>
               {on && (
