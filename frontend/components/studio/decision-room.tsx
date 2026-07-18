@@ -60,9 +60,7 @@ export function DecisionRoom() {
   ];
 
   return (
-    /* DAYLIGHT — the results render as the board's printed report: the dark
-       glass box is the process, this white document is the deliverable. */
-    <div className="daylight space-y-4 p-4 md:p-6">
+    <div className="space-y-4 pb-4">
       {/* screen connections — sticky spy-nav over the whole decision room */}
       <SectionNav items={navItems} />
 
@@ -198,8 +196,7 @@ export function DecisionRoom() {
 
       {/* the Storyteller's pitch — the honest narrative for this decision */}
       {story && (story.narrative || story.one_liner) && (
-        <section id="dr-pitch" className="glass card-in scroll-mt-24 rounded-2xl p-5"
-          style={{ borderLeft: "3px solid #7c5ce0" }}>
+        <section id="dr-pitch" className="card-in scroll-mt-24 rounded-2xl border border-line bg-gradient-to-br from-panel/90 to-[#1a1330] p-5 backdrop-blur-sm">
           <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Mic size={13} className="text-[#fca5a5]" /> The pitch — as the Storyteller would tell it
           </h3>
