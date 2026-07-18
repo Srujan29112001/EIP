@@ -17,7 +17,7 @@ export function AgentAccordion() {
   if (!rows.length) return null;
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         Agent-by-agent insights
       </h3>

@@ -130,3 +130,217 @@ html {
 .rise-in-1 { animation: rise-in 0.6s ease-out 0.12s both; }
 .rise-in-2 { animation: rise-in 0.6s ease-out 0.24s both; }
 .rise-in-3 { animation: rise-in 0.6s ease-out 0.36s both; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   THE GLASS OBSERVATORY — the design-system layer (additive; nothing above
+   this line changed). Glass panels, animated gradient borders, beams, text
+   effects, reveals, orbits, marquees. Everything honours reduced-motion.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.font-hero { font-family: var(--font-syne), var(--font-space-grotesk), sans-serif; }
+
+/* ── glass panel: frosted depth with an inner light edge ── */
+.glass {
+  background:
+    linear-gradient(160deg, rgba(148, 163, 184, 0.055), rgba(148, 163, 184, 0.015) 38%, rgba(6, 182, 212, 0.03)) ,
+    rgba(10, 16, 32, 0.72);
+  backdrop-filter: blur(14px) saturate(1.25);
+  -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.055),
+    0 18px 44px -22px rgba(0, 0, 0, 0.7);
+}
+
+/* ── animated conic gradient border (spins slowly; static on reduced motion) ── */
+@property --gb-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes gb-spin { to { --gb-angle: 360deg; } }
+.g-border {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(10, 16, 32, 0.92), rgba(10, 16, 32, 0.92)) padding-box,
+    conic-gradient(from var(--gb-angle),
+      rgba(109, 100, 163, 0.9), rgba(6, 182, 212, 0.75) 25%,
+      rgba(148, 163, 184, 0.12) 50%, rgba(167, 139, 250, 0.8) 75%,
+      rgba(109, 100, 163, 0.9)) border-box;
+  animation: gb-spin 7s linear infinite;
+}
+.g-border-slow { animation-duration: 14s; }
+
+/* ── shimmering gradient text sweep ── */
+@keyframes shimmer-x { to { background-position: -200% 0; } }
+.shimmer-text {
+  background: linear-gradient(100deg, #e2e8f0 30%, #67e8f9 45%, #c4b5fd 55%, #e2e8f0 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-x 5.5s linear infinite;
+}
+
+/* ── beam: a divider with a travelling light pulse ── */
+@keyframes beam-run { 0% { left: -18%; } 100% { left: 118%; } }
+.beam {
+  position: relative; height: 1px; overflow: hidden;
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.28), transparent);
+}
+.beam::after {
+  content: ""; position: absolute; top: 0; left: -18%;
+  width: 18%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.95), transparent);
+  animation: beam-run 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── vertical flow-line with a falling pulse (screen connections) ── */
+@keyframes flow-fall { 0% { top: -30%; } 100% { top: 120%; } }
+.flow-line {
+  position: relative; width: 1px; overflow: hidden;
+  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.25), transparent);
+}
+.flow-line::after {
+  content: ""; position: absolute; left: 0; top: -30%;
+  height: 26%; width: 100%;
+  background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.9), transparent);
+  animation: flow-fall 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── expanding pulse ring (live/active markers) ── */
+@keyframes ring-pop {
+  0% { transform: scale(0.6); opacity: 0.85; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.pulse-ring { position: relative; }
+.pulse-ring::after {
+  content: ""; position: absolute; inset: -3px;
+  border-radius: inherit; border: 1px solid var(--ring, #06b6d4);
+  animation: ring-pop 1.8s ease-out infinite;
+}
+
+/* ── scroll reveals (driven by components/fx/reveal.tsx) ── */
+.reveal { opacity: 0; transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); will-change: opacity, transform; }
+.reveal.r-up { transform: translateY(26px); }
+.reveal.r-left { transform: translateX(-26px); }
+.reveal.r-right { transform: translateX(26px); }
+.reveal.r-scale { transform: scale(0.94); }
+.reveal.reveal-visible { opacity: 1; transform: none; }
+
+/* ── entrance for dynamically-mounted cards (plays on insert) ── */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.card-in { animation: card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.msg-in { animation: msg-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ── icon marquee ── */
+@keyframes marquee-x { to { transform: translateX(-50%); } }
+.marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee-track { display: flex; width: max-content; gap: 0.75rem; animation: marquee-x 42s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* ── faint blueprint grid backdrop ── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 32%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 32%, #000 30%, transparent 78%);
+}
+
+/* ── orbiting satellite dots (decorative) ── */
+@keyframes orbit-spin { to { transform: rotate(360deg); } }
+.orbit { position: absolute; inset: 0; animation: orbit-spin var(--dur, 22s) linear infinite; pointer-events: none; }
+.orbit > span {
+  position: absolute; top: 0; left: 50%; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--dot, #67e8f9); box-shadow: 0 0 10px var(--dot, #67e8f9);
+  transform: translateX(-50%);
+}
+
+/* ── glow CTA button ── */
+.btn-glow {
+  position: relative; isolation: isolate; overflow: hidden;
+}
+.btn-glow::before {
+  content: ""; position: absolute; inset: -60%; z-index: -1;
+  background: conic-gradient(from 0deg, #6d64a3, #06b6d4, #a78bfa, #6d64a3);
+  animation: orbit-spin 4.5s linear infinite;
+  filter: blur(18px); opacity: 0.55;
+}
+.btn-glow:hover::before { opacity: 0.85; }
+
+/* ── floating levitation for hero ornaments ── */
+@keyframes float-y { 0%, 100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
+.float-y { animation: float-y 5.5s ease-in-out infinite; }
+
+/* ── tilt cards (JS sets --rx/--ry/--gx/--gy) ── */
+.tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.18s ease-out, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+}
+.tilt .tilt-glare {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 50%),
+    rgba(148, 197, 253, 0.14), transparent 55%);
+  opacity: 0; transition: opacity 0.25s;
+}
+.tilt:hover .tilt-glare { opacity: 1; }
+.tilt-pop { transform: translateZ(34px); }
+
+/* ── scanline sweep across a card on hover ── */
+@keyframes scan-y { 0% { top: -12%; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { top: 108%; opacity: 0; } }
+.scan-on-hover { position: relative; overflow: hidden; }
+.scan-on-hover::after {
+  content: ""; position: absolute; left: 0; right: 0; top: -12%; height: 10%;
+  background: linear-gradient(180deg, transparent, rgba(6, 182, 212, 0.10), transparent);
+  opacity: 0; pointer-events: none;
+}
+.scan-on-hover:hover::after { animation: scan-y 1.2s ease-in-out; }
+
+/* ── typing dots (the Boss is thinking) ── */
+@keyframes dot-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-4px); opacity: 1; } }
+.typing-dots span {
+  display: inline-block; width: 5px; height: 5px; margin-right: 3px;
+  border-radius: 50%; background: #67e8f9;
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+/* ── verdict gauge ring (conic fill set via --pct) ── */
+.gauge-ring {
+  background:
+    radial-gradient(closest-side, #0a1020 78%, transparent 79% 100%),
+    conic-gradient(from 220deg, #06b6d4 0deg, #a78bfa calc(var(--pct, 50) * 2.8deg), rgba(148, 163, 184, 0.12) 0deg);
+}
+
+/* ── global scrollbar + focus polish ── */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(109, 100, 163, 0.5), rgba(6, 182, 212, 0.4));
+  border-radius: 6px; border: 2px solid #04060f;
+}
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #6d64a3, #06b6d4); }
+
+/* ── stagger helpers ── */
+.d-1 { transition-delay: 0.06s; animation-delay: 0.06s; }
+.d-2 { transition-delay: 0.12s; animation-delay: 0.12s; }
+.d-3 { transition-delay: 0.18s; animation-delay: 0.18s; }
+.d-4 { transition-delay: 0.24s; animation-delay: 0.24s; }
+.d-5 { transition-delay: 0.3s; animation-delay: 0.3s; }
+.d-6 { transition-delay: 0.36s; animation-delay: 0.36s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-border, .beam::after, .flow-line::after, .pulse-ring::after, .marquee-track,
+  .orbit, .btn-glow::before, .float-y, .shimmer-text, .card-in, .msg-in,
+  .typing-dots span, .scan-on-hover::after { animation: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .tilt { transform: none !important; }
+}

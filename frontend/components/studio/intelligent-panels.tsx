@@ -94,13 +94,13 @@ export function QaGatePanel() {
   const rounds = [...byRound.values()].filter((e) => e.status !== "started");
   if (!rounds.length) {
     return (
-      <div className="rounded-xl border border-line bg-panel p-3 font-mono text-xs text-muted">
+      <div className="glass card-in rounded-2xl p-3 font-mono text-xs text-muted">
         ✅ QA gate running — fact traces, red-team severity, framing bias, verdict integrity…
       </div>
     );
   }
   return (
-    <div className="rounded-xl border border-line bg-panel p-4">
+    <div className="glass card-in rounded-2xl p-4">
       <div className="mb-2 flex items-center gap-2">
         <span className="text-lg">✅</span>
         <h3 className="font-display text-sm font-bold text-slate-100">QA gate</h3>
@@ -196,7 +196,7 @@ export function RulingsPanel() {
   const rulings = useRun((s) => s.rulings);
   if (!rulings.length) return null;
   return (
-    <div className="rounded-xl border border-line bg-panel p-4">
+    <div className="glass card-in rounded-2xl p-4">
       <div className="mb-2 flex items-center gap-2">
         <span className="text-lg">⚡</span>
         <h3 className="font-display text-sm font-bold text-slate-100">The Manager&apos;s rulings</h3>

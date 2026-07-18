@@ -63,11 +63,13 @@ export function StudioClient() {
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
         <PipelineRail />
         <main>
-          <div className="mb-3 flex items-center gap-1 rounded-lg border border-line bg-panel p-1">
+          <div className="glass mb-3 flex items-center gap-1 rounded-xl p-1">
             {(["pipeline", "boardroom", "results"] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
-                className={`rounded-md px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition sm:px-4 ${
-                  tab === t ? "bg-panel-2 text-cyan" : "text-slate-500 hover:text-slate-300"}`}>
+                className={`rounded-lg px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition sm:px-4 ${
+                  tab === t
+                    ? "bg-panel-2 text-cyan shadow-[0_0_18px_-6px_rgba(34,211,238,0.55),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "text-slate-500 hover:-translate-y-px hover:text-slate-300"}`}>
                 {t}
               </button>
             ))}
@@ -114,7 +116,8 @@ function BackendBadge({ state }: { state: "checking" | "live" | "offline" }) {
   }[state];
   return (
     <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 pt-4 font-mono text-[10px] uppercase tracking-wider text-slate-500">
-      <span className={`h-1.5 w-1.5 rounded-full ${cfg[0]}`} /> {cfg[1]}
+      <span className={`h-1.5 w-1.5 rounded-full ${cfg[0]} ${state === "live" ? "pulse-ring" : ""}`}
+        style={state === "live" ? ({ "--ring": "#34d399" } as React.CSSProperties) : undefined} /> {cfg[1]}
     </div>
   );
 }

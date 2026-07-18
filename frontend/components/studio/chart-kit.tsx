@@ -29,7 +29,7 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
   const [mult, setMult] = useState(1);
   const a = agentById(spec.source_agent);
   return (
-    <div className="panel-hover rounded-xl border border-line bg-panel p-4">
+    <div className="panel-hover card-in rounded-2xl border border-line bg-panel p-4">
       <div className="mb-1 flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.accent }} />
         <h4 className="text-sm font-semibold text-slate-200">{spec.title}</h4>

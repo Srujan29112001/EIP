@@ -65,7 +65,7 @@ export function RunwaySim() {
   const delta = overall - (verdict.score ?? overall);
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4 transition hover:border-cyan/25">
+    <section className="glass card-in rounded-2xl p-4 transition hover:border-cyan/25">
       <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <SlidersHorizontal size={13} /> Survival simulator — cash, live
       </h3>
@@ -138,7 +138,7 @@ export function MarketSim() {
   }
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4 transition hover:border-cyan/25">
+    <section className="glass card-in rounded-2xl p-4 transition hover:border-cyan/25">
       <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <TrendingUp size={13} /> Market pulse — 1y history → 6mo scenario cone
       </h3>
@@ -186,7 +186,7 @@ export function ScoreSim() {
   const band = overall >= 7 ? "GO" : overall >= 4.5 ? "CONDITIONAL GO" : "NO-GO";
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4 transition hover:border-cyan/25">
+    <section className="glass card-in rounded-2xl p-4 transition hover:border-cyan/25">
       <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <LineChart size={13} /> Verdict sensitivity — bend any dimension
       </h3>

@@ -73,7 +73,7 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto rounded-xl border border-line bg-panel p-2">
+      <div className="overflow-x-auto card-in rounded-2xl border border-line bg-panel p-2">
         <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[720px] w-full">
           <defs>
             <style>{`@keyframes flowdash { to { stroke-dashoffset: -14; } }`}</style>
@@ -203,7 +203,7 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
 
       {/* selected node detail */}
       {selAgent && (
-        <div className="rounded-xl border border-line bg-panel p-4 text-xs">
+        <div className="glass card-in rounded-2xl p-4 text-xs">
           <div className="mb-1 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full" style={{ background: selAgent.accent }} />
             <span className="font-semibold" style={{ color: selAgent.accent }}>{selAgent.name}</span>

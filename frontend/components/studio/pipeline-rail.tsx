@@ -22,8 +22,11 @@ export function PipelineRail() {
   const convened = new Set(["intake_parser", "context_profiler", "scope_planner", ...scope]);
 
   return (
-    <aside className="scroll-thin sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-xl border border-line bg-panel p-4">
-      <h3 className="mb-3 font-mono text-[11px] uppercase tracking-widest text-muted">Intelligence layers</h3>
+    <aside className="scroll-thin glass sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl p-4">
+      <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+        <span className="pulse-ring h-1.5 w-1.5 rounded-full bg-cyan" style={{ "--ring": "#22d3ee" } as React.CSSProperties} />
+        Intelligence layers
+      </h3>
       {layers.map((layer) => {
         const agents = AGENTS.filter((a) => a.layer === layer &&
           (scope.length === 0 || convened.has(a.id) || status[a.id]));

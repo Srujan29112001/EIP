@@ -45,7 +45,7 @@ export function AskBoard() {
   };
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4 transition hover:border-cyan/25">
+    <section className="glass card-in rounded-2xl p-4 transition hover:border-cyan/25">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <MessagesSquare size={13} /> Ask the board — grounded in this run only
       </h3>

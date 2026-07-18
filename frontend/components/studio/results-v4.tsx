@@ -37,7 +37,7 @@ export function KpiTiles() {
   return (
     <section className="grid grid-cols-3 gap-2 md:grid-cols-6">
       {tiles.map((t) => (
-        <div key={t.label} className="panel-hover rounded-xl border border-line bg-panel p-3 text-center">
+        <div key={t.label} className="panel-hover card-in rounded-2xl border border-line bg-panel p-3 text-center">
           <div className={`font-display text-xl font-bold ${t.cls}`}>{t.value}</div>
           <div className="font-mono text-[9px] uppercase tracking-widest text-slate-500">{t.label}</div>
           {t.sub && <div className="mt-0.5 font-mono text-[9px] text-slate-600">{t.sub}</div>}
@@ -74,7 +74,7 @@ export function KeyFindings() {
       </h3>
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((c, i) => (
-          <div key={i} className="panel-hover rounded-xl border border-line bg-panel p-3"
+          <div key={i} className="panel-hover card-in rounded-2xl border border-line bg-panel p-3"
             style={{ borderLeftColor: c.color, borderLeftWidth: 3 }}>
             <div className="font-mono text-[9px] uppercase tracking-widest" style={{ color: c.color }}>{c.label}</div>
             <div className="mt-0.5 text-sm font-semibold text-slate-200">{c.value}</div>
@@ -99,7 +99,7 @@ export function InsightBullets() {
   }, [agentOutputs]);
   if (items.length < 1) return null;
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <ListChecks size={13} /> Key insights · auto-detected across the board ({items.length})
       </h3>
@@ -129,7 +129,7 @@ export function AgentTable() {
     .sort((a, b) => ((b[1][sortBy] as number) ?? 0) - ((a[1][sortBy] as number) ?? 0));
   if (rows.length < 2) return null;
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Table2 size={13} /> The board, in numbers · click headers to sort
       </h3>
@@ -189,7 +189,7 @@ export function DomainScreens() {
   }, [agentOutputs]);
   if (clusters.length < 1) return null;
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Activity size={13} /> Domain screens · average read per cluster
       </h3>

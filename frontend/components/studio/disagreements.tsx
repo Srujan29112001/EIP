@@ -13,7 +13,7 @@ export function Disagreements() {
   if (!conflicts.length && !biases.length) return null;
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Swords size={13} /> Where the board disagreed
       </h3>

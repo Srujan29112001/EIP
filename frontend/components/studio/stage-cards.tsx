@@ -51,7 +51,7 @@ export function StageCards() {
   }, {});
 
   if (!cards.length) {
-    return <div className="rounded-xl border border-line bg-panel p-5 font-mono text-xs text-slate-500">waiting for the board…</div>;
+    return <div className="glass card-in rounded-2xl p-5 font-mono text-xs text-slate-500">waiting for the board…</div>;
   }
 
   return (
@@ -96,7 +96,8 @@ export function StageCards() {
               <span className="h-2 w-2 rounded-full" style={{ background: a.accent }} />
             </span>
 
-            <div className={`rounded-xl border bg-panel p-3 transition ${st === "active" ? "border-cyan/40" : "border-line"}`}>
+            <div className={`card-in rounded-xl border bg-panel/80 p-3 backdrop-blur-sm transition ${
+              st === "active" ? "border-cyan/40 shadow-[0_0_28px_-10px_rgba(34,211,238,0.5)]" : "border-line"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-[9px] text-slate-600">{String(idx + 1).padStart(2, "0")}</span>
                 <span className="text-sm font-semibold" style={{ color: st === "queued" ? "#64748b" : a.accent }}>{a.name}</span>

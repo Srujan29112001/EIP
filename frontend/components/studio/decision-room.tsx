@@ -37,7 +37,8 @@ export function DecisionRoom() {
 
   if (!verdict) {
     return (
-      <div className="rounded-xl border border-line bg-panel p-6 text-sm text-slate-500">
+      <div className="glass flex items-center gap-3 rounded-2xl p-6 text-sm text-slate-500">
+        <span className="typing-dots"><span /><span /><span /></span>
         The Decision Room fills in as the synthesis layer completes…
       </div>
     );
@@ -147,16 +148,18 @@ export function DecisionRoom() {
 
       <KpiTiles />
       {/* verdict card */}
-      <section className={`rounded-xl border p-5 ${band.cls}`}>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
-            <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
-            <div className="font-display text-4xl font-bold">
-              {verdict.score}<span className="text-xl opacity-60">/10</span>
+      <section className={`card-in rounded-2xl border p-5 ${band.cls}`}>
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="gauge-ring grid h-24 w-24 shrink-0 place-items-center rounded-full"
+            style={{ "--pct": Math.max(0, Math.min(100, Number(verdict.score) * 10)) } as React.CSSProperties}>
+            <div className="text-center">
+              <div className="font-hero text-3xl font-bold leading-none text-slate-100">{verdict.score}</div>
+              <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wider opacity-60">/ 10</div>
             </div>
           </div>
-          <div className="rounded-lg border border-current px-4 py-2 font-display text-lg font-bold">
-            {band.label}
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
+            <div className="mt-1 font-hero text-3xl font-bold md:text-4xl">{band.label}</div>
           </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-slate-200">{verdict.reasoning}</p>
@@ -184,7 +187,7 @@ export function DecisionRoom() {
 
       {/* the Storyteller's pitch — the honest narrative for this decision */}
       {story && (story.narrative || story.one_liner) && (
-        <section className="rounded-xl border border-line bg-gradient-to-br from-panel to-[#1a1330] p-5">
+        <section className="card-in rounded-2xl border border-line bg-gradient-to-br from-panel/90 to-[#1a1330] p-5 backdrop-blur-sm">
           <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Mic size={13} className="text-[#fca5a5]" /> The pitch — as the Storyteller would tell it
           </h3>
@@ -214,13 +217,13 @@ export function DecisionRoom() {
 
       {/* radar + sensitivities */}
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-xl border border-line bg-panel p-4">
+        <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Scale size={13} /> Dimension radar
           </h3>
           <Radar dims={radar?.dimensions ?? verdict.dimensions} />
         </section>
-        <section className="rounded-xl border border-line bg-panel p-4">
+        <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             What would change this verdict
           </h3>
@@ -241,7 +244,7 @@ export function DecisionRoom() {
 
       {/* risks & opportunities */}
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-xl border border-line bg-panel p-4">
+        <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-err">
             <AlertTriangle size={13} /> Risk register
           </h3>
@@ -257,7 +260,7 @@ export function DecisionRoom() {
             ))}
           </ul>
         </section>
-        <section className="rounded-xl border border-line bg-panel p-4">
+        <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-ok">
             <Lightbulb size={13} /> Opportunities & next steps
           </h3>
@@ -283,7 +286,7 @@ export function DecisionRoom() {
           .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
           .slice(0, 12);
         return (
-          <section className="rounded-xl border border-line bg-panel p-4">
+          <section className="glass card-in rounded-2xl p-4">
             <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
               <Repeat size={13} className="text-[#fbbf24]" /> Two-round deliberation — how the board changed its mind
             </h3>
@@ -342,7 +345,7 @@ export function DecisionRoom() {
 
       {/* cross-pollination — how the specialists' findings connect (A2A synthesis) */}
       {crossInsights && ((crossInsights.connections?.length ?? 0) > 0 || (crossInsights.emergent?.length ?? 0) > 0) && (
-        <section className="rounded-xl border border-line bg-panel p-4">
+        <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Network size={13} className="text-[#fbbf24]" /> Cross-pollination — how the specialists connect
           </h3>
@@ -404,7 +407,7 @@ export function DecisionRoom() {
       <ReportSection />
 
       {/* the decision graph — this run as a living neural map */}
-      <section className="rounded-xl border border-line bg-panel p-4">
+      <section className="glass card-in rounded-2xl p-4">
         <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
           <Network size={13} /> The Decision Graph — everything the board produced
         </h3>
@@ -431,7 +434,7 @@ function ComparativePanel({ r1, r2 }: { r1: ResultSetData; r2: ResultSetData }) 
   if (!keys.length) return null;
   const v1s = Number(r1.verdict?.score ?? 0), v2s = Number(r2.verdict?.score ?? 0);
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Scale size={13} className="text-[#fbbf24]" /> Comparative analysis — what deliberation changed
       </h3>
@@ -523,7 +526,7 @@ function ScenarioPanel({ out }: { out?: AO }) {
     ["P90 · good luck", String(out.p90), "text-ok"],
   ];
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         🎲 Predictions under uncertainty — {String(out.draws ?? 1000)} simulated futures
       </h3>
@@ -553,7 +556,7 @@ function ScenarioPanel({ out }: { out?: AO }) {
 function NegotiationPanel({ out }: { out?: AO }) {
   if (!out || out.degraded || !out.batna) return null;
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         🤝 The next conversation — negotiation playbook
         {typeof out.counterparty === "string" && out.counterparty ? (
@@ -582,7 +585,7 @@ function RoundOneResults({ data }: { data: ResultSetData }) {
   return (
     <div className="space-y-3 rounded-xl border border-ok/20 bg-panel/60 p-3">
       {/* the round-1 verdict */}
-      <section className={`rounded-xl border p-4 ${band.cls}`}>
+      <section className={`card-in rounded-2xl border p-4 ${band.cls}`}>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-widest opacity-70">Round-1 verdict</div>
@@ -608,7 +611,7 @@ function RoundOneResults({ data }: { data: ResultSetData }) {
 
       {/* the round-1 pitch */}
       {data.story && (data.story.one_liner || data.story.narrative) && (
-        <section className="rounded-xl border border-line bg-panel p-3">
+        <section className="glass rounded-2xl p-3">
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-muted">Round-1 pitch</div>
           {data.story.one_liner && <p className="font-display text-sm font-semibold text-slate-100">“{data.story.one_liner}”</p>}
           {data.story.narrative && <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{data.story.narrative}</p>}

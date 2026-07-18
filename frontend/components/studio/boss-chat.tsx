@@ -81,7 +81,7 @@ export function BossChat({
   };
 
   return (
-    <section className="mt-4 rounded-xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-5">
+    <section className="mt-4 rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel/85 p-5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-xs uppercase tracking-widest text-brand">
           01 · 🎩 Intake conversation
@@ -112,9 +112,9 @@ export function BossChat({
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+              className={`msg-in max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                 m.role === "user"
-                  ? "rounded-br-sm bg-cyan/15 text-slate-100"
+                  ? "rounded-br-sm bg-cyan/15 text-slate-100 shadow-[0_0_20px_-10px_rgba(34,211,238,0.5)]"
                   : "rounded-bl-sm border border-line bg-panel-2 text-slate-300"
               }`}
             >
@@ -125,8 +125,8 @@ export function BossChat({
         ))}
         {busy && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm border border-line bg-panel-2 px-3.5 py-2 text-sm text-muted">
-              🎩 <span className="animate-pulse">thinking…</span>
+            <div className="msg-in rounded-2xl rounded-bl-sm border border-line bg-panel-2 px-3.5 py-2 text-sm text-muted">
+              🎩 <span className="typing-dots ml-1"><span /><span /><span /></span>
             </div>
           </div>
         )}

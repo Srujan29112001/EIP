@@ -206,7 +206,7 @@ export function NeuralMap({ nodes, edges, height = 520 }: {
 
   if (nodes.length < 3) {
     return (
-      <div className="rounded-xl border border-line bg-panel p-6 text-center font-mono text-xs text-slate-500">
+      <div className="glass card-in rounded-2xl p-6 text-center font-mono text-xs text-slate-500">
         The Decision Graph grows as the board works — run an analysis to map it.
       </div>
     );

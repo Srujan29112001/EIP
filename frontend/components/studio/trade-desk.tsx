@@ -28,7 +28,7 @@ export function TradeDesk() {
     : "text-warn border-warn/40 bg-warn/10";
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-4 transition hover:border-cyan/25">
+    <section className="glass card-in rounded-2xl p-4 transition hover:border-cyan/25">
       <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Activity size={13} /> Trade desk — setup, proof, plan
       </h3>

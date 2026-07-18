@@ -54,7 +54,7 @@ export function SmartInsights() {
           const isOpen = open === a.id;
           return (
             <div key={a.id}
-              className="panel-hover flex flex-col rounded-xl border border-line bg-panel p-3"
+              className="panel-hover flex flex-col card-in rounded-2xl border border-line bg-panel p-3"
               style={{ borderTopColor: `${a.accent}66`, borderTopWidth: 2 }}>
               <div className="flex items-center gap-2">
                 <span className="text-base">{a.icon}</span>
@@ -134,7 +134,7 @@ export function ReportSection({ report: reportProp, title }: {
   const report = reportProp ?? storeReport;
   if (!report) return null;
   return (
-    <section className="rounded-xl border border-line bg-panel p-4">
+    <section className="glass card-in rounded-2xl p-4">
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <FileText size={13} /> {title ?? "The full decision report — by the Reporter"}
       </h3>

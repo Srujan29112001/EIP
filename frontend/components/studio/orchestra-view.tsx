@@ -35,7 +35,7 @@ export function OrchestraView() {
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-4">
+      <div className="card-in rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel/85 p-4 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-lg">🎼</span>
           <h3 className="font-display text-sm font-bold text-slate-100">The Orchestra — the Manager&apos;s score</h3>
@@ -112,7 +112,7 @@ export function OrchestraView() {
       </div>
 
       {taskGraph.movements.map((mv) => (
-        <div key={mv.id} className="rounded-xl border border-line bg-panel p-3">
+        <div key={mv.id} className="glass card-in rounded-2xl p-3">
           <div className="mb-2 flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-sm" style={{ background: mv.color }} />
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-300">

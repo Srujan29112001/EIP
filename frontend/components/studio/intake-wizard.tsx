@@ -103,7 +103,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="font-display text-3xl font-bold">
+      <h1 className="font-hero text-4xl font-bold">
         Convene your <span className="holo-text">board</span>
       </h1>
       <p className="mt-1 text-sm text-slate-400">
@@ -144,7 +144,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {/* step 1 — trader: the symbol IS the situation */}
       {trader && (
-        <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+        <section className="glass mt-4 rounded-2xl p-5">
           <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · What are you looking at?</h2>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Field label="Symbol (NSE default)">
@@ -188,7 +188,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {/* step 1 — wealth: the money picture */}
       {wealth && (
-        <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+        <section className="glass mt-4 rounded-2xl p-5">
           <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · Your money picture</h2>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Field label="Monthly income (₹)">
@@ -278,7 +278,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {/* step 1 — founder: the situation */}
       {founder && (
-      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+      <section className="glass mt-4 rounded-2xl p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">01 · What&apos;s the situation?</h2>
         <textarea
           value={f.situation}
@@ -366,7 +366,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
 
       {/* step 2 — depth (form modes; in Intelligent Mode the Manager sets depth) */}
       {!intelligent && (
-      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+      <section className="glass mt-4 rounded-2xl p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">02 · Choose the depth</h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           {([
@@ -391,7 +391,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       {/* your board — hand-pick and brief the employees (form modes; in
           Intelligent Mode casting is the 🎼 Manager's job, not a picker) */}
       {!intelligent && (
-      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+      <section className="glass mt-4 rounded-2xl p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           03 · Pick your board
         </h2>
@@ -403,7 +403,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       )}
 
       {/* engine */}
-      <section className="mt-4 rounded-xl border border-line bg-panel p-5">
+      <section className="glass mt-4 rounded-2xl p-5">
         <h2 className="mb-3 font-mono text-xs uppercase tracking-widest text-l1">
           {intelligent ? "02" : "04"} · Choose the engine
         </h2>
@@ -419,7 +419,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </section>
 
       {/* run bar */}
-      <div className="sticky bottom-4 mt-6 flex items-center justify-between rounded-xl border border-line bg-panel/90 p-4 backdrop-blur">
+      <div className="glass sticky bottom-4 mt-6 flex items-center justify-between rounded-2xl p-4 shadow-[0_-8px_40px_-20px_rgba(6,182,212,0.25),0_18px_44px_-22px_rgba(0,0,0,0.7)]">
         <span className="font-mono text-[11px] text-muted">
           {!ready
             ? trader ? "enter a symbol to begin"
@@ -438,7 +438,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 trader ? ` · ${f.symbol}` : ""}`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
-          className={`rounded-lg bg-gradient-to-r px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40 ${
+          className={`btn-glow rounded-xl bg-gradient-to-r px-6 py-2.5 font-hero text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40 ${
             intelligent ? "from-brand to-l5" : "from-brand to-cyan"}`}>
           {intelligent ? "🎩 Run the Advisory Engine" : "⚡ Convene the Board"}
         </button>
