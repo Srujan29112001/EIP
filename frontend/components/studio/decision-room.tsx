@@ -61,10 +61,47 @@ export function DecisionRoom() {
 
   return (
     <div className="space-y-4 pb-4">
-      <QualityBanner />
-      <DegradedNotice />
       {/* screen connections — sticky spy-nav over the whole decision room */}
       <SectionNav items={navItems} />
+
+      {/* ═══ 1 · THE VERDICT — the headline, before anything else ═══ */}
+      <section id="dr-verdict" className={`card-in scroll-mt-24 rounded-2xl border p-5 ${band.cls}`}>
+        <div className="flex flex-wrap items-center gap-5">
+          <AnimatedGauge value={verdict.score} />
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
+            <div className="mt-1 font-display text-3xl font-bold md:text-4xl">{band.label}</div>
+          </div>
+        </div>
+        <p className="mt-3 text-sm leading-relaxed text-slate-200">{verdict.reasoning}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[10px] text-slate-400">
+          <span>
+            {sourced} externally sourced claims · {tokens.toLocaleString()} tokens ·{" "}
+            {[...routes].join(", ") || "deterministic cores only"}
+          </span>
+          <span className="ml-auto flex gap-2">
+            <button onClick={exportMd}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <Download size={11} /> Markdown
+            </button>
+            <button onClick={exportJson}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <FileJson size={11} /> JSON
+            </button>
+            <button onClick={exportPdf}
+              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
+              <FileText size={11} /> PDF
+            </button>
+          </span>
+        </div>
+      </section>
+
+      <KpiTiles />
+      <BottomLine verdict={verdict} outputs={agentOutputs} />
+
+      {/* ═══ 2 · CAVEATS — evidence quality & reduced-depth, compact ═══ */}
+      <QualityBanner />
+      <DegradedNotice />
 
       {/* ═══ Intelligent Mode — the Advisory Engine's audit trail ═══ */}
       {intelligent && (
@@ -108,13 +145,12 @@ export function DecisionRoom() {
       {/* ═══ THE TWO RESULT SETS — round 1 in full, then round 2 under it ═══ */}
       {twoRounds && (
         <>
-          <div className="flex items-center gap-3">
-            <span className="rounded-lg border border-ok/40 bg-ok/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-ok">
-              Round 1 — independent analysis
-            </span>
-            <span className="h-px flex-1 bg-line" />
-          </div>
-          <RoundOneResults data={resultSets[1]} />
+          <details className="glass rounded-2xl p-1">
+            <summary className="cursor-pointer rounded-xl px-3 py-2.5 font-mono text-[11px] font-bold uppercase tracking-widest text-ok transition hover:bg-panel-2">
+              Round 1 — independent analysis · {String(resultSets[1]?.verdict?.score ?? "—")}/10 — expand the full first-pass dossier
+            </summary>
+            <div className="space-y-4 p-3"><RoundOneResults data={resultSets[1]} /></div>
+          </details>
           <div className="mt-2 flex items-center gap-3">
             <span className="rounded-lg border border-[#fbbf24]/50 bg-[#fbbf24]/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-[#fbbf24]">
               Round 2 — after full-board deliberation (final)
@@ -124,9 +160,6 @@ export function DecisionRoom() {
           <ComparativePanel r1={resultSets[1]} r2={resultSets[2]} />
         </>
       )}
-
-      {/* the bottom line — conclusions & recommendations, composed deterministically */}
-      <BottomLine verdict={verdict} outputs={agentOutputs} />
 
       {/* predictions under uncertainty + the negotiation playbook */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -160,39 +193,6 @@ export function DecisionRoom() {
           </p>
         </section>
       )}
-
-      <KpiTiles />
-      {/* verdict card */}
-      <section id="dr-verdict" className={`card-in scroll-mt-24 rounded-2xl border p-5 ${band.cls}`}>
-        <div className="flex flex-wrap items-center gap-5">
-          <AnimatedGauge value={verdict.score} />
-          <div className="min-w-0 flex-1">
-            <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
-            <div className="mt-1 font-display text-3xl font-bold md:text-4xl">{band.label}</div>
-          </div>
-        </div>
-        <p className="mt-3 text-sm leading-relaxed text-slate-200">{verdict.reasoning}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-3 font-mono text-[10px] text-slate-400">
-          <span>
-            {sourced} externally sourced claims · {tokens.toLocaleString()} tokens ·{" "}
-            {[...routes].join(", ") || "deterministic cores only"}
-          </span>
-          <span className="ml-auto flex gap-2">
-            <button onClick={exportMd}
-              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
-              <Download size={11} /> Markdown
-            </button>
-            <button onClick={exportJson}
-              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
-              <FileJson size={11} /> JSON
-            </button>
-            <button onClick={exportPdf}
-              className="flex items-center gap-1 rounded border border-line px-2 py-1 text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
-              <FileText size={11} /> PDF
-            </button>
-          </span>
-        </div>
-      </section>
 
       {/* the Storyteller's pitch — the honest narrative for this decision */}
       {story && (story.narrative || story.one_liner) && (
@@ -546,9 +546,9 @@ function BottomLine({ verdict, outputs }: { verdict: V | null; outputs: Record<s
   const topRisk = (verdict.risks ?? [])[0];
   const steps = (verdict.next_steps ?? []).slice(0, 3);
   return (
-    <section className="rounded-xl border border-cyan/30 bg-gradient-to-br from-panel to-[#0c1a2e] p-4">
-      <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-cyan">
-        <Lightbulb size={13} /> The bottom line — conclusions, predictions, recommendations
+    <section className="glass card-in rounded-2xl p-4">
+      <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+        <Lightbulb size={13} className="text-cyan" /> The bottom line — conclusions, predictions, recommendations
       </h3>
       <div className="grid gap-2 text-xs sm:grid-cols-2">
         <div className="rounded-lg border border-line bg-panel-2 p-2.5">
@@ -602,7 +602,7 @@ function ScenarioPanel({ out }: { out?: AO }) {
         {tiles.map(([l, v, cls]) => (
           <div key={l} className="rounded-lg border border-line bg-panel-2 p-2 text-center">
             <div className={`font-display text-xl font-bold ${cls}`}>{v}</div>
-            <div className="font-mono text-[8.5px] uppercase tracking-wider text-slate-400">{l}</div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{l}</div>
           </div>
         ))}
       </div>

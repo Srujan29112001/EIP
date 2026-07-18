@@ -27,7 +27,6 @@ export function KpiTiles() {
     : 0;
   const attacks = board.filter((b) => b.kind === "conflict").length;
   const tiles = [
-    { label: "verdict", value: `${verdict.score}/10`, cls: scoreCls(verdict.score), sub: verdict.band?.replaceAll("_", " ") },
     { label: "specialists", value: String(Object.keys(agentOutputs).length), sub: "convened & done", cls: "text-cyan" },
     { label: "avg confidence", value: `${Math.round(avgConf * 100)}%`, sub: "self-reported, calibrated", cls: avgConf >= 0.6 ? "text-ok" : "text-warn" },
     { label: "evidence", value: String(claims.length), sub: `${sourced} live-sourced (${claims.length ? Math.round((sourced / claims.length) * 100) : 0}%)`, cls: "text-cyan" },
@@ -35,7 +34,7 @@ export function KpiTiles() {
     { label: "compute", value: tokens > 999 ? `${(tokens / 1000).toFixed(1)}k` : String(tokens), sub: [...routes].length ? `${[...routes].length} routes` : "deterministic", cls: "text-slate-300" },
   ];
   return (
-    <section className="grid grid-cols-3 gap-2 md:grid-cols-6">
+    <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
       {tiles.map((t, i) => (
         <div key={t.label} className="panel-hover card-in glass rounded-2xl p-3 text-center">
           <div className={`font-display text-2xl font-bold ${t.cls}`}>{t.value}</div>
@@ -221,13 +220,14 @@ export function DegradedNotice() {
   const reason = (agentOutputs[degraded[0].id] as AgentOutput | undefined)?.degraded_reason
     ?? "no LLM reached these agents — every configured key was rate-limited or missing.";
   return (
-    <section className="rounded-xl border border-warn/40 bg-warn/5 p-3">
-      <div className="flex items-center gap-2">
+    <details className="rounded-2xl border border-warn/40 bg-warn/5 p-1">
+      <summary className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-warn/10">
         <span className="text-sm">⚠</span>
         <span className="font-mono text-[11px] uppercase tracking-widest text-warn">
-          {degraded.length} of {ran} specialists ran reduced-depth
+          {degraded.length} of {ran} specialists ran reduced-depth — details
         </span>
-      </div>
+      </summary>
+      <div className="px-3 pb-2.5">
       <p className="mt-1 text-xs leading-relaxed text-slate-400">
         These agents produced a deterministic-core answer but couldn&apos;t get AI narration: <span className="text-slate-300">{reason}</span>
       </p>
@@ -241,7 +241,8 @@ export function DegradedNotice() {
       <p className="mt-2 font-mono text-[10px] text-slate-400">
         Fix: add more API keys in the engine step (up to 16 per provider — they rotate automatically), or re-run at a lighter depth.
       </p>
-    </section>
+      </div>
+    </details>
   );
 }
 
