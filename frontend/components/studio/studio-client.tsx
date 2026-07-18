@@ -8,6 +8,7 @@ import { Boardroom } from "./boardroom";
 import { DecisionRoom } from "./decision-room";
 import { FlowMap } from "./flow-map";
 import { HitlBanner, ManagerPlanPanel, QaGatePanel, RulingsPanel } from "./intelligent-panels";
+import { MissionHud } from "./mission-hud";
 import { OrchestraView } from "./orchestra-view";
 import { IntakeWizard } from "./intake-wizard";
 import { PipelineRail } from "./pipeline-rail";
@@ -62,7 +63,7 @@ export function StudioClient() {
       <BackendBadge state={backend} />
       <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
         <PipelineRail />
-        <main>
+        <main className="min-w-0">
           <div className="glass mb-3 flex items-center gap-1 rounded-xl p-1">
             {(["pipeline", "boardroom", "results"] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)}
@@ -87,6 +88,8 @@ export function StudioClient() {
           </div>
           {tab === "pipeline" && (
             <div className="space-y-3">
+              {/* the control room — live completion ring, layer conveyor, mission clock */}
+              <MissionHud />
               {/* Intelligent Mode = the Orchestra: the Manager's task graph with every
                   player expanding to its junior instruments lighting up (null otherwise) */}
               <OrchestraView />

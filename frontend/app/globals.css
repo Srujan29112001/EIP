@@ -313,11 +313,13 @@ html {
 .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
 .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
 
-/* ── verdict gauge ring (conic fill set via --pct) ── */
+/* ── verdict gauge ring (conic fill set via --pct; sweeps on change) ── */
+@property --pct { syntax: "<number>"; initial-value: 0; inherits: false; }
 .gauge-ring {
   background:
     radial-gradient(closest-side, #0a1020 78%, transparent 79% 100%),
     conic-gradient(from 220deg, #06b6d4 0deg, #a78bfa calc(var(--pct, 50) * 2.8deg), rgba(148, 163, 184, 0.12) 0deg);
+  transition: --pct 1.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── global scrollbar + focus polish ── */

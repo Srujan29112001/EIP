@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowRight, Download, FileJson, FileText, GraduationCap, Lightbulb, Mic, Network, Repeat, Scale } from "lucide-react";
 import { NeuralMap } from "@/components/graph/neural-map";
 import { agentById } from "@/lib/agents";
@@ -46,10 +47,24 @@ export function DecisionRoom() {
   const band = BAND_STYLE[verdict.recommendation] ?? BAND_STYLE.CONDITIONAL_GO;
   const sourced = board.filter((b) => b.kind === "claim" && b.source?.url).length;
 
+  const navItems = [
+    { id: "dr-verdict", label: "⚖ Verdict" },
+    ...(story && (story.narrative || story.one_liner) ? [{ id: "dr-pitch", label: "🎙 Pitch" }] : []),
+    { id: "dr-radar", label: "📡 Radar" },
+    { id: "dr-risks", label: "⚠ Risks" },
+    ...(rounds && (rounds.deltas?.length ?? 0) > 0 ? [{ id: "dr-rounds", label: "🔁 Deliberation" }] : []),
+    { id: "dr-charts", label: "📊 Charts" },
+    { id: "dr-agents", label: "🧠 Agents" },
+    { id: "dr-graph", label: "🌐 3D Graph" },
+    { id: "dr-ask", label: "💬 Ask the Board" },
+  ];
+
   return (
     <div className="space-y-4 pb-4">
       <QualityBanner />
       <DegradedNotice />
+      {/* screen connections — sticky spy-nav over the whole decision room */}
+      <SectionNav items={navItems} />
 
       {/* ═══ Intelligent Mode — the Advisory Engine's audit trail ═══ */}
       {intelligent && (
@@ -148,15 +163,9 @@ export function DecisionRoom() {
 
       <KpiTiles />
       {/* verdict card */}
-      <section className={`card-in rounded-2xl border p-5 ${band.cls}`}>
+      <section id="dr-verdict" className={`card-in scroll-mt-24 rounded-2xl border p-5 ${band.cls}`}>
         <div className="flex flex-wrap items-center gap-5">
-          <div className="gauge-ring grid h-24 w-24 shrink-0 place-items-center rounded-full"
-            style={{ "--pct": Math.max(0, Math.min(100, Number(verdict.score) * 10)) } as React.CSSProperties}>
-            <div className="text-center">
-              <div className="font-hero text-3xl font-bold leading-none text-slate-100">{verdict.score}</div>
-              <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wider opacity-60">/ 10</div>
-            </div>
-          </div>
+          <AnimatedGauge value={verdict.score} />
           <div className="min-w-0 flex-1">
             <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
             <div className="mt-1 font-hero text-3xl font-bold md:text-4xl">{band.label}</div>
@@ -187,7 +196,7 @@ export function DecisionRoom() {
 
       {/* the Storyteller's pitch — the honest narrative for this decision */}
       {story && (story.narrative || story.one_liner) && (
-        <section className="card-in rounded-2xl border border-line bg-gradient-to-br from-panel/90 to-[#1a1330] p-5 backdrop-blur-sm">
+        <section id="dr-pitch" className="card-in scroll-mt-24 rounded-2xl border border-line bg-gradient-to-br from-panel/90 to-[#1a1330] p-5 backdrop-blur-sm">
           <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Mic size={13} className="text-[#fca5a5]" /> The pitch — as the Storyteller would tell it
           </h3>
@@ -216,7 +225,7 @@ export function DecisionRoom() {
       )}
 
       {/* radar + sensitivities */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div id="dr-radar" className="scroll-mt-24 grid gap-4 md:grid-cols-2">
         <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Scale size={13} /> Dimension radar
@@ -243,7 +252,7 @@ export function DecisionRoom() {
       </div>
 
       {/* risks & opportunities */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div id="dr-risks" className="scroll-mt-24 grid gap-4 md:grid-cols-2">
         <section className="glass card-in rounded-2xl p-4">
           <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-err">
             <AlertTriangle size={13} /> Risk register
@@ -286,7 +295,7 @@ export function DecisionRoom() {
           .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
           .slice(0, 12);
         return (
-          <section className="glass card-in rounded-2xl p-4">
+          <section id="dr-rounds" className="glass card-in scroll-mt-24 rounded-2xl p-4">
             <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
               <Repeat size={13} className="text-[#fbbf24]" /> Two-round deliberation — how the board changed its mind
             </h3>
@@ -394,9 +403,13 @@ export function DecisionRoom() {
       <TradeDesk />
 
       {/* the Visualizer's gallery + every specialist's finding */}
-      <ChartGallery />
-      <SmartInsights />
-      <AgentTable />
+      <div id="dr-charts" className="scroll-mt-24 space-y-4">
+        <ChartGallery />
+        <SmartInsights />
+      </div>
+      <div id="dr-agents" className="scroll-mt-24">
+        <AgentTable />
+      </div>
 
       {/* the simulation layer — bend every insight and watch the math move */}
       <RunwaySim />
@@ -407,19 +420,74 @@ export function DecisionRoom() {
       <ReportSection />
 
       {/* the decision graph — this run as a living neural map */}
-      <section className="glass card-in rounded-2xl p-4">
+      <section id="dr-graph" className="glass card-in scroll-mt-24 rounded-2xl p-4">
         <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
           <Network size={13} /> The Decision Graph — everything the board produced
         </h3>
         <NeuralMap {...buildGraph({ brief, board, agentOutputs, verdict, collabs })} height={460} />
       </section>
 
-      <AskBoard />
+      <div id="dr-ask" className="scroll-mt-24">
+        <AskBoard />
+      </div>
 
       <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.
       </p>
     </div>
+  );
+}
+
+/* ── the verdict dial — the conic fill sweeps in on mount ─────────────────── */
+function AnimatedGauge({ value }: { value: unknown }) {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    const target = Math.max(0, Math.min(100, Number(value) * 10 || 0));
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setPct(target)));
+    return () => cancelAnimationFrame(id);
+  }, [value]);
+  return (
+    <div className="gauge-ring grid h-24 w-24 shrink-0 place-items-center rounded-full"
+      style={{ "--pct": pct } as React.CSSProperties}>
+      <div className="text-center">
+        <div className="font-hero text-3xl font-bold leading-none text-slate-100">{String(value)}</div>
+        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wider opacity-60">/ 10</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── screen connections — sticky scroll-spy across the decision room ──────── */
+function SectionNav({ items }: { items: { id: string; label: string }[] }) {
+  const [active, setActive] = useState(items[0]?.id ?? "");
+  const key = items.map((i) => i.id).join(",");
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) { setActive(e.target.id); return; }
+      },
+      { rootMargin: "-15% 0px -75% 0px" },
+    );
+    for (const it of items) {
+      const el = document.getElementById(it.id);
+      if (el) obs.observe(el);
+    }
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return (
+    <nav className="glass scroll-thin sticky top-2 z-30 flex gap-1 overflow-x-auto rounded-2xl p-1.5">
+      {items.map((it) => (
+        <button key={it.id}
+          onClick={() => document.getElementById(it.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          className={`shrink-0 rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition ${
+            active === it.id
+              ? "bg-panel-2 text-cyan shadow-[0_0_16px_-6px_rgba(34,211,238,0.6)]"
+              : "text-slate-500 hover:text-slate-300"}`}>
+          {it.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 

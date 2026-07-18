@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ScrambleText } from "@/components/fx/scramble-text";
 import { API_BASE, type EngineStatus } from "@/lib/api";
 import type { IntakeForm } from "@/lib/types";
 import { BoardPicker } from "./board-picker";
@@ -102,33 +103,50 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
     : f.situation.trim().length >= 20;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <h1 className="font-hero text-4xl font-bold">
-        Convene your <span className="holo-text">board</span>
+    <div className="grid-bg mx-auto max-w-3xl px-6 py-10">
+      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-cyan">
+        <ScrambleText text="MISSION CONTROL" />
+      </p>
+      <h1 className="mt-2 font-hero text-4xl font-bold md:text-5xl">
+        Convene your <span className="shimmer-text">board.</span>
       </h1>
-      <p className="mt-1 text-sm text-slate-400">
+      <p className="mt-2 text-sm text-slate-400">
         Describe the situation like you would to a smart friend. The board does the rest — live data, real math, open argument.
       </p>
+      <div className="beam mt-5" />
 
-      {/* mode tabs */}
-      <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {([["founder", "🚀 Founder", "validate an idea or dilemma"],
-           ["trader", "📈 Trader", "analyse any listed stock"],
-           ["wealth", "💰 Wealth", "salary, savings, FIRE, property"],
-           ["intelligent", "🎩 Intelligent", "the Advisory Engine — Boss + Manager"]] as const).map(([id, label, sub]) => (
-          <button key={id} onClick={() => {
-              set("mode", id);
-              // the Advisory Engine is a full board with two-round deliberation by default
-              if (id === "intelligent" && f.depth === "pulse") set("depth", "board");
-            }}
-            className={`rounded-xl border p-3 text-left transition ${
-              f.mode === id
-                ? id === "intelligent" ? "border-brand/70 bg-brand/10" : "border-cyan/70 bg-cyan/10"
-                : "border-line bg-panel hover:border-slate-500"}`}>
-            <div className="text-sm font-semibold">{label}</div>
-            <div className="font-mono text-[10px] text-muted">{sub}</div>
-          </button>
-        ))}
+      {/* mode doors */}
+      <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {([["founder", "🚀", "Founder", "validate an idea or dilemma", "#22d3ee"],
+           ["trader", "📈", "Trader", "analyse any listed stock", "#5591E8"],
+           ["wealth", "💰", "Wealth", "salary, savings, FIRE, property", "#f59e0b"],
+           ["intelligent", "🎩", "Intelligent", "the Advisory Engine — Boss + Manager", "#D9A94A"]] as const).map(([id, icon, label, sub, accent]) => {
+          const on = f.mode === id;
+          return (
+            <button key={id} onClick={() => {
+                set("mode", id);
+                // the Advisory Engine is a full board with two-round deliberation by default
+                if (id === "intelligent" && f.depth === "pulse") set("depth", "board");
+              }}
+              className={`relative overflow-hidden rounded-2xl border p-3.5 text-left transition-all duration-300 ${
+                on ? "-translate-y-0.5" : "border-line bg-panel hover:-translate-y-0.5 hover:border-slate-500"}`}
+              style={on ? {
+                borderColor: `${accent}b0`,
+                background: `linear-gradient(160deg, ${accent}1f, transparent 65%)`,
+                boxShadow: `0 0 32px -10px ${accent}90, inset 0 1px 0 rgba(255,255,255,0.06)`,
+              } : undefined}>
+              {on && (
+                <span className="orbit" style={{ "--dur": "9s", "--dot": accent } as React.CSSProperties}><span /></span>
+              )}
+              <span className="grid h-9 w-9 place-items-center rounded-xl text-lg"
+                style={{ background: `${accent}${on ? "26" : "14"}` }}>
+                {icon}
+              </span>
+              <div className="mt-2 text-sm font-semibold" style={on ? { color: accent } : undefined}>{label}</div>
+              <div className="mt-0.5 font-mono text-[10px] leading-snug text-muted">{sub}</div>
+            </button>
+          );
+        })}
       </div>
 
       {intelligent && (

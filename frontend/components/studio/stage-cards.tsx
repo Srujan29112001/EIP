@@ -6,8 +6,8 @@
  * flows down the pipeline.
  */
 
-import { useState } from "react";
-import { AlertTriangle, Check, ChevronDown, Eye, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Check, Eye, Loader2, X } from "lucide-react";
 import { AGENTS, STAGE_IO, agentById } from "@/lib/agents";
 import { useRun } from "@/lib/store";
 import type { AgentOutput, LogKind, StageStatus } from "@/lib/types";
@@ -113,7 +113,7 @@ export function StageCards() {
               )}
 
               {alogs.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto rounded-lg bg-ink/70 p-2.5 font-mono text-[11px] leading-relaxed">
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-lg bg-ink/70 p-2.5 font-mono text-[11px] leading-relaxed [overflow-wrap:anywhere]">
                   {alogs.map((l, i) => (
                     <div key={i} className={KIND_CLS[l.kind]}>{l.text}</div>
                   ))}
@@ -122,17 +122,10 @@ export function StageCards() {
 
               {prompt && (
                 <div className="mt-2">
-                  <button onClick={() => setOpenPrompt(openPrompt === id ? null : id)}
-                    className="flex items-center gap-1.5 font-mono text-[10px] text-slate-500 transition hover:text-cyan">
-                    <Eye size={11} /> show exact prompt
-                    <ChevronDown size={11} className={`transition ${openPrompt === id ? "rotate-180" : ""}`} />
+                  <button onClick={() => setOpenPrompt(id)}
+                    className="flex items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-0.5 font-mono text-[10px] text-slate-500 transition hover:border-cyan/30 hover:text-cyan">
+                    <Eye size={11} /> view exact prompt
                   </button>
-                  {openPrompt === id && (
-                    <div className="mt-1.5 space-y-1.5 rounded-lg border border-line bg-ink/70 p-2.5 font-mono text-[10px] leading-relaxed">
-                      <div><span className="text-brand">system ›</span> <span className="text-slate-400 whitespace-pre-wrap">{prompt.system}</span></div>
-                      <div><span className="text-cyan">user ›</span> <span className="text-slate-400 whitespace-pre-wrap">{prompt.user}</span></div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -150,6 +143,62 @@ export function StageCards() {
           </div>
         );
       })}
+
+      {/* ── the transparency dialog — the EXACT prompt, in a glass modal ── */}
+      {openPrompt && prompts[openPrompt] && (
+        <PromptDialog
+          agentName={agentById(openPrompt).name}
+          accent={agentById(openPrompt).accent}
+          prompt={prompts[openPrompt]}
+          onClose={() => setOpenPrompt(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PromptDialog({ agentName, accent, prompt, onClose }: {
+  agentName: string; accent: string;
+  prompt: { system: string; user: string };
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog" aria-modal="true" aria-label={`Exact prompt — ${agentName}`}>
+      <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="g-border card-in relative flex max-h-[82vh] w-full max-w-3xl flex-col rounded-2xl">
+        <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
+          <span className="font-hero text-sm font-bold text-slate-100">{agentName}</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">the exact prompt it sent</span>
+          <button onClick={onClose}
+            className="ml-auto rounded-lg px-2 py-1 font-mono text-xs text-slate-500 transition hover:text-err">
+            ✕ esc
+          </button>
+        </div>
+        <div className="scroll-thin space-y-3 overflow-y-auto p-5 font-mono text-[11px] leading-relaxed">
+          <div className="rounded-xl border border-brand/25 bg-brand/5 p-3">
+            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-brand">system ›</div>
+            <p className="whitespace-pre-wrap text-slate-300">{prompt.system}</p>
+          </div>
+          <div className="rounded-xl border border-cyan/25 bg-cyan/5 p-3">
+            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-cyan">user ›</div>
+            <p className="whitespace-pre-wrap text-slate-300">{prompt.user}</p>
+          </div>
+        </div>
+        <p className="border-t border-line px-5 py-2.5 font-mono text-[9px] text-slate-600">
+          radical transparency — this is verbatim what the model received, nothing hidden.
+        </p>
+      </div>
     </div>
   );
 }

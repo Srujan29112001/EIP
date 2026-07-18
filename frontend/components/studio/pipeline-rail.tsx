@@ -22,7 +22,7 @@ export function PipelineRail() {
   const convened = new Set(["intake_parser", "context_profiler", "scope_planner", ...scope]);
 
   return (
-    <aside className="scroll-thin glass sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl p-4">
+    <aside className="scroll-thin glass sticky top-4 min-w-0 max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl p-4">
       <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <span className="pulse-ring h-1.5 w-1.5 rounded-full bg-cyan" style={{ "--ring": "#22d3ee" } as React.CSSProperties} />
         Intelligence layers

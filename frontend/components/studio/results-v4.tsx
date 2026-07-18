@@ -36,9 +36,10 @@ export function KpiTiles() {
   ];
   return (
     <section className="grid grid-cols-3 gap-2 md:grid-cols-6">
-      {tiles.map((t) => (
-        <div key={t.label} className="panel-hover card-in rounded-2xl border border-line bg-panel p-3 text-center">
-          <div className={`font-display text-xl font-bold ${t.cls}`}>{t.value}</div>
+      {tiles.map((t, i) => (
+        <div key={t.label} className="panel-hover card-in scan-on-hover rounded-2xl border border-line bg-panel p-3 text-center"
+          style={{ animationDelay: `${i * 70}ms` }}>
+          <div className={`font-hero text-2xl font-bold ${t.cls}`}>{t.value}</div>
           <div className="font-mono text-[9px] uppercase tracking-widest text-slate-500">{t.label}</div>
           {t.sub && <div className="mt-0.5 font-mono text-[9px] text-slate-600">{t.sub}</div>}
         </div>
