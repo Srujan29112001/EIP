@@ -38,7 +38,7 @@ export function DecisionRoom() {
 
   if (!verdict) {
     return (
-      <div className="glass flex items-center gap-3 rounded-2xl p-6 text-sm text-slate-500">
+      <div className="glass flex items-center gap-3 rounded-2xl p-6 text-sm text-slate-400">
         <span className="typing-dots"><span /><span /><span /></span>
         The Decision Room fills in as the synthesis layer completes…
       </div>
@@ -72,7 +72,7 @@ export function DecisionRoom() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-display text-sm font-bold text-slate-100">🎩 Advisory Engine · run audit</span>
             {hitl && (
-              <span className={`rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+              <span className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${
                 hitl.decision === "approve" || hitl.decision === "auto_approved"
                   ? "border-ok/40 bg-ok/10 text-ok"
                   : hitl.decision === "reject" ? "border-err/40 bg-err/10 text-err"
@@ -81,7 +81,7 @@ export function DecisionRoom() {
               </span>
             )}
             {noLlmCount > 0 && (
-              <span className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-warn">
+              <span className="rounded border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-warn">
                 {noLlmCount} agent{noLlmCount > 1 ? "s" : ""} deterministic-only (no LLM reached)
               </span>
             )}
@@ -139,23 +139,23 @@ export function DecisionRoom() {
         <section className={`rounded-xl border p-4 ${compliance.high > 0 ? "border-err/40 bg-err/10" : "border-warn/40 bg-warn/10"}`}>
           <h3 className={`mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest ${compliance.high > 0 ? "text-err" : "text-warn"}`}>
             <AlertTriangle size={13} /> Compliance sentinel — {compliance.alerts.length} flag{compliance.alerts.length > 1 ? "s" : ""}
-            {compliance.high > 0 && <span className="rounded bg-err/20 px-1.5 py-0.5 text-[9px]">{compliance.high} HIGH</span>}
+            {compliance.high > 0 && <span className="rounded bg-err/20 px-1.5 py-0.5 text-[10px]">{compliance.high} HIGH</span>}
           </h3>
           <ul className="space-y-1.5">
             {compliance.alerts.map((a, i) => (
               <li key={i} className="flex items-start gap-2 text-xs">
-                <span className={`mt-0.5 rounded px-1.5 py-0.5 font-mono text-[8px] uppercase ${
+                <span className={`mt-0.5 rounded px-1.5 py-0.5 font-mono text-[10px] uppercase ${
                   a.severity === "high" ? "bg-err/25 text-err" : a.severity === "medium" ? "bg-warn/25 text-warn" : "bg-panel-2 text-slate-400"}`}>
                   {a.severity}
                 </span>
                 <span className="text-slate-200">
                   {a.text}
-                  <span className="ml-1.5 font-mono text-[9px] text-slate-500">— {agentById(a.agent).name}</span>
+                  <span className="ml-1.5 font-mono text-[10px] text-slate-400">— {agentById(a.agent).name}</span>
                 </span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 font-mono text-[9px] text-slate-500">
+          <p className="mt-2 font-mono text-[10px] text-slate-400">
             Deterministic scan — education, not legal advice. Verify each against the current official source.
           </p>
         </section>
@@ -168,7 +168,7 @@ export function DecisionRoom() {
           <AnimatedGauge value={verdict.score} />
           <div className="min-w-0 flex-1">
             <div className="font-mono text-[11px] uppercase tracking-widest opacity-70">Weighted verdict</div>
-            <div className="mt-1 font-hero text-3xl font-bold md:text-4xl">{band.label}</div>
+            <div className="mt-1 font-display text-3xl font-bold md:text-4xl">{band.label}</div>
           </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-slate-200">{verdict.reasoning}</p>
@@ -213,7 +213,7 @@ export function DecisionRoom() {
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {story.three_beats.slice(0, 3).map((b, i) => (
                 <div key={i} className="rounded-lg border border-line bg-panel-2 p-3">
-                  <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-[#fca5a5]">
+                  <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-[#fca5a5]">
                     {["Problem", "Insight", "Why now"][i] ?? `Beat ${i + 1}`}
                   </div>
                   <p className="text-xs leading-relaxed text-slate-300">{b}</p>
@@ -260,7 +260,7 @@ export function DecisionRoom() {
           <ul className="space-y-2">
             {(verdict.risks ?? []).map((r, i) => (
               <li key={i} className="rounded-lg border border-line bg-panel-2 p-2.5 text-xs">
-                <span className="mr-2 rounded px-1.5 py-0.5 font-mono text-[9px]"
+                <span className="mr-2 rounded px-1.5 py-0.5 font-mono text-[10px]"
                   style={{ color: agentById(r.source_agent).accent, border: `1px solid ${agentById(r.source_agent).accent}44` }}>
                   {agentById(r.source_agent).name}
                 </span>
@@ -299,13 +299,13 @@ export function DecisionRoom() {
             <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
               <Repeat size={13} className="text-[#fbbf24]" /> Two-round deliberation — how the board changed its mind
             </h3>
-            <p className="mb-2 text-[11px] text-slate-500">
+            <p className="mb-2 text-[11px] text-slate-400">
               Round 1: every layer ran independently. Round 2: L1 → L2 → L3 re-ran with the <b>full board</b> visible —
               {" "}{rounds.refined} refined their analysis, {rounds.revised} revised their score.
             </p>
             {rounds.verdict1 && rounds.verdict2 && (
               <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-line bg-panel-2 px-3 py-2 text-xs">
-                <span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">the two verdicts</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">the two verdicts</span>
                 <span className="text-slate-300">
                   Round 1: <b>{rounds.verdict1.score}/10</b> {String(rounds.verdict1.recommendation ?? "").replaceAll("_", " ")}
                 </span>
@@ -314,7 +314,7 @@ export function DecisionRoom() {
                   After deliberation: <b>{rounds.verdict2.score}/10</b> {String(rounds.verdict2.recommendation ?? "").replaceAll("_", " ")}
                 </span>
                 {typeof rounds.verdict1.score === "number" && typeof rounds.verdict2.score === "number" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9px] ${
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${
                     rounds.verdict2.score >= rounds.verdict1.score ? "bg-ok/15 text-ok" : "bg-err/15 text-err"}`}>
                     {rounds.verdict2.score > rounds.verdict1.score ? "+" : ""}{(rounds.verdict2.score - rounds.verdict1.score).toFixed(1)}
                   </span>
@@ -328,10 +328,10 @@ export function DecisionRoom() {
                   return (
                     <div key={d.agent} className="flex items-center gap-2 rounded-lg border border-line bg-panel-2 px-2.5 py-1.5 text-xs">
                       <span className="truncate" style={{ color: a.accent }}>{a.icon} {a.name}</span>
-                      <span className="ml-auto font-mono text-[10px] text-slate-500">{d.before}</span>
-                      <ArrowRight size={10} className="shrink-0 text-slate-600" />
+                      <span className="ml-auto font-mono text-[10px] text-slate-400">{d.before}</span>
+                      <ArrowRight size={10} className="shrink-0 text-slate-400" />
                       <span className="font-mono text-[11px] text-slate-200">{d.after}</span>
-                      <span className={`rounded px-1 py-0.5 font-mono text-[9px] ${
+                      <span className={`rounded px-1 py-0.5 font-mono text-[10px] ${
                         d.delta > 0 ? "bg-ok/15 text-ok" : "bg-err/15 text-err"}`}>
                         {d.delta > 0 ? "+" : ""}{d.delta}
                       </span>
@@ -345,7 +345,7 @@ export function DecisionRoom() {
                 the round-1 reads survived full-board scrutiny.
               </p>
             )}
-            <p className="mt-2 font-mono text-[9px] text-slate-500">
+            <p className="mt-2 font-mono text-[10px] text-slate-400">
               Unmoved scores = the specialist read everyone and stood firm (convergence). Movement = new context genuinely mattered.
             </p>
           </section>
@@ -358,7 +358,7 @@ export function DecisionRoom() {
           <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             <Network size={13} className="text-[#fbbf24]" /> Cross-pollination — how the specialists connect
           </h3>
-          <p className="mb-3 text-[11px] text-slate-500">
+          <p className="mb-3 text-[11px] text-slate-400">
             Every specialist read against every other — where their findings reinforce (synergy) or collide (tension).
           </p>
           {(crossInsights.connections?.length ?? 0) > 0 && (
@@ -371,7 +371,7 @@ export function DecisionRoom() {
                       <span style={{ color: agentById(c.a).accent }}>{agentById(c.a).icon} {agentById(c.a).name}</span>
                       <span className={syn ? "text-ok" : "text-warn"}>{syn ? "⇄" : "⚡"}</span>
                       <span style={{ color: agentById(c.b).accent }}>{agentById(c.b).icon} {agentById(c.b).name}</span>
-                      <span className={`ml-auto rounded px-1.5 py-0.5 text-[8px] uppercase ${syn ? "bg-ok/15 text-ok" : "bg-warn/15 text-warn"}`}>{c.type}</span>
+                      <span className={`ml-auto rounded px-1.5 py-0.5 text-[10px] uppercase ${syn ? "bg-ok/15 text-ok" : "bg-warn/15 text-warn"}`}>{c.type}</span>
                     </div>
                     <p className="leading-relaxed text-slate-300">{c.insight}</p>
                   </div>
@@ -381,7 +381,7 @@ export function DecisionRoom() {
           )}
           {(crossInsights.emergent?.length ?? 0) > 0 && (
             <div className="mt-3">
-              <div className="mb-1.5 font-mono text-[9px] uppercase tracking-widest text-[#fbbf24]">Emergent — only visible across the whole board</div>
+              <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-[#fbbf24]">Emergent — only visible across the whole board</div>
               <ul className="space-y-1.5">
                 {crossInsights.emergent!.map((e, i) => (
                   <li key={i} className="flex gap-2 text-xs text-slate-300">
@@ -431,7 +431,7 @@ export function DecisionRoom() {
         <AskBoard />
       </div>
 
-      <p className="pb-2 text-center font-mono text-[10px] text-slate-600">
+      <p className="pb-2 text-center font-mono text-[10px] text-slate-400">
         EIP provides analytics and education, not investment advice. Decisions and outcomes are yours.
       </p>
     </div>
@@ -450,8 +450,8 @@ function AnimatedGauge({ value }: { value: unknown }) {
     <div className="gauge-ring grid h-24 w-24 shrink-0 place-items-center rounded-full"
       style={{ "--pct": pct } as React.CSSProperties}>
       <div className="text-center">
-        <div className="font-hero text-3xl font-bold leading-none text-slate-100">{String(value)}</div>
-        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wider opacity-60">/ 10</div>
+        <div className="font-display text-3xl font-bold leading-none text-slate-100">{String(value)}</div>
+        <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider opacity-60">/ 10</div>
       </div>
     </div>
   );
@@ -483,7 +483,7 @@ function SectionNav({ items }: { items: { id: string; label: string }[] }) {
           className={`shrink-0 rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider transition ${
             active === it.id
               ? "bg-panel-2 text-cyan shadow-[0_0_16px_-6px_rgba(34,211,238,0.6)]"
-              : "text-slate-500 hover:text-slate-300"}`}>
+              : "text-slate-400 hover:text-slate-300"}`}>
           {it.label}
         </button>
       ))}
@@ -506,7 +506,7 @@ function ComparativePanel({ r1, r2 }: { r1: ResultSetData; r2: ResultSetData }) 
       <h3 className="mb-1 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         <Scale size={13} className="text-[#fbbf24]" /> Comparative analysis — what deliberation changed
       </h3>
-      <p className="mb-3 text-[11px] text-slate-500">
+      <p className="mb-3 text-[11px] text-slate-400">
         Verdict {v1s}/10 → <b className="text-slate-300">{v2s}/10</b>
         {r1.story?.one_liner && r2.story?.one_liner && r1.story.one_liner !== r2.story.one_liner
           ? " · the pitch itself was rewritten after the board read itself." : ""}
@@ -523,15 +523,15 @@ function ComparativePanel({ r1, r2 }: { r1: ResultSetData; r2: ResultSetData }) 
                   style={{ width: `${b * 10}%`, mixBlendMode: "screen" }} />
               </div>
               <span className="w-16 shrink-0 text-right font-mono text-[10px] text-slate-400">{a} → <b className="text-slate-200">{b}</b></span>
-              <span className={`w-10 shrink-0 rounded px-1 text-center font-mono text-[9px] ${
-                delta > 0 ? "bg-ok/15 text-ok" : delta < 0 ? "bg-err/15 text-err" : "bg-panel-2 text-slate-500"}`}>
+              <span className={`w-10 shrink-0 rounded px-1 text-center font-mono text-[10px] ${
+                delta > 0 ? "bg-ok/15 text-ok" : delta < 0 ? "bg-err/15 text-err" : "bg-panel-2 text-slate-400"}`}>
                 {delta > 0 ? "+" : ""}{delta}
               </span>
             </div>
           );
         })}
       </div>
-      <p className="mt-2 font-mono text-[9px] text-slate-500">
+      <p className="mt-2 font-mono text-[10px] text-slate-400">
         grey = round-1 score · gold = after deliberation. The gap IS the value of the second round.
       </p>
     </section>
@@ -552,13 +552,13 @@ function BottomLine({ verdict, outputs }: { verdict: V | null; outputs: Record<s
       </h3>
       <div className="grid gap-2 text-xs sm:grid-cols-2">
         <div className="rounded-lg border border-line bg-panel-2 p-2.5">
-          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">Conclusion</div>
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-slate-400">Conclusion</div>
           <p className="text-slate-200"><b>{verdict.score}/10 · {String(verdict.recommendation ?? "").replaceAll("_", " ")}</b>
             {typeof sc.p10 === "number" && <span className="text-slate-400"> — and under 1,000 simulated futures it stays between <b>{String(sc.p10)}</b> and <b>{String(sc.p90)}</b> (P50 {String(sc.p50)}).</span>}
           </p>
         </div>
         <div className="rounded-lg border border-line bg-panel-2 p-2.5">
-          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">Prediction</div>
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-slate-400">Prediction</div>
           <p className="text-slate-200">
             {typeof sc.prob_go === "number"
               ? <>P(GO) <b className="text-ok">{Math.round(Number(sc.prob_go) * 100)}%</b> · P(NO-GO) <b className="text-err">{Math.round(Number(sc.prob_nogo ?? 0) * 100)}%</b>{sc.breaks_it ? <> — the case most often breaks on <b>{String(sc.breaks_it)}</b>.</> : "."}</>
@@ -567,12 +567,12 @@ function BottomLine({ verdict, outputs }: { verdict: V | null; outputs: Record<s
         </div>
         {topRisk && (
           <div className="rounded-lg border border-err/25 bg-err/5 p-2.5">
-            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-err">Guard against</div>
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-err">Guard against</div>
             <p className="text-slate-300">{topRisk.text}</p>
           </div>
         )}
         <div className="rounded-lg border border-ok/25 bg-ok/5 p-2.5">
-          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-ok">Recommended first moves</div>
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ok">Recommended first moves</div>
           {steps.length ? (
             <ol className="list-decimal space-y-0.5 pl-4 text-slate-300">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
           ) : <p className="text-slate-400">See the report's 30-60-90 plan.</p>}
@@ -602,7 +602,7 @@ function ScenarioPanel({ out }: { out?: AO }) {
         {tiles.map(([l, v, cls]) => (
           <div key={l} className="rounded-lg border border-line bg-panel-2 p-2 text-center">
             <div className={`font-display text-xl font-bold ${cls}`}>{v}</div>
-            <div className="font-mono text-[8.5px] uppercase tracking-wider text-slate-500">{l}</div>
+            <div className="font-mono text-[8.5px] uppercase tracking-wider text-slate-400">{l}</div>
           </div>
         ))}
       </div>
@@ -613,7 +613,7 @@ function ScenarioPanel({ out }: { out?: AO }) {
           <span className="rounded bg-warn/15 px-2 py-1 text-warn">breaks on: {out.breaks_it}</span>
         ) : null}
       </div>
-      <p className="mt-2 font-mono text-[9px] text-slate-500">
+      <p className="mt-2 font-mono text-[10px] text-slate-400">
         Deterministic Monte-Carlo over the board's own scores — uncertainty width comes from the board's confidence.
       </p>
     </section>
@@ -628,18 +628,18 @@ function NegotiationPanel({ out }: { out?: AO }) {
       <h3 className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
         🤝 The next conversation — negotiation playbook
         {typeof out.counterparty === "string" && out.counterparty ? (
-          <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[9px] normal-case text-slate-400">vs {out.counterparty}</span>
+          <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[10px] normal-case text-slate-400">vs {out.counterparty}</span>
         ) : null}
       </h3>
       <div className="space-y-1.5 text-xs">
-        <p><span className="font-mono text-[9px] uppercase tracking-widest text-cyan">Anchor · </span><span className="text-slate-200">{String(out.anchor ?? "")}</span></p>
-        <p><span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">BATNA · </span><span className="text-slate-300">{String(out.batna)}</span></p>
+        <p><span className="font-mono text-[10px] uppercase tracking-widest text-cyan">Anchor · </span><span className="text-slate-200">{String(out.anchor ?? "")}</span></p>
+        <p><span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">BATNA · </span><span className="text-slate-300">{String(out.batna)}</span></p>
         {Array.isArray(out.concessions) && out.concessions.length > 0 && (
-          <p><span className="font-mono text-[9px] uppercase tracking-widest text-slate-500">Give, in order · </span>
+          <p><span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Give, in order · </span>
             <span className="text-slate-300">{(out.concessions as string[]).join(" → ")}</span></p>
         )}
         {typeof out.walk_away === "string" && out.walk_away ? (
-          <p><span className="font-mono text-[9px] uppercase tracking-widest text-err">Walk away if · </span><span className="text-slate-300">{out.walk_away}</span></p>
+          <p><span className="font-mono text-[10px] uppercase tracking-widest text-err">Walk away if · </span><span className="text-slate-300">{out.walk_away}</span></p>
         ) : null}
       </div>
     </section>

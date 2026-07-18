@@ -207,19 +207,19 @@ export function FlowMap({ onFocus }: { onFocus?: (id: string) => void }) {
           <div className="mb-1 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full" style={{ background: selAgent.accent }} />
             <span className="font-semibold" style={{ color: selAgent.accent }}>{selAgent.name}</span>
-            <span className="font-mono text-[10px] text-slate-500">{selAgent.layer} · {status(selAgent.id)}</span>
-            <button onClick={() => setSel(null)} className="ml-auto text-slate-500 hover:text-white">✕</button>
+            <span className="font-mono text-[10px] text-slate-400">{selAgent.layer} · {status(selAgent.id)}</span>
+            <button onClick={() => setSel(null)} className="ml-auto text-slate-400 hover:text-white">✕</button>
           </div>
           <p className="text-slate-400">{selAgent.blurb}</p>
           {selOut?.verdict_line && (
             <p className="mt-2 rounded-lg bg-panel-2 p-2 text-slate-300">
-              <span className="font-mono text-[9px] uppercase text-slate-500">output › </span>{selOut.verdict_line}
+              <span className="font-mono text-[10px] uppercase text-slate-400">output › </span>{selOut.verdict_line}
               {typeof selOut.score === "number" && <span className="ml-2 font-mono" style={{ color: selAgent.accent }}>{selOut.score}/10</span>}
             </p>
           )}
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-slate-600">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] text-slate-400">
         <span className="flex items-center gap-1.5">
           <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#22d3ee" strokeOpacity="0.5" strokeWidth="1.4" /></svg>
           layer-to-layer flow

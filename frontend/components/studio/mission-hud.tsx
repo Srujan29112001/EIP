@@ -53,25 +53,25 @@ export function MissionHud() {
   });
 
   return (
-    <div className="g-border g-border-slow relative overflow-hidden rounded-2xl p-4">
+    <div className="glass relative overflow-hidden rounded-2xl p-4">
       <div className="grid items-center gap-4 lg:grid-cols-[auto_1fr_auto]">
         {/* completion ring */}
         <div className="flex items-center gap-4">
           <div className="gauge-ring grid h-24 w-24 shrink-0 place-items-center rounded-full"
             style={{ "--pct": pct } as React.CSSProperties}>
             <div className="text-center">
-              <div className="font-hero text-2xl font-bold leading-none text-slate-100">{pct}%</div>
-              <div className="mt-0.5 font-mono text-[8px] uppercase tracking-wider text-slate-500">
+              <div className="font-display text-2xl font-bold leading-none text-slate-100">{pct}%</div>
+              <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">
                 {finished.length}/{tracked.length || "—"}
               </div>
             </div>
           </div>
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-cyan">Mission</div>
-            <div className="font-hero text-lg font-bold leading-tight text-slate-100">
+            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan">Mission</div>
+            <div className="font-display text-lg font-bold leading-tight text-slate-100">
               {phase === "done" ? "Board adjourned" : "Board in session"}
             </div>
-            <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-slate-500">
+            <div className="mt-1 flex items-center gap-2 font-mono text-[10px] text-slate-400">
               <span className={`h-1.5 w-1.5 rounded-full ${phase === "done" ? "bg-ok" : "pulse-ring bg-cyan"}`}
                 style={{ "--ring": "#22d3ee" } as React.CSSProperties} />
               T+{clock}
@@ -86,13 +86,13 @@ export function MissionHud() {
               <div className={`rounded-xl border px-2.5 py-1.5 text-center transition ${
                 live ? "border-cyan/50 bg-cyan/5 shadow-[0_0_18px_-6px_rgba(34,211,238,0.6)]"
                   : done > 0 && done === total ? "border-line bg-panel-2/60" : "border-line/60 bg-transparent"}`}>
-                <div className="font-mono text-[9px] font-bold" style={{ color: LAYER_COLORS[layer] }}>{layer}</div>
-                <div className="font-mono text-[8px] text-slate-500">{LAYER_LABELS[layer]}</div>
+                <div className="font-mono text-[10px] font-bold" style={{ color: LAYER_COLORS[layer] }}>{layer}</div>
+                <div className="font-mono text-[10px] text-slate-400">{LAYER_LABELS[layer]}</div>
                 <div className="mt-1 h-0.5 w-14 overflow-hidden rounded-full bg-slate-800">
                   <div className="h-full transition-all duration-700"
                     style={{ width: total ? `${(done / total) * 100}%` : "0%", background: LAYER_COLORS[layer] }} />
                 </div>
-                <div className="mt-0.5 font-mono text-[8px] text-slate-600">{done}/{total || "·"}</div>
+                <div className="mt-0.5 font-mono text-[10px] text-slate-400">{done}/{total || "·"}</div>
               </div>
               {i < LAYERS.length - 1 && (
                 <div className="beam w-4 shrink-0" style={{ animationDelay: `${i * 0.3}s` }} />
@@ -104,22 +104,22 @@ export function MissionHud() {
         {/* live counters */}
         <div className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-1.5">
           <div className="rounded-lg border border-line bg-panel-2/60 px-2.5 py-1.5">
-            <div className="font-mono text-[8px] uppercase tracking-wider text-slate-500">now speaking</div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">now speaking</div>
             <div className="truncate text-xs font-semibold"
               style={{ color: activeAgent?.accent ?? "#475569" }}>
               {activeAgent ? `${activeAgent.icon} ${activeAgent.name}` : phase === "done" ? "—" : "…"}
             </div>
           </div>
           <div className="rounded-lg border border-line bg-panel-2/60 px-2.5 py-1.5">
-            <div className="font-mono text-[8px] uppercase tracking-wider text-slate-500">gold links · compute</div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">gold links · compute</div>
             <div className="text-xs font-semibold text-slate-200">
               <span className="text-[#fbbf24]">{goldLinks}</span>
-              <span className="mx-1 text-slate-600">·</span>
+              <span className="mx-1 text-slate-400">·</span>
               {tokens > 999 ? `${(tokens / 1000).toFixed(1)}k` : tokens} tok
             </div>
           </div>
           <div className="rounded-lg border border-line bg-panel-2/60 px-2.5 py-1.5">
-            <div className="font-mono text-[8px] uppercase tracking-wider text-slate-500">reduced depth</div>
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">reduced depth</div>
             <div className={`text-xs font-semibold ${degraded.length ? "text-warn" : "text-ok"}`}>
               {degraded.length ? `${degraded.length} agents` : "none"}
             </div>

@@ -81,7 +81,7 @@ export function BossChat({
   };
 
   return (
-    <section className="mt-4 rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel/85 p-5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
+    <section className="mt-4 rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-5 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-xs uppercase tracking-widest text-brand">
           01 · 🎩 Intake conversation
@@ -134,9 +134,9 @@ export function BossChat({
 
       {turn && !complete && turn.missing.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <span className="font-mono text-[10px] text-slate-600">still capturing:</span>
+          <span className="font-mono text-[10px] text-slate-400">still capturing:</span>
           {turn.missing.slice(0, 5).map((m) => (
-            <span key={m} className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
+            <span key={m} className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
               {m}
             </span>
           ))}
@@ -156,7 +156,7 @@ export function BossChat({
           <button
             onClick={send}
             disabled={busy || !draft.trim()}
-            className="rounded-md bg-brand/90 px-4 py-2 font-mono text-xs font-semibold text-ink transition enabled:hover:brightness-110 disabled:opacity-40"
+            className="rounded-md bg-brand/90 px-4 py-2 font-mono text-xs font-semibold text-ink transition enabled:hover:brightness-110 disabled:opacity-70 disabled:saturate-[0.6]"
           >
             send
           </button>
@@ -179,7 +179,7 @@ export function BossChat({
               .slice(0, 8)
               .map(([k, v]) => (
                 <span key={k} className="rounded border border-line bg-panel-2 px-2 py-0.5 font-mono text-[10px] text-slate-400">
-                  <span className="text-slate-600">{k}:</span> {String(v).slice(0, 40)}
+                  <span className="text-slate-400">{k}:</span> {String(v).slice(0, 40)}
                 </span>
               ))}
           </div>
@@ -187,7 +187,7 @@ export function BossChat({
       )}
 
       {error && <p className="mt-2 font-mono text-[10px] text-err">{error}</p>}
-      <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-600">
+      <p className="mt-3 font-mono text-[10px] leading-relaxed text-slate-400">
         The Boss listens and captures — it gives no advice. Once the brief is complete, the 🎼 Manager
         plans the board dynamically from the whole pool, a blocking QA gate checks every claim, and
         regulated content pauses for your review before the report publishes.

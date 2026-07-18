@@ -114,7 +114,7 @@ export function EnginePanel({ engine, onChange, status }: {
 
       {/* local/demo compute needs no cloud keys — hide the provider grid entirely */}
       {["local", "demo"].includes(engine.compute) && (
-        <p className="rounded-lg border border-line bg-panel-2 p-3 font-mono text-[10px] leading-relaxed text-slate-500">
+        <p className="rounded-lg border border-line bg-panel-2 p-3 font-mono text-[10px] leading-relaxed text-slate-400">
           {engine.compute === "local"
             ? "Local GPU mode: everything runs on your machine via Ollama — no API keys, nothing leaves your computer."
             : "Demo mode: deterministic cores only — zero keys, zero network calls to AI providers."}
@@ -125,9 +125,9 @@ export function EnginePanel({ engine, onChange, status }: {
       {!["local", "demo"].includes(engine.compute) && (
       <div>
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">providers · bring any key</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">providers · bring any key</span>
           {serverProviders.length > 0 && (
-            <span className="font-mono text-[10px] text-slate-600">
+            <span className="font-mono text-[10px] text-slate-400">
               server already has: {serverProviders.map((p) => `${p} ✓`).join(" · ")}
             </span>
           )}
@@ -145,9 +145,9 @@ export function EnginePanel({ engine, onChange, status }: {
                     : hasKey || onServer ? "border-ok/40 bg-ok/5" : "border-line bg-panel-2 hover:border-slate-500"}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold">{p.label.split(" — ")[0]}</span>
-                  {(hasKey || onServer) && <span className="font-mono text-[9px] text-ok">✓</span>}
+                  {(hasKey || onServer) && <span className="font-mono text-[10px] text-ok">✓</span>}
                 </div>
-                <div className="mt-0.5 truncate font-mono text-[9px] text-slate-600">
+                <div className="mt-0.5 truncate font-mono text-[10px] text-slate-400">
                   {hasKey ? `${nKeys} key${nKeys > 1 ? "s" : ""} · rotating` : onServer ? "server key" : p.models[0]}
                 </div>
               </button>
@@ -162,31 +162,31 @@ export function EnginePanel({ engine, onChange, status }: {
           return (
             <div className="mt-2 rounded-lg border border-cyan/30 bg-panel-2 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
                   {p.label} · up to 16 keys — load spreads across all of them (round-robin)
                 </span>
-                <span className={`font-mono text-[9px] ${filled >= 7 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-600"}`}>
+                <span className={`font-mono text-[10px] ${filled >= 7 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-400"}`}>
                   {filled}/16 keys{filled < 7 ? " · 7+ recommended for a full War Room + two deliberation rounds" : " ✓"}
                 </span>
               </div>
               <div className="space-y-1.5">
                 {slots.map((val, i) => (
                   <span key={i} className="relative flex items-center gap-1.5">
-                    <span className="w-4 shrink-0 text-center font-mono text-[10px] text-slate-600">{i + 1}</span>
+                    <span className="w-4 shrink-0 text-center font-mono text-[10px] text-slate-400">{i + 1}</span>
                     <input type={showKey[`${p.id}:${i}`] ? "text" : "password"}
                       value={val}
                       onChange={(e) => setKeyAt(p.id, i, e.target.value)}
                       placeholder={i === 0 ? "paste key (primary)" : `key ${i + 1} (rotation backup)`}
                       className="w-full rounded-md border border-line bg-ink/70 px-3 py-1.5 pr-9 text-sm outline-none focus:border-cyan/60" />
                     <button type="button" onClick={() => setShowKey((s) => ({ ...s, [`${p.id}:${i}`]: !s[`${p.id}:${i}`] }))}
-                      className="absolute right-2 text-slate-500 hover:text-slate-300">
+                      className="absolute right-2 text-slate-400 hover:text-slate-300">
                       {showKey[`${p.id}:${i}`] ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
                   </span>
                 ))}
               </div>
               <label className="mt-2 block">
-                <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <span className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-slate-400">
                   default model (type any id)
                 </span>
                 <input list={`models-${p.id}`}
@@ -200,14 +200,14 @@ export function EnginePanel({ engine, onChange, status }: {
                   }}
                   placeholder={p.models[0]}
                   className="w-full rounded-md border border-line bg-ink/70 px-3 py-2 text-sm outline-none focus:border-cyan/60" />
-                <p className="mt-1 font-mono text-[9px] text-slate-600">
+                <p className="mt-1 font-mono text-[10px] text-slate-400">
                   this exact model is used for every agent (with the fast sibling as a rate-limit fallback)
                 </p>
                 <datalist id={`models-${p.id}`}>
                   {p.models.map((m) => <option key={m} value={m} />)}
                 </datalist>
               </label>
-              <p className="mt-2 font-mono text-[9px] leading-relaxed text-slate-600">
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-slate-400">
                 Keys are sent per-run and never stored server-side. Add 5-7 free keys of the same provider
                 (e.g. several Groq/Gemini free keys) — the board round-robins across them so a full War Room
                 stays narrated instead of exhausting one key half-way.
@@ -222,19 +222,19 @@ export function EnginePanel({ engine, onChange, status }: {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border border-line bg-panel-2 p-3">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">temperature · creativity</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">temperature · creativity</span>
             <span className="rounded bg-brand/20 px-2 py-0.5 font-mono text-[10px] text-brand">{temp.toFixed(2)}</span>
           </div>
           <input type="range" min={0} max={1} step={0.05} value={temp}
             onChange={(e) => set("temperature", Number(e.target.value))}
             className="mt-2 w-full accent-[#6d64a3]" />
-          <div className="flex justify-between font-mono text-[9px] text-slate-600">
+          <div className="flex justify-between font-mono text-[10px] text-slate-400">
             <span>precise</span><span>creative</span>
           </div>
         </div>
         <div className="rounded-lg border border-line bg-panel-2 p-3">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">max tokens · per agent call</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">max tokens · per agent call</span>
             <span className="rounded bg-brand/20 px-2 py-0.5 font-mono text-[10px] text-brand">
               {engine.max_tokens_cap === 0 ? "auto" : engine.max_tokens_cap}
             </span>
@@ -242,7 +242,7 @@ export function EnginePanel({ engine, onChange, status }: {
           <input type="range" min={0} max={4096} step={128} value={engine.max_tokens_cap}
             onChange={(e) => set("max_tokens_cap", Number(e.target.value))}
             className="mt-2 w-full accent-[#6d64a3]" />
-          <div className="flex justify-between font-mono text-[9px] text-slate-600">
+          <div className="flex justify-between font-mono text-[10px] text-slate-400">
             <span>auto (recommended)</span><span>4096 cap</span>
           </div>
         </div>
@@ -251,11 +251,11 @@ export function EnginePanel({ engine, onChange, status }: {
       {/* one engine vs per-agent */}
       <div>
         <div className="mb-2 flex items-center gap-1">
-          <span className="mr-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">routing</span>
+          <span className="mr-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">routing</span>
           {(["single", "perAgent"] as const).map((m) => (
             <button key={m} onClick={() => setMode(m)}
               className={`rounded-full px-3 py-1 font-mono text-[10px] transition ${
-                mode === m ? "bg-brand/20 text-brand" : "text-slate-500 hover:text-slate-300"}`}>
+                mode === m ? "bg-brand/20 text-brand" : "text-slate-400 hover:text-slate-300"}`}>
               {m === "single" ? "one engine" : "per-agent"}
             </button>
           ))}
@@ -286,7 +286,7 @@ export function EnginePanel({ engine, onChange, status }: {
                 </div>
               );
             })}
-            <p className="px-2 pt-1 font-mono text-[9px] text-slate-600">
+            <p className="px-2 pt-1 font-mono text-[10px] text-slate-400">
               Weighing Engine takes no model — it is pure math, on purpose.
             </p>
           </div>

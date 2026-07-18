@@ -50,7 +50,7 @@ export function TradeDesk() {
 
         {/* position plan */}
         <div className="rounded-lg border border-line bg-panel-2 p-3">
-          <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-500">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">
             <ShieldAlert size={11} /> if you traded it (plan, not advice)
           </div>
           {risk ? (
@@ -59,11 +59,11 @@ export function TradeDesk() {
               <div>stop ≈ <span className="text-err">{String(risk.stop)}</span> (2×ATR)</div>
               <div>max loss ₹{Number(risk.max_loss ?? 0).toLocaleString()} = {String(risk.risk_pct)}% of capital</div>
             </div>
-          ) : <div className="mt-1 text-xs text-slate-500">risk manager did not run</div>}
+          ) : <div className="mt-1 text-xs text-slate-400">risk manager did not run</div>}
         </div>
 
         {/* honesty card */}
-        <div className="rounded-lg border border-line bg-panel-2 p-3 text-[10px] leading-relaxed text-slate-500">
+        <div className="rounded-lg border border-line bg-panel-2 p-3 text-[10px] leading-relaxed text-slate-400">
           <div className="mb-1 font-mono uppercase tracking-widest">the honest part</div>
           Backtests model no costs, slippage or taxes. A constructive setup is an edge, not a promise.
           EIP never executes and is not SEBI-registered advice — paper-trade first.
@@ -73,12 +73,12 @@ export function TradeDesk() {
       {/* backtest table — the signal's proof of work */}
       {tests.length > 0 && (
         <div className="mt-3 overflow-x-auto">
-          <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-500">
+          <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">
             <TestTubes size={11} /> proof of work — this symbol&apos;s own history (2y)
           </div>
           <table className="w-full min-w-[560px] font-mono text-[11px]">
             <thead>
-              <tr className="border-b border-line text-left text-slate-500">
+              <tr className="border-b border-line text-left text-slate-400">
                 <th className="py-1.5 pr-2 font-normal">strategy</th>
                 <th className="pr-2 font-normal">trades</th>
                 <th className="pr-2 font-normal">hit rate</th>
@@ -99,7 +99,7 @@ export function TradeDesk() {
                   </td>
                   <td className="pr-2">{t.buy_hold_return_pct >= 0 ? "+" : ""}{t.buy_hold_return_pct}%</td>
                   <td className="pr-2 text-err">{t.max_drawdown_pct}%</td>
-                  <td className={t.trades < 5 ? "text-warn" : "text-slate-500"}>{t.sample_note}</td>
+                  <td className={t.trades < 5 ? "text-warn" : "text-slate-400"}>{t.sample_note}</td>
                 </tr>
               ))}
             </tbody>

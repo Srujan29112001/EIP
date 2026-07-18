@@ -70,12 +70,12 @@ export function StudioClient() {
                 className={`rounded-lg px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition sm:px-4 ${
                   tab === t
                     ? "bg-panel-2 text-cyan shadow-[0_0_18px_-6px_rgba(34,211,238,0.55),inset_0_1px_0_rgba(255,255,255,0.06)]"
-                    : "text-slate-500 hover:-translate-y-px hover:text-slate-300"}`}>
+                    : "text-slate-400 hover:-translate-y-px hover:text-slate-300"}`}>
                 {t}
               </button>
             ))}
             <button onClick={() => { abortRef.current?.abort(); reset(); }}
-              className="ml-auto rounded-md px-3 py-1.5 font-mono text-xs text-slate-500 hover:text-err">
+              className="ml-auto rounded-md px-3 py-1.5 font-mono text-xs text-slate-400 hover:text-err">
               ✕ new run
             </button>
           </div>
@@ -118,7 +118,7 @@ function BackendBadge({ state }: { state: "checking" | "live" | "offline" }) {
     offline: ["bg-warn", "backend offline — start uvicorn :8000"],
   }[state];
   return (
-    <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 pt-4 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+    <div className="mx-auto flex max-w-7xl items-center gap-2 px-6 pt-4 font-mono text-[10px] uppercase tracking-wider text-slate-400">
       <span className={`h-1.5 w-1.5 rounded-full ${cfg[0]} ${state === "live" ? "pulse-ring" : ""}`}
         style={state === "live" ? ({ "--ring": "#34d399" } as React.CSSProperties) : undefined} /> {cfg[1]}
     </div>

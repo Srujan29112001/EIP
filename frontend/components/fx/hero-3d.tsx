@@ -140,7 +140,7 @@ export default function Hero3D() {
       // opaque ink-colored buffer: additive particles glow correctly (a transparent
       // buffer washes white — premultiplied-alpha can't represent additive color)
       gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-      onCreated={({ gl }) => gl.setClearColor("#04060f", 1)}
+      onCreated={({ gl }) => gl.setClearColor("#070b18", 1)}
       style={{ position: "absolute", inset: 0 }}
       aria-hidden
     >

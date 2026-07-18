@@ -35,12 +35,12 @@ export function OrchestraView() {
 
   return (
     <div className="space-y-3">
-      <div className="card-in rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel/85 p-4 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md">
+      <div className="card-in rounded-2xl border border-brand/40 bg-gradient-to-b from-brand/5 to-panel p-4 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-lg">🎼</span>
           <h3 className="font-display text-sm font-bold text-slate-100">The Orchestra — the Manager&apos;s score</h3>
           {taskGraph.regulated && (
-            <span className="rounded border border-err/40 bg-err/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-err">
+            <span className="rounded border border-err/40 bg-err/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-err">
               regulated · human review
             </span>
           )}
@@ -63,7 +63,7 @@ export function OrchestraView() {
             </span>
           )}
           {nLight > 0 && (
-            <span className="rounded border border-line px-1.5 py-0.5 text-slate-500">
+            <span className="rounded border border-line px-1.5 py-0.5 text-slate-400">
               {nLight} cast light
             </span>
           )}
@@ -83,27 +83,27 @@ export function OrchestraView() {
         </div>
         {(taskGraph.key_questions?.length ?? 0) > 0 && (
           <div className="mt-2 space-y-0.5">
-            <div className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+            <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
               the Manager&apos;s hand-off questions (the communication lines)
             </div>
             {taskGraph.key_questions!.slice(0, 7).map((k, i) => (
               <div key={i} className="text-[11px] leading-snug text-slate-400">
                 <span className="text-brand">{k.assign.replace(/_/g, " ")}</span>
-                <span className="text-slate-600"> ← </span>{k.q}
+                <span className="text-slate-400"> ← </span>{k.q}
               </div>
             ))}
           </div>
         )}
         {(taskGraph.benched?.length ?? 0) > 0 && (
           <details className="mt-2">
-            <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-wider text-slate-500">
+            <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-wider text-slate-400">
               benched by the Manager — {taskGraph.benched!.length} player(s) this brief doesn&apos;t need
             </summary>
             <div className="mt-1 space-y-0.5">
               {taskGraph.benched!.map((b) => (
-                <div key={b.id} className="text-[11px] leading-snug text-slate-500">
+                <div key={b.id} className="text-[11px] leading-snug text-slate-400">
                   <span className="text-slate-400">{b.id.replace(/_/g, " ")}</span>
-                  <span className="text-slate-600"> — {b.reason}</span>
+                  <span className="text-slate-400"> — {b.reason}</span>
                 </div>
               ))}
             </div>
@@ -118,7 +118,7 @@ export function OrchestraView() {
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-300">
               {mv.id} · {mv.name}
             </span>
-            <span className="font-mono text-[10px] text-slate-600">{mv.players.length} players</span>
+            <span className="font-mono text-[10px] text-slate-400">{mv.players.length} players</span>
           </div>
           <div className="grid gap-2 md:grid-cols-2">
             {mv.players.map((p) => (
@@ -154,21 +154,21 @@ function PlayerCard({ player, color, status, insts, isLead, depth }: {
         <span className="text-sm">{player.emoji}</span>
         <span className="truncate text-[13px] font-semibold text-slate-200">{player.name}</span>
         {isLead && (
-          <span className="shrink-0 rounded border border-brand/50 bg-brand/15 px-1 py-0.5 font-mono text-[8px] uppercase tracking-wider text-brand">
+          <span className="shrink-0 rounded border border-brand/50 bg-brand/15 px-1 py-0.5 font-mono text-[10px] uppercase tracking-wider text-brand">
             👑 lead
           </span>
         )}
         {depth === "deep" && !isLead && (
-          <span className="shrink-0 rounded border border-cyan/40 bg-cyan/10 px-1 py-0.5 font-mono text-[8px] uppercase tracking-wider text-cyan">
+          <span className="shrink-0 rounded border border-cyan/40 bg-cyan/10 px-1 py-0.5 font-mono text-[10px] uppercase tracking-wider text-cyan">
             deep
           </span>
         )}
         {depth === "light" && (
-          <span className="shrink-0 rounded border border-line px-1 py-0.5 font-mono text-[8px] uppercase tracking-wider text-slate-500">
+          <span className="shrink-0 rounded border border-line px-1 py-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">
             light
           </span>
         )}
-        <span className="ml-auto shrink-0 font-mono text-[9px] text-slate-500">
+        <span className="ml-auto shrink-0 font-mono text-[10px] text-slate-400">
           {played}/{player.instruments.length} ▸
         </span>
       </button>
@@ -180,9 +180,9 @@ function PlayerCard({ player, color, status, insts, isLead, depth }: {
           const amber = done && done.finding.startsWith("(no model");
           return (
             <span key={name} title={done?.finding || name}
-              className={`rounded px-1.5 py-0.5 font-mono text-[9px] transition ${
+              className={`rounded px-1.5 py-0.5 font-mono text-[10px] transition ${
                 lit ? "border text-slate-200" : amber ? "border border-warn/40 bg-warn/5 text-warn"
-                : "border border-line text-slate-600"}`}
+                : "border border-line text-slate-400"}`}
               style={lit ? { borderColor: color, color, background: `${color}14` } : undefined}>
               {name}
             </span>
@@ -196,7 +196,7 @@ function PlayerCard({ player, color, status, insts, isLead, depth }: {
             return (
               <div key={name} className="text-[11px] leading-snug">
                 <span className="font-mono text-[10px]" style={{ color }}>{name}</span>
-                <span className="text-slate-400"> — {f?.finding || <span className="text-slate-600">pending…</span>}</span>
+                <span className="text-slate-400"> — {f?.finding || <span className="text-slate-400">pending…</span>}</span>
               </div>
             );
           })}

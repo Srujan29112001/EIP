@@ -33,7 +33,7 @@ export function PipelineRail() {
         if (!agents.length) return null;
         return (
           <div key={layer} className="mb-4">
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">
               {layer} · {LAYER_LABELS[layer]}
             </div>
             <ul className="space-y-1">
@@ -44,10 +44,10 @@ export function PipelineRail() {
                     className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition ${
                       st === "active" ? "glow-active border-cyan/40 bg-panel-2" : "border-transparent"}`}>
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[st]}`} />
-                    <span className="truncate" style={{ color: st === "queued" ? "#64748b" : a.accent }}>
+                    <span className="truncate" style={{ color: st === "queued" ? "#94a3b8" : a.accent }}>
                       {a.name}
                     </span>
-                    <span className={`ml-auto font-mono text-[9px] ${st === "degraded" ? "text-warn" : "text-slate-600"}`}>
+                    <span className={`ml-auto font-mono text-[10px] ${st === "degraded" ? "text-warn" : "text-slate-400"}`}>
                       {st === "done" && (roundsDone[a.id] ?? 0) >= 2 ? (
                         <span title="round 1 + round 2 (deliberation) complete">
                           <span className="text-ok">✓</span><span className="text-[#fbbf24]">✓</span>

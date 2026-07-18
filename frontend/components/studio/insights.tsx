@@ -61,10 +61,10 @@ export function SmartInsights() {
                 <span className="truncate font-mono text-[10px] uppercase tracking-wider" style={{ color: a.accent }}>
                   {a.name}
                 </span>
-                <span className="rounded bg-panel-2 px-1 py-0.5 font-mono text-[8px] uppercase text-slate-600">{a.cluster}</span>
+                <span className="rounded bg-panel-2 px-1 py-0.5 font-mono text-[10px] uppercase text-slate-400">{a.cluster}</span>
                 {out.degraded ? (
                   <span title={String(out.degraded_reason ?? "no LLM reached this agent")}
-                    className="rounded-full border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[8px] text-warn">
+                    className="rounded-full border border-warn/40 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn">
                     reduced depth
                   </span>
                 ) : null}
@@ -82,11 +82,11 @@ export function SmartInsights() {
                   <span className="h-1 flex-1 overflow-hidden rounded bg-slate-800">
                     <span className="block h-full rounded" style={{ width: `${Math.round(conf * 100)}%`, background: a.accent }} />
                   </span>
-                  <span className="font-mono text-[9px] text-slate-500">{Math.round(conf * 100)}%</span>
+                  <span className="font-mono text-[10px] text-slate-400">{Math.round(conf * 100)}%</span>
                 </div>
               )}
               <button onClick={() => setOpen(isOpen ? null : a.id)}
-                className="mt-2 flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-slate-500 hover:text-cyan">
+                className="mt-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-slate-400 hover:text-cyan">
                 full analysis · chart · what-if <ChevronDown size={10} className={`transition ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && (
@@ -100,7 +100,7 @@ export function SmartInsights() {
                     <p className="text-[11px] leading-relaxed text-slate-400">{String(out.analysis)}</p>
                   ) : null}
                   {out.what_would_change ? (
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-[10px] text-slate-400">
                       <span className="font-mono uppercase tracking-wider text-cyan/70">flips my score: </span>
                       {String(out.what_would_change)}
                     </p>
@@ -108,7 +108,7 @@ export function SmartInsights() {
                   {Array.isArray(out.assumptions) && out.assumptions.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {out.assumptions.slice(0, 3).map((s, i) => (
-                        <span key={i} className="rounded border border-warn/25 bg-warn/5 px-1.5 py-0.5 font-mono text-[9px] text-warn/90">
+                        <span key={i} className="rounded border border-warn/25 bg-warn/5 px-1.5 py-0.5 font-mono text-[10px] text-warn/90">
                           assumes: {String(s).slice(0, 50)}
                         </span>
                       ))}

@@ -73,7 +73,7 @@ export function RunwaySim() {
         <div>
           <TimeSeries past={[{ x: 0, y: cap, label: "today" }]} future={future.slice(1)}
             color="#9ae64a" futureColor="#22d3ee" yLabel="cash ₹L" zeroLine markerX={cashOut} height={200} />
-          <p className="mt-1 font-mono text-[10px] text-slate-500">
+          <p className="mt-1 font-mono text-[10px] text-slate-400">
             {cashOut ? `cash-out at month ${cashOut}` : "solvent through month 30"} ·
             runway {runway.toFixed(1)} mo · deterministic core re-run, directional only
           </p>
@@ -96,7 +96,7 @@ export function RunwaySim() {
             </div>
           </div>
           <button onClick={() => { setCapital(null); setBurn(null); setRevM(0); setRevGrow(15); }}
-            className="font-mono text-[10px] text-slate-500 hover:text-cyan">↺ reset to analysed values</button>
+            className="font-mono text-[10px] text-slate-400 hover:text-cyan">↺ reset to analysed values</button>
         </div>
       </div>
     </section>
@@ -146,11 +146,11 @@ export function MarketSim() {
         {pulses.map((p, i) => (
           <button key={i} onClick={() => setSel(i)}
             className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] transition ${
-              i === sel ? "border-cyan/60 bg-cyan/10 text-cyan" : "border-line text-slate-500 hover:text-slate-300"}`}>
+              i === sel ? "border-cyan/60 bg-cyan/10 text-cyan" : "border-line text-slate-400 hover:text-slate-300"}`}>
             {p.label}
           </button>
         ))}
-        <span className="ml-auto font-mono text-[10px] text-slate-600">source: Yahoo Finance · projection: yours</span>
+        <span className="ml-auto font-mono text-[10px] text-slate-400">source: Yahoo Finance · projection: yours</span>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
         <TimeSeries past={past} future={future} cone={{ points: cone }} height={210} yLabel="price" />
@@ -159,12 +159,12 @@ export function MarketSim() {
             onChange={setDrift} fmt={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}%/yr`} />
           <SimSlider label="Volatility regime" value={volX} min={0.5} max={2.5} step={0.1}
             onChange={setVolX} fmt={(v) => `${v.toFixed(1)}×`} />
-          <p className="rounded-lg bg-panel-2 p-2.5 text-[10px] leading-relaxed text-slate-500">
+          <p className="rounded-lg bg-panel-2 p-2.5 text-[10px] leading-relaxed text-slate-400">
             The cone is a probability band, never a prediction (Constitution #6): wider volatility or
             longer horizon = wider cone. History is real data; the future is your assumption made visible.
           </p>
           <button onClick={() => { setDrift(null); setVolX(1); }}
-            className="font-mono text-[10px] text-slate-500 hover:text-cyan">↺ reset assumptions</button>
+            className="font-mono text-[10px] text-slate-400 hover:text-cyan">↺ reset assumptions</button>
         </div>
       </div>
     </section>
@@ -199,16 +199,16 @@ export function ScoreSim() {
           ))}
         </div>
         <div className="flex flex-col justify-center rounded-lg border border-line bg-panel-2 p-4 text-center">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-slate-500">simulated verdict</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-slate-400">simulated verdict</div>
           <div className="font-display text-4xl font-bold text-slate-100">
-            {overall.toFixed(1)}<span className="text-lg text-slate-500">/10</span>
+            {overall.toFixed(1)}<span className="text-lg text-slate-400">/10</span>
           </div>
           <div className={`font-mono text-xs ${delta > 0.05 ? "text-ok" : delta < -0.05 ? "text-err" : "text-slate-400"}`}>
             {delta >= 0 ? "▲ +" : "▼ "}{delta.toFixed(1)} vs the board · {band}
           </div>
           <button onClick={() => setOverrides({})}
-            className="mt-3 font-mono text-[10px] text-slate-500 hover:text-cyan">↺ back to the board&apos;s numbers</button>
-          <p className="mt-2 text-[10px] leading-relaxed text-slate-600">
+            className="mt-3 font-mono text-[10px] text-slate-400 hover:text-cyan">↺ back to the board&apos;s numbers</button>
+          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
             This shows which dimension your verdict is most sensitive to — it does not re-run the agents.
           </p>
         </div>

@@ -72,7 +72,7 @@ export function Radar({ dims }: { dims: Record<string, number> }) {
       <div className="min-h-[2.4rem]">
         {focus ? (
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
-            <span className="uppercase tracking-wider text-slate-500">{focus} scored by:</span>
+            <span className="uppercase tracking-wider text-slate-400">{focus} scored by:</span>
             {focusSources.length ? focusSources.map((id) => {
               const a = agentById(id);
               const out = outputs[id];
@@ -82,10 +82,10 @@ export function Radar({ dims }: { dims: Record<string, number> }) {
                   {a.name}{typeof out?.score === "number" ? ` ${out.score}` : ""}
                 </span>
               );
-            }) : <span className="text-slate-600">computed deterministically</span>}
+            }) : <span className="text-slate-400">computed deterministically</span>}
           </div>
         ) : (
-          <p className="font-mono text-[10px] text-slate-600">hover an axis → who scored it</p>
+          <p className="font-mono text-[10px] text-slate-400">hover an axis → who scored it</p>
         )}
       </div>
     </div>

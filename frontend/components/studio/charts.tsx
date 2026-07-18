@@ -164,7 +164,7 @@ export function SimSlider({ label, value, min, max, step, onChange, fmt }: {
 }) {
   return (
     <label className="block">
-      <span className="flex justify-between font-mono text-[10px] uppercase tracking-wider text-slate-500">
+      <span className="flex justify-between font-mono text-[10px] uppercase tracking-wider text-slate-400">
         {label} <span className="text-cyan">{fmt ? fmt(value) : value}</span>
       </span>
       <input type="range" min={min} max={max} step={step} value={value}

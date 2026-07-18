@@ -35,7 +35,7 @@ export function Disagreements() {
           </div>
         ))}
       </div>
-      <p className="mt-2 font-mono text-[10px] text-slate-600">
+      <p className="mt-2 font-mono text-[10px] text-slate-400">
         Disagreement is data — it is factored into the weighted score, not hidden.
       </p>
     </section>

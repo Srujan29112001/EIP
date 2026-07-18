@@ -33,7 +33,7 @@ export function ChartCard({ spec }: { spec: ChartSpec }) {
       <div className="mb-1 flex items-center gap-2">
         <span className="h-1.5 w-1.5 rounded-full" style={{ background: a.accent }} />
         <h4 className="text-sm font-semibold text-slate-200">{spec.title}</h4>
-        <span className="ml-auto font-mono text-[9px] uppercase tracking-wider text-slate-600">{a.name}</span>
+        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-slate-400">{a.name}</span>
       </div>
       <p className="mb-2 text-xs leading-relaxed text-slate-400">{spec.insight}</p>
       <ChartBody spec={spec} mult={mult} />
@@ -65,7 +65,7 @@ function ChartBody({ spec, mult }: { spec: ChartSpec; mult: number }) {
     case "radial": return <Radial d={d} />;
     case "pyramid": case "funnel": return <Pyramid d={d} funnel={spec.type === "funnel"} />;
     case "histogram": return <Histogram d={d} mult={mult} />;
-    default: return <pre className="font-mono text-[10px] text-slate-500">{JSON.stringify(d).slice(0, 200)}</pre>;
+    default: return <pre className="font-mono text-[10px] text-slate-400">{JSON.stringify(d).slice(0, 200)}</pre>;
   }
 }
 
@@ -272,7 +272,7 @@ function Heatmap({ d }: { d: { rows: { label: string; value: number; group: stri
             <span className="h-5 rounded-sm transition-all hover:scale-x-105"
               style={{ width: `${18 + heat * 82}%`, background: `color-mix(in srgb, ${ERR} ${Math.round(heat * 100)}%, ${WARN}33)` }} />
             <span className="min-w-0 flex-1 truncate text-[11px] text-slate-400">{r.label}</span>
-            <span className="font-mono text-[9px] text-slate-600">{agentById(r.group).name}</span>
+            <span className="font-mono text-[10px] text-slate-400">{agentById(r.group).name}</span>
           </div>
         );
       })}

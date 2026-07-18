@@ -47,22 +47,22 @@ export function AgentAccordion() {
                       <span className="block h-full rounded"
                         style={{ width: `${Math.round(conf * 100)}%`, background: a.accent }} />
                     </span>
-                    <span className="font-mono text-[9px] text-slate-500">{Math.round(conf * 100)}%</span>
+                    <span className="font-mono text-[10px] text-slate-400">{Math.round(conf * 100)}%</span>
                   </span>
                 )}
-                <ChevronDown size={13} className={`shrink-0 text-slate-600 transition ${isOpen ? "rotate-180" : ""}`} />
+                <ChevronDown size={13} className={`shrink-0 text-slate-400 transition ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && (
                 <div className="border-t border-line p-3 text-xs leading-relaxed text-slate-300">
                   {typeof out.score === "number" && (
-                    <div className="mb-1 font-mono text-[10px] text-slate-500">
+                    <div className="mb-1 font-mono text-[10px] text-slate-400">
                       score {out.score}/10{out.route ? ` · via ${out.route}` : ""}
                     </div>
                   )}
                   {out.analysis && <p>{out.analysis}</p>}
                   {Array.isArray(out.assumptions) && out.assumptions.length > 0 && (
                     <div className="mt-2">
-                      <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">assumptions</div>
+                      <div className="font-mono text-[10px] uppercase tracking-wider text-slate-400">assumptions</div>
                       <ul className="mt-1 list-inside list-disc text-slate-400">
                         {out.assumptions.map((x, i) => <li key={i}>{x}</li>)}
                       </ul>

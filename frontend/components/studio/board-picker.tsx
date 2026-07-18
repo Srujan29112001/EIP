@@ -187,11 +187,11 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
 
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+      <div className="mb-2 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">
         <span>{onCount}/{roster.length} convened{briefedCount ? ` · ${briefedCount} briefed` : ""}</span>
-        <span className="text-slate-600">click a node → its capability card, brief box & bench/convene</span>
+        <span className="text-slate-400">click a node → its capability card, brief box & bench/convene</span>
         {enabled.length > 0 && (
-          <button onClick={() => onChange([])} className="ml-auto text-slate-500 hover:text-cyan">↺ everyone back on</button>
+          <button onClick={() => onChange([])} className="ml-auto text-slate-400 hover:text-cyan">↺ everyone back on</button>
         )}
       </div>
 
@@ -285,59 +285,59 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
             <span className="text-sm normal-case font-sans font-semibold tracking-normal" style={{ color: briefAgent.accent }}>
               {briefAgent.name}
             </span>
-            <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[8px] text-slate-500">{briefAgent.layer} · {briefAgent.cluster}</span>
+            <span className="rounded bg-panel-2 px-1.5 py-0.5 text-[10px] text-slate-400">{briefAgent.layer} · {briefAgent.cluster}</span>
             {locked ? (
-              <span className="rounded border border-line px-2 py-0.5 text-[9px] text-slate-500">core · always runs</span>
+              <span className="rounded border border-line px-2 py-0.5 text-[10px] text-slate-400">core · always runs</span>
             ) : (
               <button onClick={() => toggle(briefAgent.id)}
-                className={`rounded border px-2 py-0.5 text-[9px] transition ${
+                className={`rounded border px-2 py-0.5 text-[10px] transition ${
                   on ? "border-err/50 text-err hover:bg-err/10" : "border-ok/50 text-ok hover:bg-ok/10"}`}>
                 {on ? "bench this agent" : "convene this agent"}
               </button>
             )}
-            <button onClick={() => setBriefFor(null)} className="ml-auto text-slate-500 hover:text-white">✕</button>
+            <button onClick={() => setBriefFor(null)} className="ml-auto text-slate-400 hover:text-white">✕</button>
           </div>
 
           <div className="mb-2 grid gap-2 text-[11px] leading-relaxed md:grid-cols-3">
             <div>
-              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">what it does</div>
+              <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">what it does</div>
               <p className="text-slate-300">{briefAgent.blurb}.</p>
               {io && (
                 <div className="mt-1 space-y-0.5 font-mono text-[10px]">
-                  <div className="text-slate-500">⇥ in: <span className="text-slate-400">{io.in}</span></div>
-                  <div className="text-slate-500">⇤ out: <span className="text-slate-400">{io.out}</span></div>
+                  <div className="text-slate-400">⇥ in: <span className="text-slate-400">{io.in}</span></div>
+                  <div className="text-slate-400">⇤ out: <span className="text-slate-400">{io.out}</span></div>
                 </div>
               )}
             </div>
             <div>
-              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">talks to</div>
+              <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">talks to</div>
               <ul className="space-y-0.5 text-slate-400">
                 {caps.talks_to.slice(0, 4).map((t, i) => <li key={i}>↔ {t}</li>)}
               </ul>
             </div>
             <div>
-              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">sub-agents</div>
+              <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">sub-agents</div>
               {caps.subagents.length ? (
                 <ul className="space-y-0.5 text-slate-400">
                   {caps.subagents.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
-              ) : <p className="text-slate-600">works solo on the shared board</p>}
+              ) : <p className="text-slate-400">works solo on the shared board</p>}
             </div>
           </div>
 
           {/* tools & data access — the additive tech layer for this specialist */}
           <div className="mb-2">
-            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-slate-500">tools & data access</div>
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-slate-400">tools & data access</div>
             <div className="flex flex-wrap gap-1">
               {caps.tools.map((t, i) => (
-                <span key={i} className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[9px] text-slate-300">
+                <span key={i} className="rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
                   {t}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="mb-1 font-mono text-[9px] uppercase tracking-widest" style={{ color: briefAgent.accent }}>
+          <div className="mb-1 font-mono text-[10px] uppercase tracking-widest" style={{ color: briefAgent.accent }}>
             brief it directly — it reads this verbatim before analysing
           </div>
           <textarea

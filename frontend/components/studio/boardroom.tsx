@@ -43,7 +43,7 @@ export function Boardroom() {
 
   if (board.length === 0) {
     return (
-      <div className="glass card-in flex items-center gap-3 rounded-2xl p-5 text-xs text-slate-500">
+      <div className="glass card-in flex items-center gap-3 rounded-2xl p-5 text-xs text-slate-400">
         <span className="typing-dots"><span /><span /><span /></span>
         Claims, conflicts and bias flags appear here as agents talk to each other.
       </div>
@@ -76,10 +76,10 @@ export function Boardroom() {
           <span className="ml-auto flex gap-1">
             {(["all", "claim", "conflict", "debate", "bias"] as const).map((fk) => (
               <button key={fk} onClick={() => setFilter(fk)}
-                className={`rounded-lg px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider transition ${
+                className={`rounded-lg px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider transition ${
                   filter === fk
                     ? "bg-panel-2 text-cyan shadow-[0_0_14px_-5px_rgba(34,211,238,0.6)]"
-                    : "text-slate-500 hover:text-slate-300"}`}>
+                    : "text-slate-400 hover:text-slate-200"}`}>
                 {fk}{counts[fk] ? ` ${counts[fk]}` : ""}
               </button>
             ))}
@@ -142,14 +142,14 @@ export function Boardroom() {
           }
           return (
             <div key={i}
-              className="card-in scan-on-hover relative rounded-2xl border border-line bg-panel/80 p-3.5 text-xs backdrop-blur-sm transition hover:-translate-y-0.5"
-              style={{ borderLeftColor: a.accent, borderLeftWidth: 3, animationDelay: `${Math.min(i % 8, 6) * 45}ms` }}>
+              className="card-in glass relative rounded-2xl p-3.5 text-xs transition hover:-translate-y-0.5"
+              style={{ borderLeftColor: a.accent, borderLeftWidth: 3 }}>
               <div className="mb-1 flex items-center justify-between">
                 <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: a.accent }}>
                   {a.icon} {a.name}
                 </span>
                 {typeof b.confidence === "number" && (
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] text-slate-500">
+                  <span className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
                     <span className="inline-block h-1 w-10 overflow-hidden rounded-full bg-slate-800">
                       <span className="block h-full rounded-full"
                         style={{ width: `${Math.round(b.confidence * 100)}%`, background: a.accent }} />
@@ -166,7 +166,7 @@ export function Boardroom() {
                 </a>
               )}
               {!b.source?.url && b.kind === "claim" && (
-                <span className="mt-1.5 inline-block rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[9px] text-warn">
+                <span className="mt-1.5 inline-block rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-warn">
                   agent claim — not externally sourced
                 </span>
               )}

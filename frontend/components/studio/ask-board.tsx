@@ -54,7 +54,7 @@ export function AskBoard() {
         <div className="mb-2 flex flex-wrap gap-1.5">
           {SUGGESTIONS.map((s) => (
             <button key={s} onClick={() => send(s)}
-              className="rounded-full border border-line px-2.5 py-1 font-mono text-[10px] text-slate-500 transition hover:border-cyan/50 hover:text-cyan">
+              className="rounded-full border border-line px-2.5 py-1 font-mono text-[10px] text-slate-400 transition hover:border-cyan/50 hover:text-cyan">
               {s}
             </button>
           ))}
@@ -67,13 +67,13 @@ export function AskBoard() {
             <div key={i} className={`rounded-lg p-2.5 text-xs leading-relaxed ${
               m.role === "you" ? "ml-8 border border-brand/30 bg-brand/10 text-slate-200"
                 : "mr-8 border border-line bg-panel-2 text-slate-300"}`}>
-              <div className="mb-0.5 font-mono text-[9px] uppercase tracking-wider text-slate-500">
+              <div className="mb-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">
                 {m.role === "you" ? "you" : `the board${m.route && m.route !== "none" ? ` · via ${m.route}` : ""}`}
               </div>
               <p className="whitespace-pre-wrap">{m.text}</p>
             </div>
           ))}
-          {busy && <div className="mr-8 rounded-lg border border-line bg-panel-2 p-2.5 font-mono text-xs text-slate-500">the board is deliberating<span className="cursor-blink">…</span></div>}
+          {busy && <div className="mr-8 rounded-lg border border-line bg-panel-2 p-2.5 font-mono text-xs text-slate-400">the board is deliberating<span className="cursor-blink">…</span></div>}
           <div ref={endRef} />
         </div>
       )}
@@ -84,11 +84,11 @@ export function AskBoard() {
           placeholder='e.g. "Why did the fact checker flag the market claim?"'
           className="flex-1 rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-cyan/60" />
         <button onClick={() => send(q)} disabled={busy || q.trim().length < 3}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-brand to-cyan px-4 py-2 font-display text-xs font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40">
+          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-brand to-cyan px-4 py-2 font-display text-xs font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-70 disabled:saturate-[0.6]">
           Ask <CornerDownLeft size={12} />
         </button>
       </div>
-      <p className="mt-2 font-mono text-[9px] text-slate-600">
+      <p className="mt-2 font-mono text-[10px] text-slate-400">
         Answers cite the agents and evidence of this run — questions beyond the record get an honest &quot;not in the record&quot;.
       </p>
     </section>

@@ -103,8 +103,8 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
     : f.situation.trim().length >= 20;
 
   return (
-    <div className="grid-bg mx-auto max-w-3xl px-6 py-10">
-      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-cyan">
+    <div className="mx-auto max-w-3xl px-6 py-10">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.35em] text-cyan">
         <ScrambleText text="MISSION CONTROL" />
       </p>
       <h1 className="mt-2 font-hero text-4xl font-bold md:text-5xl">
@@ -197,7 +197,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 onChange={(e) => set("existing_position", Number(e.target.value))} className={selectCls} />
             </Field>
           </div>
-          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
+          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-400">
             EIP analyses setups and teaches — it never tells you to buy or sell, never predicts prices,
             never executes. Not SEBI-registered advice. Decisions and outcomes are yours.
           </p>
@@ -259,7 +259,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 onChange={(e) => set("monthly_sip", Number(e.target.value))} className={selectCls} />
             </Field>
           </div>
-          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-500">
+          <p className="mt-3 rounded-lg bg-panel-2 p-2.5 font-mono text-[10px] leading-relaxed text-slate-400">
             The wealth board teaches money math — it never recommends specific securities and is not
             SEBI-registered advice. Numbers stay on your machine unless you choose a cloud engine.
           </p>
@@ -357,7 +357,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         {/* ground it — document intelligence (PDF/TXT/MD/CSV; scans/OCR later) */}
         <div className="mt-4 rounded-lg border border-dashed border-line bg-panel-2 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
               ground it (optional) · pitch deck / P&L / contract
             </span>
             <label className="cursor-pointer rounded-md border border-line px-2.5 py-1 font-mono text-[10px] text-slate-300 transition hover:border-cyan/60 hover:text-cyan">
@@ -373,7 +373,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 <span key={i} className="inline-flex items-center gap-1.5 rounded border border-cyan/30 bg-cyan/5 px-2 py-0.5 font-mono text-[10px] text-cyan">
                   📄 {d.name} · {(d.text.length / 1000).toFixed(1)}k chars
                   <button onClick={() => set("documents", f.documents.filter((_, x) => x !== i))}
-                    className="text-slate-500 hover:text-err">✕</button>
+                    className="text-slate-400 hover:text-err">✕</button>
                 </span>
               ))}
             </div>
@@ -428,7 +428,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
         {engine && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
             <span className={`rounded border px-1.5 py-0.5 ${
-              engine.local ? "border-ok/40 bg-ok/10 text-ok" : "border-line text-slate-600"}`}>
+              engine.local ? "border-ok/40 bg-ok/10 text-ok" : "border-line text-slate-400"}`}>
               local gpu ({engine.local_model}) {engine.local ? "✓" : "not detected"}
             </span>
           </div>
@@ -437,7 +437,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
       </section>
 
       {/* run bar */}
-      <div className="glass sticky bottom-4 mt-6 flex items-center justify-between rounded-2xl p-4 shadow-[0_-8px_40px_-20px_rgba(6,182,212,0.25),0_18px_44px_-22px_rgba(0,0,0,0.7)]">
+      <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-3 rounded-2xl border border-slate-400/30 bg-panel-2 p-4 shadow-[0_18px_44px_-18px_rgba(0,0,0,0.9)]">
         <span className="font-mono text-[11px] text-muted">
           {!ready
             ? trader ? "enter a symbol to begin"
@@ -456,7 +456,7 @@ export function IntakeWizard({ onRun, engine }: { onRun: (f: IntakeForm) => void
                 trader ? ` · ${f.symbol}` : ""}`}
         </span>
         <button disabled={!ready} onClick={() => onRun(f)}
-          className={`btn-glow rounded-xl bg-gradient-to-r px-6 py-2.5 font-hero text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-40 ${
+          className={`btn-glow rounded-xl bg-gradient-to-r px-6 py-2.5 font-display text-sm font-bold text-ink transition enabled:hover:brightness-110 disabled:opacity-70 disabled:saturate-[0.6] ${
             intelligent ? "from-brand to-l5" : "from-brand to-cyan"}`}>
           {intelligent ? "🎩 Run the Advisory Engine" : "⚡ Convene the Board"}
         </button>

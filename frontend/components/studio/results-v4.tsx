@@ -37,11 +37,10 @@ export function KpiTiles() {
   return (
     <section className="grid grid-cols-3 gap-2 md:grid-cols-6">
       {tiles.map((t, i) => (
-        <div key={t.label} className="panel-hover card-in scan-on-hover rounded-2xl border border-line bg-panel p-3 text-center"
-          style={{ animationDelay: `${i * 70}ms` }}>
-          <div className={`font-hero text-2xl font-bold ${t.cls}`}>{t.value}</div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-slate-500">{t.label}</div>
-          {t.sub && <div className="mt-0.5 font-mono text-[9px] text-slate-600">{t.sub}</div>}
+        <div key={t.label} className="panel-hover card-in glass rounded-2xl p-3 text-center">
+          <div className={`font-display text-2xl font-bold ${t.cls}`}>{t.value}</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-slate-400">{t.label}</div>
+          {t.sub && <div className="mt-0.5 font-mono text-[10px] text-slate-400">{t.sub}</div>}
         </div>
       ))}
     </section>
@@ -75,11 +74,11 @@ export function KeyFindings() {
       </h3>
       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((c, i) => (
-          <div key={i} className="panel-hover card-in rounded-2xl border border-line bg-panel p-3"
+          <div key={i} className="panel-hover card-in glass rounded-2xl p-3"
             style={{ borderLeftColor: c.color, borderLeftWidth: 3 }}>
-            <div className="font-mono text-[9px] uppercase tracking-widest" style={{ color: c.color }}>{c.label}</div>
+            <div className="font-mono text-[10px] uppercase tracking-widest" style={{ color: c.color }}>{c.label}</div>
             <div className="mt-0.5 text-sm font-semibold text-slate-200">{c.value}</div>
-            {c.sub && <div className="mt-0.5 text-[11px] text-slate-500">{c.sub}</div>}
+            {c.sub && <div className="mt-0.5 text-[11px] text-slate-400">{c.sub}</div>}
           </div>
         ))}
       </div>
@@ -111,7 +110,7 @@ export function InsightBullets() {
             <div key={i} className="flex items-start gap-2 rounded-lg bg-panel-2 px-2.5 py-1.5 text-xs leading-relaxed">
               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: a.accent }} />
               <span className="text-slate-300">{x.text}
-                <span className="ml-1.5 font-mono text-[9px] text-slate-600">— {a.name}</span>
+                <span className="ml-1.5 font-mono text-[10px] text-slate-400">— {a.name}</span>
               </span>
             </div>
           );
@@ -137,7 +136,7 @@ export function AgentTable() {
       <div className="scroll-thin max-h-96 overflow-auto">
         <table className="w-full min-w-[640px] font-mono text-[11px]">
           <thead className="sticky top-0 bg-panel">
-            <tr className="border-b border-line text-left text-slate-500">
+            <tr className="border-b border-line text-left text-slate-400">
               <th className="py-1.5 pr-2 font-normal">specialist</th>
               <th className="pr-2 font-normal">cluster</th>
               <th className="cursor-pointer pr-2 font-normal hover:text-cyan" onClick={() => setSortBy("score")}>
@@ -157,7 +156,7 @@ export function AgentTable() {
                     <span className="mr-1">{a.icon}</span>
                     <span style={{ color: a.accent }}>{a.name}</span>
                   </td>
-                  <td className="pr-2 text-slate-600">{a.cluster}</td>
+                  <td className="pr-2 text-slate-400">{a.cluster}</td>
                   <td className={`pr-2 font-bold ${scoreCls(s)}`}>{s}</td>
                   <td className="pr-2 text-slate-400">
                     {typeof o.confidence === "number" ? `${Math.round(o.confidence * 100)}%` : "—"}
@@ -198,7 +197,7 @@ export function DomainScreens() {
         {clusters.map((c) => (
           <div key={c.cluster}>
             <div className="flex justify-between font-mono text-[10px]">
-              <span className="uppercase tracking-wider text-slate-400">{c.cluster} <span className="text-slate-600">· {c.n} agents</span></span>
+              <span className="uppercase tracking-wider text-slate-400">{c.cluster} <span className="text-slate-400">· {c.n} agents</span></span>
               <span className={scoreCls(c.avg)}>{c.avg.toFixed(1)}/10</span>
             </div>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-800">
@@ -234,12 +233,12 @@ export function DegradedNotice() {
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {degraded.map((a) => (
-          <span key={a.id} className="inline-flex items-center gap-1 rounded border border-warn/30 bg-warn/10 px-1.5 py-0.5 font-mono text-[9px] text-warn">
+          <span key={a.id} className="inline-flex items-center gap-1 rounded border border-warn/30 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn">
             <span>{a.icon}</span> {a.name}
           </span>
         ))}
       </div>
-      <p className="mt-2 font-mono text-[9px] text-slate-500">
+      <p className="mt-2 font-mono text-[10px] text-slate-400">
         Fix: add more API keys in the engine step (up to 16 per provider — they rotate automatically), or re-run at a lighter depth.
       </p>
     </section>
@@ -261,7 +260,7 @@ export function QualityBanner() {
       style={{ borderColor: `${grade[1]}55`, background: `${grade[1]}0d` }}>
       <GaugeIcon size={15} style={{ color: grade[1] }} />
       <span className="text-sm font-semibold" style={{ color: grade[1] }}>{grade[0]}</span>
-      <span className="font-mono text-[10px] text-slate-500">
+      <span className="font-mono text-[10px] text-slate-400">
         {sourcedPct}% of claims live-sourced · {llmRuns} AI-narrated specialists · dissent preserved, never averaged away
       </span>
     </div>

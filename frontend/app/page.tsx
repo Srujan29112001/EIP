@@ -60,11 +60,11 @@ export default function Landing() {
           </span>
           <span className="flex items-center gap-1.5">
             <Link href="/graph"
-              className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-500 transition hover:text-cyan">
+              className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-400 transition hover:text-cyan">
               Graph
             </Link>
             <Link href="/history"
-              className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-500 transition hover:text-cyan">
+              className="rounded-lg px-3 py-2 font-mono text-xs uppercase tracking-wider text-slate-400 transition hover:text-cyan">
               History
             </Link>
             <Link href="/studio"
@@ -78,7 +78,7 @@ export default function Landing() {
       {/* ── THE OBSERVATORY — full-viewport 3D hero ── */}
       <header className="relative flex min-h-[92vh] flex-col items-center justify-center px-6 text-center">
         <Hero3D />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,transparent_30%,#04060f_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,transparent_30%,#070b18_100%)]" />
 
         <div className="relative z-10">
           <p className="rise-in mb-5 font-mono text-[11px] uppercase tracking-[0.4em] text-cyan">
@@ -103,7 +103,7 @@ export default function Landing() {
               🎩 Talk to the Boss
             </Link>
           </div>
-          <p className="rise-in-3 mt-4 font-mono text-[10px] tracking-wide text-slate-600">
+          <p className="rise-in-3 mt-4 font-mono text-[10px] tracking-wide text-slate-400">
             zero API keys needed · runs on your own GPU · founder / trader / wealth / intelligent
           </p>
 
@@ -119,14 +119,14 @@ export default function Landing() {
                 <div className="font-hero text-3xl font-bold text-slate-100">
                   <CountUp to={s.to} suffix={s.suffix} />
                 </div>
-                <div className="mt-1 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{s.label}</div>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-400">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
 
         <ChevronDown size={20}
-          className="absolute bottom-6 z-10 animate-bounce text-slate-600" aria-hidden />
+          className="absolute bottom-6 z-10 animate-bounce text-slate-400" aria-hidden />
       </header>
 
       {/* ── FOUR WAYS IN ── */}
@@ -147,7 +147,7 @@ export default function Landing() {
                     {m.icon}
                   </div>
                   <h3 className="mt-4 font-hero text-xl font-bold" style={{ color: m.accent }}>{m.name}</h3>
-                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-500">{m.tag}</p>
+                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">{m.tag}</p>
                   <ul className="mt-4 space-y-2">
                     {m.lines.map((l) => (
                       <li key={l} className="flex items-start gap-2 text-[13px] leading-snug text-slate-400">
@@ -195,7 +195,7 @@ export default function Landing() {
 
           <Reveal dir="right">
             <div className="g-border g-border-slow rounded-3xl p-7">
-              <p className="mb-5 text-center font-mono text-[9px] uppercase tracking-[0.3em] text-slate-500">
+              <p className="mb-5 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-slate-400">
                 one decision · six movements · live
               </p>
               <div className="space-y-2.5">
@@ -206,7 +206,7 @@ export default function Landing() {
                         style={{ background: l.color, ["--ring" as string]: l.color, animationDelay: `${i * 0.28}s` }} />
                       <span className="font-mono text-[10px] uppercase tracking-wider" style={{ color: l.color }}>{l.id}</span>
                       <span className="text-sm font-semibold text-slate-200">{l.label}</span>
-                      <span className="ml-auto font-mono text-[9px] text-slate-600">
+                      <span className="ml-auto font-mono text-[10px] text-slate-400">
                         {l.id === "R2" ? "all-to-all re-read" :
                           `${AGENTS.filter((a) => a.layer === (l.id as string)).length || "—"} agents`}
                       </span>
@@ -243,7 +243,7 @@ export default function Landing() {
                     <div key={n} className={`float-y rounded-xl border border-line bg-panel-2/70 p-2.5 text-center`}
                       style={{ animationDelay: `${i * 0.5}s` }}>
                       <div className="text-lg">{e}</div>
-                      <div className="font-mono text-[8px] uppercase tracking-wider" style={{ color: c as string }}>{n}</div>
+                      <div className="font-mono text-[10px] uppercase tracking-wider" style={{ color: c as string }}>{n}</div>
                       <div className="mt-1.5 flex justify-center gap-1">
                         {[0, 1, 2, 3, 4].map((d) => (
                           <span key={d} className="h-1 w-1 rounded-full"
@@ -253,7 +253,7 @@ export default function Landing() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.25em] text-slate-600">
+                <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.25em] text-slate-400">
                   62 players · 310 junior instruments · one score
                 </p>
               </div>
@@ -296,7 +296,7 @@ export default function Landing() {
               <span key={`${a.id}-${i}`}
                 className="flex shrink-0 items-center gap-2 rounded-full border border-line bg-panel/80 px-4 py-2 text-xs text-slate-400">
                 <span className="text-sm">{a.icon}</span> {a.name}
-                <span className="font-mono text-[8px] uppercase" style={{ color: a.accent }}>{a.layer}</span>
+                <span className="font-mono text-[10px] uppercase" style={{ color: a.accent }}>{a.layer}</span>
               </span>
             ))}
           </div>
@@ -325,7 +325,7 @@ export default function Landing() {
               <div key={l} className={`glass rounded-2xl px-5 py-3 text-center transition hover:-translate-y-0.5 d-${i + 1}`}>
                 <div className="font-mono text-[10px] text-cyan">{l}</div>
                 <div className="text-xs text-slate-300">{LAYER_LABELS[l]}</div>
-                <div className="font-mono text-[9px] text-slate-600">
+                <div className="font-mono text-[10px] text-slate-400">
                   {AGENTS.filter((a) => a.layer === l).length} live
                 </div>
               </div>
@@ -353,7 +353,7 @@ export default function Landing() {
         </Reveal>
       </section>
 
-      <footer className="border-t border-line py-8 text-center font-mono text-[10px] text-slate-600">
+      <footer className="border-t border-line py-8 text-center font-mono text-[10px] text-slate-400">
         EIP provides analytics and education, not investment advice. It is not SEBI-registered.
       </footer>
     </div>

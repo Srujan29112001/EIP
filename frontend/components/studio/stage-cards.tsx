@@ -14,23 +14,23 @@ import type { AgentOutput, LogKind, StageStatus } from "@/lib/types";
 
 const KIND_CLS: Record<LogKind, string> = {
   info: "text-slate-300", code: "text-cyan/90", ok: "text-ok",
-  err: "text-err", warn: "text-warn", muted: "text-slate-500",
+  err: "text-err", warn: "text-warn", muted: "text-slate-400",
 };
 
 function StatusBadge({ status, accent }: { status: StageStatus; accent: string }) {
   if (status === "active")
-    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[9px]"
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[10px]"
       style={{ color: accent, background: `${accent}24` }}><Loader2 size={11} className="animate-spin" /> running</span>;
   if (status === "done")
-    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok/15 px-2 py-0.5 font-mono text-[9px] text-ok"><Check size={11} /> done</span>;
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-ok/15 px-2 py-0.5 font-mono text-[10px] text-ok"><Check size={11} /> done</span>;
   if (status === "degraded")
     return <span title="ran on its deterministic core only — no LLM reached this agent"
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-warn/15 px-2 py-0.5 font-mono text-[9px] text-warn"><AlertTriangle size={11} /> reduced depth</span>;
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-warn/15 px-2 py-0.5 font-mono text-[10px] text-warn"><AlertTriangle size={11} /> reduced depth</span>;
   if (status === "error")
-    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-err/15 px-2 py-0.5 font-mono text-[9px] text-err"><X size={11} /> error</span>;
+    return <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-err/15 px-2 py-0.5 font-mono text-[10px] text-err"><X size={11} /> error</span>;
   if (status === "skipped")
-    return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[9px] text-slate-500">benched</span>;
-  return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800/60 px-2 py-0.5 font-mono text-[9px] text-slate-500">queued</span>;
+    return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-slate-400">benched</span>;
+  return <span className="inline-flex shrink-0 items-center rounded-full bg-slate-800/60 px-2 py-0.5 font-mono text-[10px] text-slate-400">queued</span>;
 }
 
 export function StageCards() {
@@ -51,7 +51,7 @@ export function StageCards() {
   }, {});
 
   if (!cards.length) {
-    return <div className="glass card-in rounded-2xl p-5 font-mono text-xs text-slate-500">waiting for the board…</div>;
+    return <div className="glass card-in rounded-2xl p-5 font-mono text-xs text-slate-400">waiting for the board…</div>;
   }
 
   return (
@@ -59,11 +59,11 @@ export function StageCards() {
       {/* input chips — what the whole run started from */}
       {brief && (
         <div className="rounded-xl border border-brand/30 bg-brand/5 p-3">
-          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-500">input</div>
+          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-400">input</div>
           <div className="flex flex-wrap gap-1.5 text-xs">
             {Object.entries(brief).filter(([k, v]) => v && k !== "keywords").map(([k, v]) => (
               <span key={k} className="rounded-lg border border-line bg-panel-2 px-2 py-0.5">
-                <span className="font-mono text-[9px] uppercase text-slate-500">{k}: </span>
+                <span className="font-mono text-[10px] uppercase text-slate-400">{k}: </span>
                 <span className="text-slate-300">{String(v).slice(0, 60)}</span>
               </span>
             ))}
@@ -96,19 +96,19 @@ export function StageCards() {
               <span className="h-2 w-2 rounded-full" style={{ background: a.accent }} />
             </span>
 
-            <div className={`card-in rounded-xl border bg-panel/80 p-3 backdrop-blur-sm transition ${
+            <div className={`card-in rounded-xl border bg-panel p-3 transition ${
               st === "active" ? "border-cyan/40 shadow-[0_0_28px_-10px_rgba(34,211,238,0.5)]" : "border-line"}`}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-[9px] text-slate-600">{String(idx + 1).padStart(2, "0")}</span>
-                <span className="text-sm font-semibold" style={{ color: st === "queued" ? "#64748b" : a.accent }}>{a.name}</span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-600">{a.layer} · {a.cluster}</span>
+                <span className="font-mono text-[10px] text-slate-400">{String(idx + 1).padStart(2, "0")}</span>
+                <span className="text-sm font-semibold" style={{ color: st === "queued" ? "#94a3b8" : a.accent }}>{a.name}</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{a.layer} · {a.cluster}</span>
                 <span className="ml-auto"><StatusBadge status={st} accent={a.accent} /></span>
               </div>
 
               {io && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5 font-mono text-[10px]">
-                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-500">in → {io.in}</span>
-                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-500">out → {io.out}</span>
+                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-400">in → {io.in}</span>
+                  <span className="rounded border border-line bg-panel-2 px-1.5 py-0.5 text-slate-400">out → {io.out}</span>
                 </div>
               )}
 
@@ -123,7 +123,7 @@ export function StageCards() {
               {prompt && (
                 <div className="mt-2">
                   <button onClick={() => setOpenPrompt(id)}
-                    className="flex items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-0.5 font-mono text-[10px] text-slate-500 transition hover:border-cyan/30 hover:text-cyan">
+                    className="flex items-center gap-1.5 rounded-lg border border-transparent px-1.5 py-0.5 font-mono text-[10px] text-slate-400 transition hover:border-cyan/30 hover:text-cyan">
                     <Eye size={11} /> view exact prompt
                   </button>
                 </div>
@@ -132,7 +132,7 @@ export function StageCards() {
               {out?.verdict_line && (
                 <div className="mt-2 rounded-lg border px-2.5 py-1.5 text-xs"
                   style={{ borderColor: `${a.accent}40`, background: `${a.accent}0d` }}>
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">output › </span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">output › </span>
                   <span className="text-slate-200">{out.verdict_line}</span>
                   {typeof out.score === "number" && (
                     <span className="ml-2 font-mono text-[10px]" style={{ color: a.accent }}>{out.score}/10</span>
@@ -178,24 +178,24 @@ function PromptDialog({ agentName, accent, prompt, onClose }: {
       <div className="g-border card-in relative flex max-h-[82vh] w-full max-w-3xl flex-col rounded-2xl">
         <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
           <span className="h-2 w-2 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
-          <span className="font-hero text-sm font-bold text-slate-100">{agentName}</span>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">the exact prompt it sent</span>
+          <span className="font-display text-sm font-bold text-slate-100">{agentName}</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-400">the exact prompt it sent</span>
           <button onClick={onClose}
-            className="ml-auto rounded-lg px-2 py-1 font-mono text-xs text-slate-500 transition hover:text-err">
+            className="ml-auto rounded-lg px-2 py-1 font-mono text-xs text-slate-400 transition hover:text-err">
             ✕ esc
           </button>
         </div>
         <div className="scroll-thin space-y-3 overflow-y-auto p-5 font-mono text-[11px] leading-relaxed">
           <div className="rounded-xl border border-brand/25 bg-brand/5 p-3">
-            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-brand">system ›</div>
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-brand">system ›</div>
             <p className="whitespace-pre-wrap text-slate-300">{prompt.system}</p>
           </div>
           <div className="rounded-xl border border-cyan/25 bg-cyan/5 p-3">
-            <div className="mb-1 font-mono text-[9px] uppercase tracking-widest text-cyan">user ›</div>
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-cyan">user ›</div>
             <p className="whitespace-pre-wrap text-slate-300">{prompt.user}</p>
           </div>
         </div>
-        <p className="border-t border-line px-5 py-2.5 font-mono text-[9px] text-slate-600">
+        <p className="border-t border-line px-5 py-2.5 font-mono text-[10px] text-slate-400">
           radical transparency — this is verbatim what the model received, nothing hidden.
         </p>
       </div>
