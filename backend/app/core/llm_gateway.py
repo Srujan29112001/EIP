@@ -147,11 +147,14 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         p, m = route.split(":", 1)
         return (p.strip(), m.strip())
 
-    # precedence: per-agent route → per-CLASS route → per-tier request route → env route
+    # precedence: per-agent route → per-CLASS route → per-tier request route → env route.
+    # user_pin = a provider the USER deliberately chose (one-engine / per-class /
+    # per-agent). env route is a server default, not a user choice.
     cls = specialization_of(agent) if agent else ""
-    explicit = (parse(cfg.agent_routes.get(agent, "")) if agent else None) \
+    user_pin = (parse(cfg.agent_routes.get(agent, "")) if agent else None) \
         or (parse(cfg.class_routes.get(cls, "")) if cls else None) \
-        or parse(cfg.routes.get(tier, "")) or parse(getattr(settings, f"{tier}_route", ""))
+        or parse(cfg.routes.get(tier, ""))
+    explicit = user_pin or parse(getattr(settings, f"{tier}_route", ""))
     if explicit:
         plan.append(explicit)
 
@@ -181,6 +184,20 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
     # keep the board narrated on 8b rather than failing).
     def cheap(p: str) -> str:
         return FAST_MODELS.get(p, DEFAULT_MODELS[p])
+
+    # HONOR A DELIBERATE ENGINE PICK EXACTLY — no cross-provider fallback.
+    # When the user pinned a provider (one-engine / per-class / per-agent), stay
+    # on THAT provider only: Gateway.complete rotates across its own keys, and we
+    # allow its fast sibling to survive a rate-limited flagship. We do NOT drop to
+    # a different provider's key — if the chosen engine can't answer, the agent
+    # falls to its deterministic core (an honest "reduced depth") instead of a
+    # silent swap the user never asked for.
+    if user_pin and user_pin[0] not in ("ollama", "lmstudio"):
+        pp, pm = user_pin
+        out = [(pp, pm)]
+        if cheap(pp) != pm:
+            out.append((pp, cheap(pp)))
+        return out
 
     def entries(ps: list[str]) -> list[tuple[str, str]]:
         out: list[tuple[str, str]] = []
