@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Cpu, Eye, EyeOff, Rocket, Sparkles, Zap } from "lucide-react";
+import { Cpu, Eye, EyeOff, Layers, Rocket, Sparkles, Zap } from "lucide-react";
 import type { EngineStatus } from "@/lib/api";
 import { AGENTS } from "@/lib/agents";
 import { CLASS_META, SPECIALIZATION, SPECIALIST_MODELS, specialistModel, type SpecClass } from "@/lib/specialists";
@@ -122,11 +122,12 @@ export function EnginePanel({ engine, onChange, status }: {
   return (
     <div className="space-y-4">
       {/* compute mode cards */}
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
         {([
           ["auto", "Auto", Sparkles, "best available"],
+          ["hybrid", "Hybrid", Layers, "local + cloud · tiered"],
           ["local", "Local GPU", Cpu, "private · free · Ollama"],
-          ["cloud", "My API keys", Zap, "full depth"],
+          ["cloud", "My API keys", Zap, "your keys only · no fallback"],
           ["demo", "Demo", Rocket, "zero keys · deterministic"],
         ] as const).map(([id, label, Icon, sub]) => (
           <button key={id} onClick={() => set("compute", id)}
@@ -146,6 +147,23 @@ export function EnginePanel({ engine, onChange, status }: {
             ? "Local GPU mode: everything runs on your machine via Ollama — no API keys, nothing leaves your computer."
             : "Demo mode: deterministic cores only — zero keys, zero network calls to AI providers."}
         </p>
+      )}
+
+      {/* hybrid: explain the tiered split + local-model status */}
+      {engine.compute === "hybrid" && (
+        <div className="rounded-lg border border-cyan/30 bg-cyan/[0.04] p-3 font-mono text-[10px] leading-relaxed text-slate-300">
+          <b className="text-cyan">Hybrid — tiered routing.</b> Your <b className="text-slate-100">local GPU</b> (Ollama)
+          runs the high-volume, lower-stakes work — extraction, grounding and domain analysis (t1/t2), so private
+          data stays on your machine — and the <b className="text-slate-100">cloud frontier</b> runs the hard
+          reasoning &amp; synthesis — crucible, weighing, verdict, reporter (t3). Add your cloud key(s) below for
+          the reasoning tier. Strict: no cross-tier fallback.
+          <span className="mt-1.5 block">
+            {status?.local
+              ? <span className="text-ok">✓ local model detected: {status.local_model} — local tiers will run on it.</span>
+              : <span className="text-warn">⚠ local model not detected — start Ollama, or the local tiers (extraction/analysis)
+                  will show reduced-depth. (Use Auto if you want cloud to cover them instead.)</span>}
+          </span>
+        </div>
       )}
 
       {/* provider grid — 8 providers, each with its own key + model */}

@@ -185,14 +185,26 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
                 return sm
         return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
 
-    # auto/hybrid PREFER the local GPU for mechanical/analysis tiers — that is a
-    # primary choice, not a fallback: when Ollama is up it IS the t1/t2 engine.
-    if cfg.compute in ("auto", "hybrid") and ollama_up and tier in ("t1", "t2"):
+    # HYBRID: a DELIBERATE tiered split — local GPU does the high-volume,
+    # lower-stakes work (t1 mechanical + t2 analysis: parsing, extraction,
+    # domain narratives, keeping private data on your machine), the cloud
+    # frontier does the hard reasoning/synthesis (t3: crucible, verdict,
+    # reporter). No cross-tier fallback: if the local model is down, the local
+    # tiers show reduced-depth (honest) rather than silently spilling to cloud.
+    if cfg.compute == "hybrid":
+        if tier in ("t1", "t2"):
+            return [local] if ollama_up else []
+        clouds = _available_cloud(cfg)
+        return [(clouds[0], model_for(clouds[0]))] if clouds else []
+
+    # AUTO: best available — prefer the local GPU for t1/t2 when it's running
+    # (a primary choice, not a fallback), otherwise the cloud handles them.
+    if cfg.compute == "auto" and ollama_up and tier in ("t1", "t2"):
         return [local]
 
     clouds = _available_cloud(cfg)
     if not clouds:
-        return [local] if (cfg.compute in ("auto", "hybrid") and ollama_up) else []
+        return [local] if (cfg.compute == "auto" and ollama_up) else []
     chosen = clouds[0]  # the user's preferred provider if keyed, else first keyed
     return [(chosen, model_for(chosen))]
 
@@ -386,10 +398,15 @@ class Gateway:
         plan = _route_plan(tier, self.cfg, await self._local_ok(), agent)
         if not plan:
             if self.cfg.compute == "demo":
-                return failed("demo mode — deterministic cores only, no AI calls")
+                return failed("demo mode - deterministic cores only, no AI calls")
             if self.cfg.compute == "local":
-                return failed("local mode — Ollama not reachable")
-            return failed("no engine available — add an API key or start Ollama")
+                return failed("local mode - Ollama not reachable at " + settings.ollama_url)
+            if self.cfg.compute == "hybrid" and tier in ("t1", "t2"):
+                return failed("hybrid mode - local model (Ollama) not running; local-tier "
+                              "agents (extraction/analysis) need it. Start Ollama or use Auto.")
+            if self.cfg.compute == "hybrid":
+                return failed("hybrid mode - no cloud key for the reasoning tier; add one for t3 agents")
+            return failed("no engine available - add an API key or start Ollama")
 
         provider, model = plan[0]
         tag = f"{provider}:{model}"
