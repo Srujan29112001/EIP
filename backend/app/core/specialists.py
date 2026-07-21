@@ -14,8 +14,8 @@ provider, so a run stops sending quant work and poetry to the same brain:
 Resolution order in the gateway (highest wins):
   user's explicit per-agent route → user's explicit model pick →
   specialist model for the agent's class (when cfg.specialized) →
-  tier default. The degradation ladder is unchanged: if a specialist model is
-  rate-limited or unknown, the fast sibling and other providers still answer.
+  tier default. Routing is STRICT: the resolved model is the only one tried —
+  if it fails, the agent reports the reason (no silent sibling/provider swap).
 Agents not listed fall through to tier defaults untouched.
 """
 from __future__ import annotations
@@ -74,8 +74,8 @@ SPECIALIZATION: dict[str, str] = {
 }
 
 # ── provider → class → model ─────────────────────────────────────────────────
-# Chosen from each provider's live catalog; an unknown/exhausted id simply
-# falls down the gateway ladder to the fast sibling, so these are safe bets.
+# Chosen from each provider's live catalog (probe /models before changing —
+# a wrong id now fails VISIBLY instead of silently swapping models).
 SPECIALIST_MODELS: dict[str, dict[str, str]] = {
     "groq": {
         "reasoning": "openai/gpt-oss-120b",

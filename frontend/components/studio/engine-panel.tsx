@@ -312,7 +312,8 @@ export function EnginePanel({ engine, onChange, status }: {
                 Each specialty gets the model its JOB needs. Leave a row on{" "}
                 <b className="text-slate-200">auto</b> to use the best fit on your keyed providers, or pin a
                 specific provider + model per specialty. Keys are added once per provider (in the grid above,
-                shared by every agent on that provider) — the ⚠ button jumps you there.
+                shared by every agent on that provider) — the ⚠ button jumps you there. Routing is strict:
+                a failing model reports its reason instead of silently switching.
               </p>
               <div className="space-y-1.5">
                 {(Object.keys(CLASS_META) as SpecClass[]).map((cls) => {
@@ -356,6 +357,7 @@ export function EnginePanel({ engine, onChange, status }: {
               <p className="mt-2 font-mono text-[10px] text-slate-400">
                 Popular picks: reasoning → Claude / Gemini 2.5 Pro / o4-mini · quant → o4-mini / DeepSeek-Reasoner ·
                 extraction → Groq 8B (fast & cheap). A per-agent override still beats its specialty here.
+                Note: only Groq &amp; Gemini have truly free API tiers — Claude/OpenAI/xAI keys need billing enabled.
               </p>
             </div>
           );
@@ -375,7 +377,8 @@ export function EnginePanel({ engine, onChange, status }: {
             <div className="rounded-lg border border-line bg-panel-2 p-3">
               <p className="mb-2.5 font-mono text-[10px] leading-relaxed text-slate-400">
                 One model runs <b className="text-slate-200">every</b> agent. Pick the provider + model for the whole
-                board below. Its keys rotate across all you added; the other providers stay as fallback only.
+                board below. Its keys rotate across all you added — and there is <b className="text-slate-200">no
+                fallback</b>: if this engine fails, agents show the reason instead of switching providers.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-400">the engine</span>
@@ -407,7 +410,7 @@ export function EnginePanel({ engine, onChange, status }: {
               {engine.provider ? (
                 <p className="mt-2 font-mono text-[10px] text-slate-400">
                   <b className="text-cyan">{engine.provider}:{engine.model || "(provider default)"}</b> runs all{" "}
-                  {AGENTS.length} agents · fast sibling as the rate-limit fallback.
+                  {AGENTS.length} agents · strict — failures show their reason, nothing switches silently.
                 </p>
               ) : (
                 <p className="mt-2 font-mono text-[10px] text-warn">

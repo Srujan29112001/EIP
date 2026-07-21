@@ -217,29 +217,35 @@ export function DegradedNotice() {
     agentStatus[a.id] === "degraded" || (agentOutputs[a.id] as AgentOutput | undefined)?.degraded);
   const ran = Object.keys(agentOutputs).length;
   if (!degraded.length) return null;
-  const reason = (agentOutputs[degraded[0].id] as AgentOutput | undefined)?.degraded_reason
-    ?? "no LLM reached these agents — every configured key was rate-limited or missing.";
+  const reasonOf = (id: string) =>
+    (agentOutputs[id] as AgentOutput | undefined)?.degraded_reason ?? "engine unreachable";
+  const primary = reasonOf(degraded[0].id);
   return (
     <details className="rounded-2xl border border-warn/40 bg-warn/5 p-1">
       <summary className="flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 transition hover:bg-warn/10">
         <span className="text-sm">⚠</span>
         <span className="font-mono text-[11px] uppercase tracking-widest text-warn">
-          {degraded.length} of {ran} specialists ran reduced-depth — details
+          {degraded.length} of {ran} specialists ran reduced-depth — why
         </span>
       </summary>
       <div className="px-3 pb-2.5">
       <p className="mt-1 text-xs leading-relaxed text-slate-400">
-        These agents produced a deterministic-core answer but couldn&apos;t get AI narration: <span className="text-slate-300">{reason}</span>
+        Strict engine: no silent fallback. These agents couldn&apos;t reach the selected model and ran their
+        deterministic core instead. Reason: <span className="font-mono text-slate-200">{primary}</span>
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {degraded.map((a) => (
-          <span key={a.id} className="inline-flex items-center gap-1 rounded border border-warn/30 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn">
+          <span key={a.id} title={reasonOf(a.id)}
+            className="inline-flex items-center gap-1 rounded border border-warn/30 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn">
             <span>{a.icon}</span> {a.name}
           </span>
         ))}
       </div>
       <p className="mt-2 font-mono text-[10px] text-slate-400">
-        Fix: add more API keys in the engine step (up to 16 per provider — they rotate automatically), or re-run at a lighter depth.
+        Fix depends on the reason: <b className="text-slate-300">401 / unauthorized</b> = wrong key or the provider
+        needs billing/credits (only Groq &amp; Gemini are truly free); <b className="text-slate-300">429</b> = rate-limited,
+        add more keys of that provider or wait; <b className="text-slate-300">no API key</b> = add one in the engine step.
+        Hover a chip for that agent&apos;s exact reason.
       </p>
       </div>
     </details>

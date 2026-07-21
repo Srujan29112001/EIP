@@ -2,8 +2,9 @@
  *
  * Each agent is classified by the KIND of thinking its task demands, and each
  * provider maps every class to its best-fitting model. The gateway resolves:
- * explicit per-agent route → explicit model pick → specialist model → tier
- * default, with the usual degradation ladder underneath.
+ * explicit per-agent route → per-class route → explicit model pick →
+ * specialist model → tier default. Routing is STRICT — the resolved model is
+ * the only one tried; failures surface their reason instead of switching.
  */
 
 export type SpecClass = "reasoning" | "quant" | "research" | "creative" | "extraction";

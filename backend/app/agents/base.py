@@ -50,14 +50,25 @@ class Ctx:
 
     async def finish(self, agent_id: str, layer: str, result: dict[str, Any] | None = None,
                      route: str = "", tokens: int = 0) -> None:
+        # honest status: a deterministic-only run is "degraded" (amber), not
+        # "done" — and it must say WHY (strict engine: zero silent fallbacks).
+        degraded = bool(isinstance(result, dict) and result.get("degraded"))
+        if degraded and isinstance(result, dict):
+            # the gateway's ACTUAL error wins over any generic string the agent
+            # hardcoded — that is the real cause the user needs to see.
+            reason = str(getattr(self.llm, "_errors", {}).get(agent_id, "")
+                         or result.get("degraded_reason")
+                         or getattr(self.llm, "last_error", "") or "").strip()
+            if reason:
+                result["degraded_reason"] = reason
+                await self.emit.log(
+                    agent_id, f"engine failed → deterministic core only: {reason}", "warn")
         if result is not None:
             self.state.outputs[agent_id] = result
             # stream the structured output → Decision Room agent accordion
             await self.emit.partial("agent_output", {"agent": agent_id, "output": result})
         if tokens:
             await self.emit.usage(agent_id, tokens, route)
-        # honest status: a fallback-only run is "degraded" (amber), not "done"
-        degraded = bool(isinstance(result, dict) and result.get("degraded"))
         if degraded and self.state.raw.get("mode") == "intelligent":
             # Advisory-Engine contract (Intelligent Mode ONLY — other modes'
             # event streams stay exactly as they were): say EXPLICITLY that

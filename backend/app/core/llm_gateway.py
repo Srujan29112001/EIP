@@ -5,8 +5,10 @@ Tiers (per MASTER_PLAN §6.2):
   t2 analysis    → local-heavy / cheap  (domain agent narratives)
   t3 reasoning   → cloud flagship       (crucible, synthesis, verdict)
 
-Degradation ladder: requested route → any available cloud → local → "" (caller
-falls back to its deterministic core). The app must never blank on a missing key.
+STRICT routing (zero silent fallbacks — the app must be testable): every call
+resolves to exactly ONE provider+model. Key rotation happens only WITHIN that
+provider (throughput, not masking). On failure the agent runs its deterministic
+core, visibly "reduced depth", carrying the exact reason in degraded_reason.
 """
 from __future__ import annotations
 
@@ -56,6 +58,7 @@ class LLMResult:
     text: str
     route: str = ""                  # e.g. "ollama:qwen3:4b" | "anthropic:claude-…" | "none"
     tokens: int = 0
+    error: str = ""                  # why the call failed (401 bad key, 429, 404 model…) — "" on success
 
     @property
     def ok(self) -> bool:
@@ -73,7 +76,9 @@ def _all_keys(provider: str, cfg: EngineConfig) -> list[str]:
     if cfg.provider == provider and cfg.api_key:
         keys.append(cfg.api_key.strip())
     env = getattr(settings, f"{provider}_api_key", "")
-    if env:
+    # compute="cloud" is "My API keys": user keys ONLY, so a bad key fails
+    # loudly instead of being silently rescued by the server's env key.
+    if env and cfg.compute != "cloud":
         keys.append(env.strip())
     seen: set[str] = set()
     out: list[str] = []
@@ -155,22 +160,23 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         or (parse(cfg.class_routes.get(cls, "")) if cls else None) \
         or parse(cfg.routes.get(tier, ""))
     explicit = user_pin or parse(getattr(settings, f"{tier}_route", ""))
+
+    # ── STRICT ROUTING: exactly ONE candidate, never a silent hop ─────────────
+    # Zero fallbacks by design (the app must be TESTABLE): each call resolves to
+    # one provider and one model. If that call fails, the agent reports WHY and
+    # shows "reduced depth" — it never quietly switches provider or model.
     if explicit:
-        plan.append(explicit)
+        return [explicit]
 
-    clouds = _available_cloud(cfg)
     local = ("ollama", settings.local_model)
-
     if cfg.compute == "demo":
         return []
     if cfg.compute == "local":
-        return plan + ([local] if ollama_up else [])
-    # preferred(p): the model to TRY FIRST for provider p. An explicit user
-    # model choice ALWAYS wins for its provider, at every tier — no silent
-    # downgrade. Next, specialist routing picks the class-fit model for THIS
-    # agent (quant → math/reasoning model, extraction → fast sibling, …).
-    # Otherwise t1/t2 ride the fast sibling, t3 the flagship.
-    def preferred(p: str) -> str:
+        return [local] if ollama_up else []
+
+    def model_for(p: str) -> str:
+        # explicit user model for their provider → specialist class model →
+        # tier default. This picks the ONE model; there is no sibling swap.
         if cfg.model and p == cfg.provider:
             return cfg.model
         if cfg.specialized and agent:
@@ -179,57 +185,16 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
                 return sm
         return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
 
-    # cheap(p): the fast sibling — the resilient fallback if `preferred` is
-    # rate-limited (e.g. user picked 70b but its small daily quota is spent →
-    # keep the board narrated on 8b rather than failing).
-    def cheap(p: str) -> str:
-        return FAST_MODELS.get(p, DEFAULT_MODELS[p])
+    # auto/hybrid PREFER the local GPU for mechanical/analysis tiers — that is a
+    # primary choice, not a fallback: when Ollama is up it IS the t1/t2 engine.
+    if cfg.compute in ("auto", "hybrid") and ollama_up and tier in ("t1", "t2"):
+        return [local]
 
-    # HONOR A DELIBERATE ENGINE PICK EXACTLY — no cross-provider fallback.
-    # When the user pinned a provider (one-engine / per-class / per-agent), stay
-    # on THAT provider only: Gateway.complete rotates across its own keys, and we
-    # allow its fast sibling to survive a rate-limited flagship. We do NOT drop to
-    # a different provider's key — if the chosen engine can't answer, the agent
-    # falls to its deterministic core (an honest "reduced depth") instead of a
-    # silent swap the user never asked for.
-    if user_pin and user_pin[0] not in ("ollama", "lmstudio"):
-        pp, pm = user_pin
-        out = [(pp, pm)]
-        if cheap(pp) != pm:
-            out.append((pp, cheap(pp)))
-        return out
-
-    def entries(ps: list[str]) -> list[tuple[str, str]]:
-        out: list[tuple[str, str]] = []
-        for p in ps:
-            out.append((p, preferred(p)))
-            if cheap(p) != preferred(p):
-                out.append((p, cheap(p)))
-        return out
-
-    # rotate which keyed provider leads for t1/t2 so one free key's rate
-    # limits don't starve every agent (t3 keeps the user's preferred order)
-    if tier in ("t1", "t2") and len(clouds) > 1:
-        global _ROTATE
-        _ROTATE += 1
-        clouds = clouds[_ROTATE % len(clouds):] + clouds[:_ROTATE % len(clouds)]
-
-    if cfg.compute == "cloud":
-        return plan + entries(clouds)
-
-    # auto / hybrid: t1,t2 prefer local; t3 prefers cloud
-    if tier in ("t1", "t2"):
-        if ollama_up:
-            plan.append(local)
-        plan += entries(clouds)
-    else:
-        plan += entries(clouds)
-        if ollama_up:
-            plan.append(local)
-    return plan
-
-
-_ROTATE = 0
+    clouds = _available_cloud(cfg)
+    if not clouds:
+        return [local] if (cfg.compute in ("auto", "hybrid") and ollama_up) else []
+    chosen = clouds[0]  # the user's preferred provider if keyed, else first keyed
+    return [(chosen, model_for(chosen))]
 
 
 # ── provider calls ────────────────────────────────────────────────────────────
@@ -378,6 +343,11 @@ class Gateway:
     def __init__(self, cfg: EngineConfig | None = None) -> None:
         self.cfg = cfg or EngineConfig()
         self._ollama_up: bool | None = None
+        # why each agent's call failed — keyed by agent id so concurrent calls
+        # never clobber each other. Ctx.finish attaches it to the "reduced
+        # depth" output so failures are diagnosable, never silent.
+        self._errors: dict[str, str] = {}
+        self.last_error: str = ""
 
     async def _local_ok(self) -> bool:
         if self._ollama_up is None:
@@ -395,89 +365,124 @@ class Gateway:
     async def complete(self, tier: Tier, system: str, user: str,
                        max_tokens: int = 1200, temperature: float = 0.4,
                        agent: str = "") -> LLMResult:
-        """Walk the degradation ladder. Returns LLMResult(ok=False) if nothing worked."""
+        """STRICT: one resolved provider+model per call, zero silent fallbacks.
+        Rotates across the resolved provider's OWN keys (throughput, not
+        masking) and rides out brief 429s; on failure it returns the REASON in
+        LLMResult.error so the agent can show exactly what broke."""
         if self.cfg.temperature is not None:
             temperature = max(0.0, min(1.5, self.cfg.temperature))
         if self.cfg.max_tokens_cap:
             max_tokens = min(max_tokens, self.cfg.max_tokens_cap)
+        self.last_error = ""
+        if agent:
+            self._errors.pop(agent, None)   # clear stale error; a success leaves it clear
+
+        def failed(reason: str) -> LLMResult:
+            self.last_error = reason
+            if agent:
+                self._errors[agent] = reason
+            return LLMResult(text="", route="none", error=reason)
+
         plan = _route_plan(tier, self.cfg, await self._local_ok(), agent)
-        all_cooling: list[tuple[str, str, str]] = []  # (provider, model, key) parked for last resort
-        for provider, model in plan:
-            if provider in ("ollama", "lmstudio"):
+        if not plan:
+            if self.cfg.compute == "demo":
+                return failed("demo mode — deterministic cores only, no AI calls")
+            if self.cfg.compute == "local":
+                return failed("local mode — Ollama not reachable")
+            return failed("no engine available — add an API key or start Ollama")
+
+        provider, model = plan[0]
+        tag = f"{provider}:{model}"
+
+        if provider in ("ollama", "lmstudio"):
+            try:
+                res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                if res.ok:
+                    res.route = tag
+                    return _scrub(res)
+                return failed(f"{tag} returned empty output")
+            except Exception as e:
+                return failed(f"{tag} - {type(e).__name__}: {str(e)[:120]}")
+
+        keys = _all_keys(provider, self.cfg)
+        if not keys:
+            return failed(f"{provider}: no API key provided for the selected engine")
+
+        fresh = [k for k in keys if not _key_cooling(provider, k)]
+        # ROUND-ROBIN: start each call at a different key so N keys share the
+        # load evenly from the first request (multi-key throughput, same provider)
+        if len(fresh) > 1:
+            global _KEY_RR
+            _KEY_RR += 1
+            off = _KEY_RR % len(fresh)
+            fresh = fresh[off:] + fresh[:off]
+
+        errors: list[str] = []
+        for key in fresh:
+            for attempt in (0, 1):
                 try:
-                    res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
+                    async with _CLOUD_SEM:
+                        await _pace(provider, key)
+                        res = await _dispatch(provider, model, self.cfg, system, user,
+                                              max_tokens, temperature, key=key)
                     if res.ok:
-                        res.route = f"{provider}:{model}"
+                        res.route = tag
                         return _scrub(res)
-                except Exception:
-                    pass
-                continue
-
-            # rotate through EVERY key this provider has — when one is exhausted
-            # (429) it's parked and the next takes over, so a run never dies
-            # half-way as long as one fresh key remains anywhere.
-            keys = _all_keys(provider, self.cfg)
-            if not keys:
-                continue
-            fresh = [k for k in keys if not _key_cooling(provider, k)]
-            if not fresh:
-                all_cooling.append((provider, model, keys[0]))
-                continue
-            # ROUND-ROBIN: start each call at a different key so N keys share the
-            # load evenly from the first request — 16 keys ≈ 16× the free-tier
-            # requests/minute instead of hammering key #1 until it dies.
-            if len(fresh) > 1:
-                global _KEY_RR
-                _KEY_RR += 1
-                off = _KEY_RR % len(fresh)
-                fresh = fresh[off:] + fresh[:off]
-            for key in fresh:
-                got_429 = False
-                for attempt in (0, 1):
+                    errors.append("empty output")
+                    break
+                except httpx.HTTPStatusError as e:
+                    code = e.response.status_code
+                    if code == 429:
+                        # honor Retry-After; brief in-place retry, else park THIS
+                        # key and let the next key of the SAME provider take over
+                        ra = e.response.headers.get("retry-after", "")
+                        cool = 30.0
+                        try:
+                            cool = max(5.0, min(90.0, float(ra)))
+                        except (TypeError, ValueError):
+                            pass
+                        if attempt == 0 and cool <= 6.0:
+                            await asyncio.sleep(cool)
+                            continue
+                        _cool_key(provider, key, cool)
+                        errors.append("429 rate-limited")
+                        break
+                    body = ""
                     try:
-                        async with _CLOUD_SEM:
-                            await _pace(provider, key)
-                            res = await _dispatch(provider, model, self.cfg, system, user,
-                                                  max_tokens, temperature, key=key)
-                        if res.ok:
-                            res.route = f"{provider}:{model}"
-                            return _scrub(res)
-                        break
-                    except httpx.HTTPStatusError as e:
-                        if e.response.status_code == 429:
-                            # honor Retry-After when the provider tells us how long
-                            ra = e.response.headers.get("retry-after", "")
-                            cool = 30.0
-                            try:
-                                cool = max(5.0, min(90.0, float(ra)))
-                            except (TypeError, ValueError):
-                                pass
-                            if attempt == 0 and cool <= 6.0:
-                                await asyncio.sleep(cool)
-                                continue
-                            _cool_key(provider, key, cool)   # park this key, try the next
-                            got_429 = True
-                        break
+                        body = " ".join(e.response.text[:140].split())
                     except Exception:
+                        pass
+                    if code in (401, 403):
+                        # this key is bad — another key of the same provider may work
+                        errors.append(f"{code} unauthorized - invalid key or no credits ({body})")
                         break
-                if not got_429:
-                    break  # a non-rate-limit failure won't be cured by another key
+                    # 400/404/422…: the MODEL/request is rejected — no key fixes that
+                    return failed(f"{tag} - HTTP {code} model/request rejected ({body})")
+                except Exception as e:
+                    # network/timeout — transient; the next key gets its own try
+                    errors.append(f"{type(e).__name__}: {str(e)[:100]}")
+                    break
 
-        # every provider/key was rate-limited — wait out the soonest and try once
-        if all_cooling:
-            provider, model, key = all_cooling[0]
-            tag = _key_tag(provider, key)
-            wait = max(0.5, min(20.0, _KEY_COOLDOWN.get(tag, 0.0) - asyncio.get_event_loop().time()))
+        # every key is cooling → bounded wait for the soonest, ONE more try on
+        # the SAME provider+model (rate-limit persistence, never a swap)
+        if not fresh and keys:
+            key = keys[0]
+            ktag = _key_tag(provider, key)
+            wait = max(0.5, min(20.0, _KEY_COOLDOWN.get(ktag, 0.0) - asyncio.get_event_loop().time()))
             await asyncio.sleep(wait)
             try:
                 async with _CLOUD_SEM:
                     res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature, key=key)
                 if res.ok:
-                    res.route = f"{provider}:{model}"
+                    res.route = tag
                     return _scrub(res)
-            except Exception:
-                pass
-        return LLMResult(text="", route="none")
+            except Exception as e:
+                errors.append(f"{type(e).__name__}")
+            return failed(f"{tag} - all {len(keys)} key(s) rate-limited/cooling")
+
+        detail = errors[-1] if errors else "no working key"
+        n_bad = len(errors)
+        return failed(f"{tag} - {detail}" + (f" (tried {n_bad} key{'s' if n_bad > 1 else ''})" if n_bad > 1 else ""))
 
     async def structured(self, tier: Tier, system: str, user: str, schema_hint: str,
                          max_tokens: int = 1200, agent: str = "") -> tuple[dict[str, Any] | None, LLMResult]:
