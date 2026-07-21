@@ -286,8 +286,14 @@ export function EnginePanel({ engine, onChange, status }: {
             <button key={m}
               onClick={() => {
                 setMode(m);
-                if (m === "single") onChange({ ...engine, specialized: false, class_routes: {} });
-                else if (m === "specialized") onChange({ ...engine, specialized: true, model: "", routes: {} });
+                if (m === "single") {
+                  // pin a concrete single engine immediately so it's never "everything"
+                  const p = engine.provider || autoProvider;
+                  const mdl = engine.model || PROVIDERS.find((x) => x.id === p)?.models[0] || "";
+                  const route = mdl ? `${p}:${mdl}` : "";
+                  onChange({ ...engine, specialized: false, class_routes: {}, provider: p, model: mdl,
+                    routes: route ? { t1: route, t2: route, t3: route } : {} });
+                } else if (m === "specialized") onChange({ ...engine, specialized: true, model: "", routes: {} });
                 else onChange({ ...engine, specialized: true });
               }}
               className={`rounded-full px-3 py-1 font-mono text-[10px] transition ${
@@ -351,6 +357,64 @@ export function EnginePanel({ engine, onChange, status }: {
                 Popular picks: reasoning → Claude / Gemini 2.5 Pro / o4-mini · quant → o4-mini / DeepSeek-Reasoner ·
                 extraction → Groq 8B (fast & cheap). A per-agent override still beats its specialty here.
               </p>
+            </div>
+          );
+        })()}
+
+        {mode === "single" && (() => {
+          const setSingle = (provider: string, model?: string) => {
+            if (!provider) { onChange({ ...engine, provider: "", model: "", routes: {} }); return; }
+            const m = model !== undefined ? model.trim()
+              : (provider === engine.provider ? engine.model : "")
+                || PROVIDERS.find((x) => x.id === provider)?.models[0] || "";
+            const route = m ? `${provider}:${m}` : "";
+            onChange({ ...engine, provider, model: m, specialized: false, class_routes: {},
+              routes: route ? { t1: route, t2: route, t3: route } : {} });
+          };
+          return (
+            <div className="rounded-lg border border-line bg-panel-2 p-3">
+              <p className="mb-2.5 font-mono text-[10px] leading-relaxed text-slate-400">
+                One model runs <b className="text-slate-200">every</b> agent. Pick the provider + model for the whole
+                board below. Its keys rotate across all you added; the other providers stay as fallback only.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-400">the engine</span>
+                <select value={engine.provider}
+                  onChange={(e) => setSingle(e.target.value)}
+                  className="shrink-0 rounded border border-line bg-ink/70 px-2 py-1.5 font-mono text-[11px] outline-none focus:border-cyan/60">
+                  <option value="">— pick one provider —</option>
+                  <option value="ollama">ollama (local)</option>
+                  {PROVIDERS.map((x) => (
+                    <option key={x.id} value={x.id}>{x.id}{needsKey(x.id) ? " (needs key)" : ""}</option>
+                  ))}
+                </select>
+                {engine.provider && engine.provider !== "ollama" && (
+                  <input value={engine.model} list="single-models"
+                    onChange={(e) => setSingle(engine.provider, e.target.value)}
+                    placeholder={PROVIDERS.find((x) => x.id === engine.provider)?.models[0] ?? "model id"}
+                    className="min-w-[9rem] flex-1 rounded border border-line bg-ink/70 px-2 py-1.5 font-mono text-[11px] text-cyan outline-none focus:border-cyan/60" />
+                )}
+                <datalist id="single-models">
+                  {(PROVIDERS.find((x) => x.id === engine.provider)?.models ?? []).map((m) => <option key={m} value={m} />)}
+                </datalist>
+                {needsKey(engine.provider) && (
+                  <button type="button" onClick={() => openProviderKeys(engine.provider)}
+                    className="shrink-0 rounded-full border border-warn/50 bg-warn/10 px-2 py-0.5 font-mono text-[10px] text-warn transition hover:bg-warn/20">
+                    ⚠ add {engine.provider} key
+                  </button>
+                )}
+              </div>
+              {engine.provider ? (
+                <p className="mt-2 font-mono text-[10px] text-slate-400">
+                  <b className="text-cyan">{engine.provider}:{engine.model || "(provider default)"}</b> runs all{" "}
+                  {AGENTS.length} agents · fast sibling as the rate-limit fallback.
+                </p>
+              ) : (
+                <p className="mt-2 font-mono text-[10px] text-warn">
+                  No provider picked → the board spreads across every keyed provider by priority. Pick one above to
+                  force a single engine.
+                </p>
+              )}
             </div>
           );
         })()}
