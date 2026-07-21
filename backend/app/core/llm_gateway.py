@@ -20,6 +20,7 @@ import httpx
 import orjson
 
 from .config import DEFAULT_MODELS, FAST_MODELS, settings
+from .specialists import specialist_model
 
 Tier = str  # "t1" | "t2" | "t3"
 
@@ -40,6 +41,10 @@ class EngineConfig:
     agent_routes: dict[str, str] = field(default_factory=dict)  # agent_id → "provider:model"
     temperature: float | None = None  # global override (per-call default when None)
     max_tokens_cap: int = 0           # 0 = no cap; else clamp every call
+    # specialist routing: each agent's task class (reasoning/quant/research/
+    # creative/extraction) picks the best-fitting model on the active provider
+    # instead of one general model for every job. Explicit routes still win.
+    specialized: bool = True
 
 
 @dataclass
@@ -153,10 +158,16 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         return plan + ([local] if ollama_up else [])
     # preferred(p): the model to TRY FIRST for provider p. An explicit user
     # model choice ALWAYS wins for its provider, at every tier — no silent
-    # downgrade. Otherwise t1/t2 ride the fast sibling, t3 the flagship.
+    # downgrade. Next, specialist routing picks the class-fit model for THIS
+    # agent (quant → math/reasoning model, extraction → fast sibling, …).
+    # Otherwise t1/t2 ride the fast sibling, t3 the flagship.
     def preferred(p: str) -> str:
         if cfg.model and p == cfg.provider:
             return cfg.model
+        if cfg.specialized and agent:
+            sm = specialist_model(agent, p)
+            if sm:
+                return sm
         return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
 
     # cheap(p): the fast sibling — the resilient fallback if `preferred` is
@@ -330,6 +341,16 @@ async def _pace(provider: str, key: str = "") -> None:
         _LAST_CALL[tag] = asyncio.get_event_loop().time()
 
 
+
+def _scrub(res: LLMResult) -> LLMResult:
+    """Reasoning models (R1/QwQ/Qwen-think, gpt-oss) may emit <think>…</think>
+    traces — strip them so findings and reports stay clean prose."""
+    if res.text and "<think" in res.text:
+        res.text = re.sub(r"<think>.*?</think>", "", res.text, flags=re.S).strip()
+        # an unterminated think block would otherwise swallow the whole answer
+        res.text = re.sub(r"<think>.*\Z", "", res.text, flags=re.S).strip()
+    return res
+
 class Gateway:
     def __init__(self, cfg: EngineConfig | None = None) -> None:
         self.cfg = cfg or EngineConfig()
@@ -364,7 +385,7 @@ class Gateway:
                     res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature)
                     if res.ok:
                         res.route = f"{provider}:{model}"
-                        return res
+                        return _scrub(res)
                 except Exception:
                     pass
                 continue
@@ -397,7 +418,7 @@ class Gateway:
                                                   max_tokens, temperature, key=key)
                         if res.ok:
                             res.route = f"{provider}:{model}"
-                            return res
+                            return _scrub(res)
                         break
                     except httpx.HTTPStatusError as e:
                         if e.response.status_code == 429:
@@ -430,7 +451,7 @@ class Gateway:
                     res = await _dispatch(provider, model, self.cfg, system, user, max_tokens, temperature, key=key)
                 if res.ok:
                     res.route = f"{provider}:{model}"
-                    return res
+                    return _scrub(res)
             except Exception:
                 pass
         return LLMResult(text="", route="none")

@@ -19,6 +19,10 @@ export interface EngineSelection {
   routes: Record<string, string>;
   temperature: number | null;
   max_tokens_cap: number;
+  /** specialist routing: each agent's task class (reasoning/quant/research/
+   * creative/extraction) picks the best-fitting model on the active provider.
+   * Explicit picks and per-agent overrides always win. */
+  specialized: boolean;
 }
 
 export interface IntakeForm {
