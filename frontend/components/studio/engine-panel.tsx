@@ -192,9 +192,17 @@ export function EnginePanel({ engine, onChange, status }: {
                 <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
                   {p.label} · up to 16 keys — load spreads across all of them (round-robin)
                 </span>
-                <span className={`font-mono text-[10px] ${filled >= 7 ? "text-ok" : filled >= 1 ? "text-warn" : "text-slate-400"}`}>
-                  {filled}/16 keys{filled < 7 ? " · 7+ recommended for a full War Room + two deliberation rounds" : " ✓"}
+                <span className={`font-mono text-[10px] ${filled >= 1 ? "text-ok" : "text-slate-400"}`}>
+                  {filled}/16 keys{filled >= 1 ? " ✓" : ""}
                 </span>
+              </div>
+              {/* how many keys? — the rule, right where you paste them */}
+              <div className="mb-2.5 rounded-md border border-line bg-panel px-2.5 py-2 font-mono text-[10px] leading-relaxed text-slate-400">
+                <span className="text-slate-200">How many keys?</span> One is enough to start.
+                Add more (up to 16) only for a <b className="text-slate-200">free-tier</b> provider you route a
+                lot of agents to — the board rotates across them so it never gets rate-limited half-way through a
+                War Room. A <b className="text-slate-200">paid</b> key, or a provider you send only a few agents to,
+                needs just <b className="text-slate-200">1</b>. Keys are sent per-run and never stored server-side.
               </div>
               <div className="space-y-1.5">
                 {slots.map((val, i) => (
@@ -234,11 +242,6 @@ export function EnginePanel({ engine, onChange, status }: {
                   {p.models.map((m) => <option key={m} value={m} />)}
                 </datalist>
               </label>
-              <p className="mt-2 font-mono text-[10px] leading-relaxed text-slate-400">
-                Keys are sent per-run and never stored server-side. Add 5-7 free keys of the same provider
-                (e.g. several Groq/Gemini free keys) — the board round-robins across them so a full War Room
-                stays narrated instead of exhausting one key half-way.
-              </p>
             </div>
           );
         })()}
