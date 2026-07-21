@@ -20,7 +20,7 @@ import httpx
 import orjson
 
 from .config import DEFAULT_MODELS, FAST_MODELS, settings
-from .specialists import specialist_model
+from .specialists import specialist_model, specialization_of
 
 Tier = str  # "t1" | "t2" | "t3"
 
@@ -39,6 +39,10 @@ class EngineConfig:
     # cooled and the next takes over automatically.
     api_keys_multi: dict[str, list[str]] = field(default_factory=dict)
     agent_routes: dict[str, str] = field(default_factory=dict)  # agent_id → "provider:model"
+    # class → "provider:model": pin a whole specialty to a provider+model, e.g.
+    # {"reasoning": "anthropic:claude-sonnet-4-5", "quant": "openai:o4-mini"}.
+    # Applies to every agent of that class; a per-agent route still overrides it.
+    class_routes: dict[str, str] = field(default_factory=dict)
     temperature: float | None = None  # global override (per-call default when None)
     max_tokens_cap: int = 0           # 0 = no cap; else clamp every call
     # specialist routing: each agent's task class (reasoning/quant/research/
@@ -143,8 +147,10 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         p, m = route.split(":", 1)
         return (p.strip(), m.strip())
 
-    # precedence: per-agent route → per-tier request route → env route
+    # precedence: per-agent route → per-CLASS route → per-tier request route → env route
+    cls = specialization_of(agent) if agent else ""
     explicit = (parse(cfg.agent_routes.get(agent, "")) if agent else None) \
+        or (parse(cfg.class_routes.get(cls, "")) if cls else None) \
         or parse(cfg.routes.get(tier, "")) or parse(getattr(settings, f"{tier}_route", ""))
     if explicit:
         plan.append(explicit)

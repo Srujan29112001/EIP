@@ -6,7 +6,7 @@
  * (keys stay in the browser; sent per-run, never stored server-side).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Cpu, Eye, EyeOff, Rocket, Sparkles, Zap } from "lucide-react";
 import type { EngineStatus } from "@/lib/api";
 import { AGENTS } from "@/lib/agents";
@@ -35,6 +35,7 @@ export function EnginePanel({ engine, onChange, status }: {
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
   const [mode, setMode] = useState<"specialized" | "single" | "perAgent">("specialized");
   const [hydrated, setHydrated] = useState(false);
+  const providerGridRef = useRef<HTMLDivElement>(null);
 
   // hydrate persisted config once (keys never leave the browser except per-run)
   useEffect(() => {
@@ -57,7 +58,8 @@ export function EnginePanel({ engine, onChange, status }: {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         provider: engine.provider, model: engine.model, api_keys: engine.api_keys,
         api_keys_multi: engine.api_keys_multi, routes: engine.routes,
-        agent_routes: engine.agent_routes, temperature: engine.temperature,
+        agent_routes: engine.agent_routes, class_routes: engine.class_routes,
+        specialized: engine.specialized, temperature: engine.temperature,
         max_tokens_cap: engine.max_tokens_cap, mode,
       }));
     } catch { /* storage full/blocked — per-run config still works */ }
@@ -69,6 +71,24 @@ export function EnginePanel({ engine, onChange, status }: {
     const next = { ...engine.agent_routes };
     if (route) next[agentId] = route; else delete next[agentId];
     set("agent_routes", next);
+  };
+  // pin a whole specialty to a provider (+ model). Empty provider = back to auto.
+  const setClassRoute = (cls: string, provider: string, model?: string) => {
+    const next = { ...engine.class_routes };
+    if (!provider) {
+      delete next[cls];
+    } else {
+      const m = (model ?? SPECIALIST_MODELS[provider]?.[cls as SpecClass] ?? "").trim()
+        || PROVIDERS.find((x) => x.id === provider)?.models[0] || "";
+      next[cls] = m ? `${provider}:${m}` : "";
+    }
+    set("class_routes", next);
+  };
+  // jump the user to a provider's key entry (keys are per-provider, added once)
+  const openProviderKeys = (id: string) => {
+    setOpenProvider(id);
+    requestAnimationFrame(() =>
+      providerGridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   // 16 key slots per provider; the first non-blank also mirrors to api_keys so
@@ -93,6 +113,11 @@ export function EnginePanel({ engine, onChange, status }: {
   const keyedProviders = PROVIDERS.filter((p) => hasAnyKey(p.id));
   const serverProviders = status?.cloud ?? [];
   const temp = engine.temperature ?? 0.4;
+  const cloudOK = !["local", "demo"].includes(engine.compute);
+  // a cloud provider the user picked but can't actually reach yet (no key, not on server)
+  const needsKey = (p: string) =>
+    cloudOK && !!p && p !== "ollama" && !hasAnyKey(p) && !serverProviders.includes(p);
+  const autoProvider = engine.provider || keyedProviders[0]?.id || serverProviders[0] || "groq";
 
   return (
     <div className="space-y-4">
@@ -125,7 +150,7 @@ export function EnginePanel({ engine, onChange, status }: {
 
       {/* provider grid — 8 providers, each with its own key + model */}
       {!["local", "demo"].includes(engine.compute) && (
-      <div>
+      <div ref={providerGridRef} className="scroll-mt-4">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">providers · bring any key</span>
           {serverProviders.length > 0 && (
@@ -256,7 +281,12 @@ export function EnginePanel({ engine, onChange, status }: {
           <span className="mr-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">routing</span>
           {(["specialized", "single", "perAgent"] as const).map((m) => (
             <button key={m}
-              onClick={() => { setMode(m); set("specialized", m !== "single"); }}
+              onClick={() => {
+                setMode(m);
+                if (m === "single") onChange({ ...engine, specialized: false, class_routes: {} });
+                else if (m === "specialized") onChange({ ...engine, specialized: true, model: "", routes: {} });
+                else onChange({ ...engine, specialized: true });
+              }}
               className={`rounded-full px-3 py-1 font-mono text-[10px] transition ${
                 mode === m ? "bg-brand/20 text-brand" : "text-slate-400 hover:text-slate-300"}`}>
               {m === "specialized" ? "🎯 specialized (recommended)" : m === "single" ? "one engine" : "per-agent"}
@@ -265,31 +295,59 @@ export function EnginePanel({ engine, onChange, status }: {
         </div>
 
         {mode === "specialized" && (() => {
-          const activeProvider = engine.provider || keyedProviders[0]?.id || "groq";
           const counts = Object.values(SPECIALIZATION).reduce<Record<string, number>>(
             (acc, c) => ((acc[c] = (acc[c] ?? 0) + 1), acc), {});
           return (
             <div className="rounded-lg border border-line bg-panel-2 p-3">
-              <p className="mb-2 font-mono text-[10px] text-slate-400">
-                Every specialist gets the model its JOB needs on{" "}
-                <b className="text-slate-200">{activeProvider}</b> — not one general model for all 91.
-                Your explicit picks and per-agent overrides always win; a rate-limited specialist
-                falls back down the ladder automatically.
+              <p className="mb-2.5 font-mono text-[10px] leading-relaxed text-slate-400">
+                Each specialty gets the model its JOB needs. Leave a row on{" "}
+                <b className="text-slate-200">auto</b> to use the best fit on your keyed providers, or pin a
+                specific provider + model per specialty. Keys are added once per provider (in the grid above,
+                shared by every agent on that provider) — the ⚠ button jumps you there.
               </p>
-              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-                {(Object.keys(CLASS_META) as SpecClass[]).map((cls) => (
-                  <div key={cls} className="rounded-lg border border-line bg-panel px-2.5 py-2">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-                      <span>{CLASS_META[cls].icon}</span> {CLASS_META[cls].label}
-                      <span className="ml-auto font-mono text-[10px] text-slate-400">{counts[cls] ?? 0} agents</span>
+              <div className="space-y-1.5">
+                {(Object.keys(CLASS_META) as SpecClass[]).map((cls) => {
+                  const cr = engine.class_routes[cls] ?? "";
+                  const [cp, cm] = cr.includes(":")
+                    ? [cr.split(":")[0], cr.split(":").slice(1).join(":")] : ["", ""];
+                  const resolved = cp ? cm : (SPECIALIST_MODELS[autoProvider]?.[cls] ?? "tier default");
+                  return (
+                    <div key={cls} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-panel px-2.5 py-2">
+                      <span className="text-sm">{CLASS_META[cls].icon}</span>
+                      <span className="w-24 shrink-0 text-xs font-semibold text-slate-200">{CLASS_META[cls].label}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-slate-400">{counts[cls] ?? 0} agents</span>
+                      <select value={cp}
+                        onChange={(e) => setClassRoute(cls, e.target.value)}
+                        className="shrink-0 rounded border border-line bg-ink/70 px-1.5 py-1 font-mono text-[10px] outline-none focus:border-cyan/60">
+                        <option value="">auto (best keyed)</option>
+                        <option value="ollama">ollama (local)</option>
+                        {PROVIDERS.map((x) => <option key={x.id} value={x.id}>{x.id}</option>)}
+                      </select>
+                      <input value={cp ? cm : resolved} readOnly={!cp}
+                        list={cp ? `cls-models-${cls}` : undefined}
+                        onChange={(e) => setClassRoute(cls, cp, e.target.value)}
+                        title={cp ? "model id — type any" : "auto: best model for this specialty on your provider"}
+                        className={`min-w-[7rem] flex-1 rounded border border-line px-1.5 py-1 font-mono text-[10px] ${
+                          cp ? "bg-ink/70 text-cyan outline-none focus:border-cyan/60" : "bg-panel-2 text-slate-400"}`} />
+                      {cp && (
+                        <datalist id={`cls-models-${cls}`}>
+                          {(PROVIDERS.find((x) => x.id === cp)?.models ?? []).map((m) => <option key={m} value={m} />)}
+                        </datalist>
+                      )}
+                      {needsKey(cp) && (
+                        <button type="button" onClick={() => openProviderKeys(cp)}
+                          className="shrink-0 rounded-full border border-warn/50 bg-warn/10 px-2 py-0.5 font-mono text-[10px] text-warn transition hover:bg-warn/20">
+                          ⚠ add {cp} key
+                        </button>
+                      )}
                     </div>
-                    <div className="mt-0.5 truncate font-mono text-[10px] text-cyan">
-                      {SPECIALIST_MODELS[activeProvider]?.[cls] ?? "tier default"}
-                    </div>
-                    <div className="mt-0.5 text-[11px] leading-snug text-slate-400">{CLASS_META[cls].blurb}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+              <p className="mt-2 font-mono text-[10px] text-slate-400">
+                Popular picks: reasoning → Claude / Gemini 2.5 Pro / o4-mini · quant → o4-mini / DeepSeek-Reasoner ·
+                extraction → Groq 8B (fast & cheap). A per-agent override still beats its specialty here.
+              </p>
             </div>
           );
         })()}
@@ -300,11 +358,11 @@ export function EnginePanel({ engine, onChange, status }: {
               const route = engine.agent_routes[a.id] ?? "";
               const [rp, rm] = route.includes(":") ? [route.split(":")[0], route.split(":").slice(1).join(":")] : ["", ""];
               const cls = SPECIALIZATION[a.id];
-              const spec = specialistModel(a.id, engine.provider || keyedProviders[0]?.id || "groq");
+              const spec = specialistModel(a.id, rp || autoProvider);
               return (
                 <div key={a.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-white/[0.03]">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: a.accent }} />
-                  <span className="w-40 truncate" style={{ color: a.accent }}>{a.name}</span>
+                  <span className="w-36 truncate" style={{ color: a.accent }}>{a.name}</span>
                   {cls && (
                     <span title={`${CLASS_META[cls].label} — its specialist default`}
                       className="shrink-0 rounded-full bg-panel px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
@@ -312,18 +370,29 @@ export function EnginePanel({ engine, onChange, status }: {
                     </span>
                   )}
                   <select value={rp}
-                    onChange={(e) => setRoute(a.id, e.target.value ? `${e.target.value}:${rm || PROVIDERS.find((x) => x.id === e.target.value)?.models[0] || ""}` : "")}
-                    className="rounded border border-line bg-ink/70 px-1.5 py-1 font-mono text-[10px] outline-none focus:border-cyan/60">
+                    onChange={(e) => setRoute(a.id, e.target.value ? `${e.target.value}:${rm || specialistModel(a.id, e.target.value) || PROVIDERS.find((x) => x.id === e.target.value)?.models[0] || ""}` : "")}
+                    className="shrink-0 rounded border border-line bg-ink/70 px-1.5 py-1 font-mono text-[10px] outline-none focus:border-cyan/60">
                     <option value="">{spec ? `auto · ${spec.split("/").pop()}` : "default"}</option>
                     <option value="ollama">ollama (local)</option>
-                    {(keyedProviders.length ? keyedProviders : PROVIDERS).map((x) => (
-                      <option key={x.id} value={x.id}>{x.id}</option>
+                    {PROVIDERS.map((x) => (
+                      <option key={x.id} value={x.id}>{x.id}{needsKey(x.id) ? " (needs key)" : ""}</option>
                     ))}
                   </select>
-                  {rp && (
+                  {rp && rp !== "ollama" && (
                     <input value={rm} onChange={(e) => setRoute(a.id, `${rp}:${e.target.value}`)}
-                      placeholder="model id"
-                      className="flex-1 rounded border border-line bg-ink/70 px-1.5 py-1 font-mono text-[10px] outline-none focus:border-cyan/60" />
+                      placeholder="model id" list={`agent-models-${a.id}`}
+                      className="min-w-[6rem] flex-1 rounded border border-line bg-ink/70 px-1.5 py-1 font-mono text-[10px] outline-none focus:border-cyan/60" />
+                  )}
+                  {rp && (
+                    <datalist id={`agent-models-${a.id}`}>
+                      {(PROVIDERS.find((x) => x.id === rp)?.models ?? []).map((m) => <option key={m} value={m} />)}
+                    </datalist>
+                  )}
+                  {needsKey(rp) && (
+                    <button type="button" onClick={() => openProviderKeys(rp)}
+                      className="shrink-0 rounded-full border border-warn/50 bg-warn/10 px-1.5 py-0.5 font-mono text-[10px] text-warn transition hover:bg-warn/20">
+                      ⚠ key
+                    </button>
                   )}
                 </div>
               );

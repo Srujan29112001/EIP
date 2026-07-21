@@ -45,7 +45,7 @@ const DEFAULTS: IntakeForm = {
   agent_context: {},
   engine: {
     compute: "auto", provider: "", api_key: "", model: "",
-    api_keys: {}, api_keys_multi: {}, agent_routes: {}, routes: {}, temperature: null, max_tokens_cap: 0,
+    api_keys: {}, api_keys_multi: {}, agent_routes: {}, class_routes: {}, routes: {}, temperature: null, max_tokens_cap: 0,
     specialized: true,
   },
 };
