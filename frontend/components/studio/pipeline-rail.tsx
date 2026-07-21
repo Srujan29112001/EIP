@@ -43,7 +43,10 @@ export function PipelineRail() {
                   <li key={a.id} style={{ "--glow": a.accent } as React.CSSProperties}
                     className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition ${
                       st === "active" ? "glow-active border-cyan/40 bg-panel-2" : "border-transparent"}`}>
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[st]}`} />
+                    <span className="shrink-0 text-sm leading-none" style={{ opacity: st === "queued" ? 0.45 : 1 }}>
+                      {a.icon}
+                    </span>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${DOT[st]}`} title={st} />
                     <span className="truncate" style={{ color: st === "queued" ? "#94a3b8" : a.accent }}>
                       {a.name}
                     </span>

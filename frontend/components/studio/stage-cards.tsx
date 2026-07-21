@@ -88,12 +88,13 @@ export function StageCards() {
                   style={{ height: done ? "100%" : "0%", background: `linear-gradient(${a.accent}, ${a.accent}22)` }} />
               </div>
             )}
-            {/* icon dot */}
-            <span className="absolute left-1.5 top-1.5 grid h-9 w-9 place-items-center rounded-xl border"
+            {/* agent icon node */}
+            <span className="absolute left-1.5 top-1.5 grid h-9 w-9 place-items-center rounded-xl border text-base leading-none"
               style={{ borderColor: `${a.accent}${st === "queued" ? "26" : "80"}`,
                 background: `${a.accent}${st === "queued" ? "0a" : "24"}`,
+                opacity: st === "queued" ? 0.5 : 1,
                 boxShadow: st === "active" ? `0 0 20px -2px ${a.accent}e0` : "none" }}>
-              <span className="h-2 w-2 rounded-full" style={{ background: a.accent }} />
+              {a.icon}
             </span>
 
             <div className={`card-in rounded-xl border bg-panel p-3 transition ${

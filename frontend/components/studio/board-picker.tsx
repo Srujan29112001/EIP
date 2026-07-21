@@ -9,6 +9,7 @@
 
 import { useMemo, useState } from "react";
 import { AGENTS, LAYER_LABELS, STAGE_IO, agentById, capsFor, type Layer } from "@/lib/agents";
+import { AGENT_PROMPTS } from "@/lib/agent-prompts";
 
 const MANDATORY = new Set(["intake_parser", "context_profiler", "scope_planner",
   "rag_memory", "weighing_engine", "verdict_composer", "scenario_planner", "negotiation_coach",
@@ -336,6 +337,42 @@ export function BoardPicker({ mode, depth, enabled, onChange, agentContext, onCo
               ))}
             </div>
           </div>
+
+          {/* the exact prompt + logic this agent runs — radical transparency */}
+          {(() => {
+            const p = AGENT_PROMPTS[briefAgent.id];
+            if (!p) return null;
+            return (
+              <details className="mb-2 rounded-md border border-line bg-panel-2/60">
+                <summary className="cursor-pointer px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-300 transition hover:text-cyan">
+                  🧠 its prompt &amp; logic — exactly what this agent runs
+                </summary>
+                <div className="space-y-2 px-2.5 pb-2.5 pt-1">
+                  {p.system && (
+                    <div>
+                      <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-brand">system prompt ›</div>
+                      <p className="whitespace-pre-wrap rounded bg-ink/60 p-2 font-mono text-[11px] leading-relaxed text-slate-200">{p.system}</p>
+                    </div>
+                  )}
+                  {p.task && (
+                    <div>
+                      <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-cyan">task ›</div>
+                      <p className="whitespace-pre-wrap rounded bg-ink/60 p-2 font-mono text-[11px] leading-relaxed text-slate-200">{p.task}</p>
+                    </div>
+                  )}
+                  {p.logic && (
+                    <div>
+                      <div className="mb-0.5 font-mono text-[10px] uppercase tracking-widest text-ok">deterministic core ›</div>
+                      <p className="whitespace-pre-wrap rounded bg-ink/60 p-2 text-[11px] leading-relaxed text-slate-300">{p.logic}</p>
+                    </div>
+                  )}
+                  <p className="font-mono text-[10px] text-slate-400">
+                    Your direct brief below is appended to this task verbatim at run time; live evidence + colleagues&apos; findings are added too.
+                  </p>
+                </div>
+              </details>
+            );
+          })()}
 
           <div className="mb-1 font-mono text-[10px] uppercase tracking-widest" style={{ color: briefAgent.accent }}>
             brief it directly — it reads this verbatim before analysing

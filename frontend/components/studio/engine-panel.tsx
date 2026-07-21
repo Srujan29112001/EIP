@@ -431,8 +431,8 @@ export function EnginePanel({ engine, onChange, status }: {
               const spec = specialistModel(a.id, rp || autoProvider);
               return (
                 <div key={a.id} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-white/[0.03]">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: a.accent }} />
-                  <span className="w-36 truncate" style={{ color: a.accent }}>{a.name}</span>
+                  <span className="shrink-0 text-sm leading-none">{a.icon}</span>
+                  <span className="w-32 truncate" style={{ color: a.accent }}>{a.name}</span>
                   {cls && (
                     <span title={`${CLASS_META[cls].label} — its specialist default`}
                       className="shrink-0 rounded-full bg-panel px-1.5 py-0.5 font-mono text-[10px] text-slate-400">
