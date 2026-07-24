@@ -373,9 +373,12 @@ export function EnginePanel({ engine, onChange, status }: {
                 })}
               </div>
               <p className="mt-2 font-mono text-[10px] text-slate-400">
-                Popular picks: reasoning → Claude / Gemini 2.5 Pro / o4-mini · quant → o4-mini / DeepSeek-Reasoner ·
-                extraction → Groq 8B (fast & cheap). A per-agent override still beats its specialty here.
-                Note: only Groq &amp; Gemini have truly free API tiers — Claude/OpenAI/xAI keys need billing enabled.
+                Real specialists where they exist: 💻 code → Codestral / Qwen-Coder / DeepSeek-V4 (the #1 open coder) ·
+                🧠 reasoning → Claude Opus / Gemini 3 Pro / DeepSeek-R1 · ⚡ extraction → fast cheap models. If you add an
+                <b className="text-slate-200"> OpenRouter</b> key, code &amp; reasoning agents prefer it (widest catalog of
+                fine-tunes). A per-agent override still beats its specialty. Honest note: true domain-expert LLMs
+                (finance/legal) aren&apos;t API-served — these are the best <i>task-matched</i> models available.
+                Only Groq &amp; Gemini have truly free tiers; Claude/OpenAI/xAI need billing.
               </p>
             </div>
           );

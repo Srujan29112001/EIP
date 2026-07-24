@@ -185,6 +185,16 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
                 return sm
         return FAST_MODELS.get(p, DEFAULT_MODELS[p]) if tier in ("t1", "t2") else DEFAULT_MODELS[p]
 
+    def pick(clouds: list[str]) -> str:
+        # prefer OpenRouter for the code & reasoning specialties — its catalog
+        # carries genuine fine-tunes (dedicated coders, R1-class reasoners) that
+        # the general providers don't. Only when the user hasn't pinned a
+        # provider, and only in specialized mode; otherwise honor their order.
+        if (cfg.specialized and not cfg.provider and "openrouter" in clouds
+                and cls in ("code", "reasoning")):
+            return "openrouter"
+        return clouds[0]
+
     # HYBRID: a DELIBERATE tiered split — local GPU does the high-volume,
     # lower-stakes work (t1 mechanical + t2 analysis: parsing, extraction,
     # domain narratives, keeping private data on your machine), the cloud
@@ -195,7 +205,7 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
         if tier in ("t1", "t2"):
             return [local] if ollama_up else []
         clouds = _available_cloud(cfg)
-        return [(clouds[0], model_for(clouds[0]))] if clouds else []
+        return [(pick(clouds), model_for(pick(clouds)))] if clouds else []
 
     # AUTO: best available — prefer the local GPU for t1/t2 when it's running
     # (a primary choice, not a fallback), otherwise the cloud handles them.
@@ -205,8 +215,8 @@ def _route_plan(tier: Tier, cfg: EngineConfig, ollama_up: bool, agent: str = "")
     clouds = _available_cloud(cfg)
     if not clouds:
         return [local] if (cfg.compute == "auto" and ollama_up) else []
-    chosen = clouds[0]  # the user's preferred provider if keyed, else first keyed
-    return [(chosen, model_for(chosen))]
+    chosen = pick(clouds)  # user's provider if pinned; else OpenRouter for
+    return [(chosen, model_for(chosen))]  # code/reasoning specialists, else first keyed
 
 
 # ── provider calls ────────────────────────────────────────────────────────────

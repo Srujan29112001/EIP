@@ -7,6 +7,7 @@ provider, so a run stops sending quant work and poetry to the same brain:
 
   reasoning   deep multi-step judgment      → reasoning-tuned flagships (R1/QwQ/o4/2.5-pro)
   quant       math, markets, simulations    → reasoning/math models
+  code        engineering, architecture     → code-tuned models (Codestral/Qwen-Coder/DeepSeek-V4)
   research    breadth: retrieve + synthesize→ strong general flagships
   creative    narrative, persuasion, pitch  → strong general flagships
   extraction  parse, structure, classify    → fast cheap siblings
@@ -30,18 +31,18 @@ SPECIALIZATION: dict[str, str] = {
     "verdict_composer": "reasoning",
     "legal": "reasoning", "tax": "reasoning", "policy_compliance": "reasoning",
     "regulator": "reasoning", "patent_ip": "reasoning", "insurance_risk": "reasoning",
-    "cybersecurity_privacy": "reasoning", "philosophy_ethics": "reasoning",
+    "cybersecurity_privacy": "code", "philosophy_ethics": "reasoning",
     "macroeconomist": "reasoning", "geopolitics": "reasoning",
-    "industry_expert": "reasoning", "deep_tech": "reasoning",
+    "industry_expert": "reasoning", "deep_tech": "code",
     # math, markets, models, simulations
     "finance_modeler": "quant", "quant_signals": "quant",
-    "technical_analyst": "quant", "backtest_engineer": "quant",
+    "technical_analyst": "quant", "backtest_engineer": "code",
     "options_desk": "quant", "microstructure": "quant",
     "risk_manager": "quant", "stock_analyst": "quant", "fund_analyst": "quant",
     "salary_budget": "quant", "portfolio_allocator": "quant",
     "fire_planner": "quant", "debt_banking": "quant", "real_estate": "quant",
     "cap_table": "quant", "optimization_predictor": "quant",
-    "data_analytics": "quant", "scenario_planner": "quant",
+    "data_analytics": "code", "scenario_planner": "quant",
     "weighing_engine": "quant",
     # breadth: retrieve, compare, synthesize a domain
     "market_analyst": "research", "market_research": "research",
@@ -50,7 +51,7 @@ SPECIALIZATION: dict[str, str] = {
     "pricing_strategist": "research", "supply_chain": "research",
     "fundraising_capital": "research", "sales_revops": "research",
     "partnerships_bd": "research", "hr_talent": "research",
-    "ai_ml_strategist": "research", "software_architecture": "research",
+    "ai_ml_strategist": "code", "software_architecture": "code",
     "intl_markets": "research", "trends": "research",
     "esg_impact": "research", "sustainability_accountant": "research",
     "location_scout": "research", "human_needs": "research",
@@ -77,58 +78,70 @@ SPECIALIZATION: dict[str, str] = {
 # Chosen from each provider's live catalog (probe /models before changing —
 # a wrong id now fails VISIBLY instead of silently swapping models).
 SPECIALIST_MODELS: dict[str, dict[str, str]] = {
+    # Groq (live-probed): no dedicated coder — Qwen is the best code-capable one.
     "groq": {
         "reasoning": "openai/gpt-oss-120b",
         "quant": "qwen/qwen3.6-27b",
+        "code": "qwen/qwen3.6-27b",
         "research": "llama-3.3-70b-versatile",
         "creative": "llama-3.3-70b-versatile",
         "extraction": "llama-3.1-8b-instant",
     },
-    "anthropic": {
-        "reasoning": "claude-sonnet-4-5",
-        "quant": "claude-sonnet-4-5",
-        "research": "claude-haiku-4-5",
-        "creative": "claude-sonnet-4-5",
-        "extraction": "claude-haiku-4-5",
-    },
-    "openai": {
-        "reasoning": "o4-mini",
-        "quant": "o4-mini",
-        "research": "gpt-5-mini",
-        "creative": "gpt-5-mini",
-        "extraction": "gpt-5-mini",
-    },
-    "google": {
-        "reasoning": "gemini-2.5-pro",
-        "quant": "gemini-2.5-pro",
-        "research": "gemini-2.5-flash",
-        "creative": "gemini-2.5-flash",
-        "extraction": "gemini-2.5-flash-lite",
-    },
-    "deepseek": {
-        "reasoning": "deepseek-reasoner",
-        "quant": "deepseek-reasoner",
-        "research": "deepseek-chat",
-        "creative": "deepseek-chat",
-        "extraction": "deepseek-chat",
-    },
+    # OpenRouter — the specialist gateway: widest catalog + real fine-tunes.
     "openrouter": {
         "reasoning": "deepseek/deepseek-r1",
         "quant": "deepseek/deepseek-r1",
+        "code": "qwen/qwen3-coder-plus",          # dedicated code model
         "research": "deepseek/deepseek-chat",
         "creative": "deepseek/deepseek-chat",
-        "extraction": "deepseek/deepseek-chat",
+        "extraction": "openai/gpt-oss-20b",        # strong + free
     },
+    # DeepSeek — V4-Pro is the #1 open coder (80.6% SWE-bench Verified).
+    "deepseek": {
+        "reasoning": "deepseek-v4-pro",
+        "quant": "deepseek-v4-pro",
+        "code": "deepseek-v4-pro",
+        "research": "deepseek-v4-flash",
+        "creative": "deepseek-v4-flash",
+        "extraction": "deepseek-v4-flash",
+    },
+    # Mistral — Codestral is purpose-built for code (#1 Copilot Arena).
     "mistral": {
-        "reasoning": "magistral-medium-latest",
-        "quant": "magistral-medium-latest",
+        "reasoning": "magistral-medium-2506",
+        "quant": "magistral-medium-2506",
+        "code": "codestral-latest",
         "research": "mistral-large-latest",
         "creative": "mistral-large-latest",
         "extraction": "mistral-small-latest",
     },
+    "anthropic": {
+        "reasoning": "claude-opus-4-8",
+        "quant": "claude-sonnet-4-6",
+        "code": "claude-sonnet-4-6",
+        "research": "claude-haiku-4-5",
+        "creative": "claude-sonnet-4-6",
+        "extraction": "claude-haiku-4-5",
+    },
+    "google": {
+        "reasoning": "gemini-3-pro-preview",
+        "quant": "gemini-3-pro-preview",
+        "code": "gemini-3-pro-preview",
+        "research": "gemini-3.6-flash",
+        "creative": "gemini-3.6-flash",
+        "extraction": "gemini-3.5-flash-lite",
+    },
+    "openai": {
+        "reasoning": "gpt-5.5",
+        "quant": "gpt-5.5",
+        "code": "gpt-5.5",
+        "research": "gpt-5.5",
+        "creative": "gpt-5.5",
+        "extraction": "gpt-5.4-nano",
+    },
     "xai": {
         "reasoning": "grok-4",
         "quant": "grok-4",
+        "code": "grok-4",
         "research": "grok-3-mini",
         "creative": "grok-4",
         "extraction": "grok-3-mini",
